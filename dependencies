@@ -1,0 +1,7 @@
+# similar to Debian control dependencies
+
+python >= 2.5
+mysql-server >= 5.0
+
+python-django-south  # db schema migrations
+
