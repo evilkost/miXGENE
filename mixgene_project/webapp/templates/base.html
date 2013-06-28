@@ -1,0 +1,49 @@
+{% extends "empty.html" %}
+
+{% block body %}
+    <div class="navbar navbar-inverse navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container">
+          <a class="brand" href="/">miXGENE</a>
+          <div class="nav-collapse collapse">
+            <ul class="nav">
+              <li class="active"><a href="/">Home</a></li>
+              <li><a href="#about">About</a></li>
+              <li><a href="#contact">Contact</a></li>
+              
+              
+            </ul>
+          </div><!--/.nav-collapse -->
+          
+          {% if  user.is_authenticated %}
+            <form class="" action="{% url 'django.contrib.auth.views.logout' %}"  method=POST>
+                {% csrf_token %}
+                <button  class="btn btn-warning pull-right" type="submit">Logout</a>
+                <input type="hidden" name="next" id="next" value="{{ next}}" > 
+            </form>
+            
+          {% else %}
+                <form class="navbar-form pull-right" action="{% url 'webapp.views.create_user' %}" method=POST>
+                    {% csrf_token %}
+                    <button  class="btn btn-primary" href="create_new_user">Registration</button>
+                </form>
+                
+                <form class="navbar-form pull-right" action="{% url 'django.contrib.auth.views.login' %}" method=POST>
+                  {% csrf_token %}
+                  <input class="span2" type="text" name="username" id="id_username" placeholder="Username">
+                  <input class="span2" type="password" name="password"  id="id_password" placeholder="Password">
+                  
+                  <input type="hidden" name="next" id="next" value="{{ next}}" > 
+                  <button type="submit" class="btn">Sign in</button>
+                </form>  
+                
+                
+          {% endif %}
+          
+        </div>
+      </div>
+    </div>
+
+    {% block inner %} {% endblock %}
+    </div> <!-- /container -->
+{% endblock %}

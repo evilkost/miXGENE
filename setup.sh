@@ -24,3 +24,11 @@ quit
 # installing Django from PIP
 sudo pip install Django --upgrade
 sudo pip install South --upgrade
+
+
+# init base db tables and prepare for migrations
+#cd miXGENE/mixgene_project
+python manage.py syncdb
+
+#do db migrations
+python manage.py migrate

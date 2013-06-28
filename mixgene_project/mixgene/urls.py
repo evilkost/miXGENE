@@ -7,7 +7,10 @@ from webapp import views
 
 urlpatterns = patterns('',
     url(r'^$', views.index, name='index'),
-    url(r'^login$', views.login, name='login'),
+    url(r'^auth/login/$', 'django.contrib.auth.views.login', {'template_name': 'auth/login.html'}),
+    url(r'^auth/logout/$', 'django.contrib.auth.views.logout', {}),
+    url(r'^auth/create_user/$', 'webapp.views.create_user', {}),
+    
     # Examples:
     # url(r'^$', 'mixgene.views.home', name='home'),
     # url(r'^mixgene/', include('mixgene.foo.urls')),

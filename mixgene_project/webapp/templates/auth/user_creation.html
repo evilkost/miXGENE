@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block inner %}
+      <div class="container">    
+        <h2>Create new user</h2>
+        
+        <form class="form-horizontal" action="{% url 'webapp.views.create_user' %}" method="post">
+          {% csrf_token %}
+          
+          <div class="control-group">
+            <label class="control-label" for="id_username"> Username </label>
+            <div class="controls">
+                <input id="id_username" maxlength="254" name="username" type="text" />
+            </div>
+          </div>
+          
+          <div class="control-group">
+            <label class="control-label" for="id_email"> E-mail </label>
+            <div class="controls">
+                <input id="id_email" maxlength="254" name="email" type="text" />
+            </div>
+          </div>
+
+          <div class="control-group">        
+            <label class="control-label" for="id_password1"> Password </label>
+            <div class="controls">
+                <input id="id_password1" name="password1" type="password" />
+            </div>
+          </div>
+
+          <div class="control-group">        
+            <label class="control-label" for="id_password2"> Repeat password </label>
+            <div class="controls">
+                <input id="id_password2" name="password2" type="password" />
+            </div>
+          </div>
+          
+          <div class="control-group">
+            <div class="controls">
+                <button  class="btn btn-primary" "type"="submit" >Create user </button>
+                <input type="hidden" name="next" value="{{ next }}" />
+            </div>
+          </div>
+        </form>
+      </div>
+
+{% endblock %}

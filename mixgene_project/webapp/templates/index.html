@@ -1,90 +1,14 @@
-{% load staticfiles %}
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <title>miXGENE</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="">
-    <meta name="author" content="imvalgo@gmail.com">
+{% extends "base.html" %}
 
-    <link href="static/css/bootstrap.css" rel="stylesheet">
-     
-    <style>
-      body {
-        padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
-      }
-    </style>
-    
-    <link href="static/css/bootstrap-responsive.css" rel="stylesheet">
-
-    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
-    <!--[if lt IE 9]>
-      <script src="static/js/html5shiv.js"></script>
-    <![endif]-->
-
-    <link rel="shortcut icon" href="static/ico/favicon.png">
-  </head>
-
-  <body>
-
-    <div class="navbar navbar-inverse navbar-fixed-top">
-      <div class="navbar-inner">
-        <div class="container">
-          <a class="brand" href="#">miXGENE</a>
-          <div class="nav-collapse collapse">
-            <ul class="nav">
-              <li class="active"><a href="#">Home</a></li>
-              <li><a href="#about">About</a></li>
-              <li><a href="#contact">Contact</a></li>
-            </ul>
-          </div><!--/.nav-collapse -->
-          
-          <form class="navbar-form pull-right" action="{% url 'login' %}" method=POST>
-              {% csrf_token %}
-              <input class="span2" type="text" name="username" placeholder="Username">
-              <input class="span2" type="password" name="password" placeholder="Password">
-              <button type="submit" class="btn">Sign in</button>
-          </form>
-        </div>
-      </div>
-    </div>
-
+{% block inner %}
     <div class="row">
       
       <div class="span7 offset1">
         <h1>miXGENE web app main page</h1>
+        {% if  user.is_authenticated %}
+            <h3>Hello {{user.username}} ! </h3>
+        {% endif %}
         <p>Use this document as a way to quick start any new project.<br> All you get is this message and a barebones HTML document.</p>
       </div>
-    
-      <div class="span3">    
-        <h2>Create new account</h2>
-        
-        <form action="https://twitter.com/signup" class="signup" method="post">
-          <div class="placeholding-input">
-            <input type="text" id="signup-user-name" class="text-input" autocomplete="off" name="user[name]" maxlength="20" placeholder="Your name">
-          </div>
-          <div class="placeholding-input">
-            <input type="text" id="signup-user-email" class="text-input email-input" autocomplete="off" name="user[email]" placeholder="E-mail">
-          </div>
-          <div class="placeholding-input">
-            <input type="password" id="signup-user-password" class="text-input" name="user[user_password]" placeholder="Password">
-          </div>
-      
-          <input type="hidden" value="" name="context">
-          <input type="hidden" value="b94e2c95838fe2e5c7c45cd2d1167dcdd30713e9" name="authenticity_token">
-          <button type="submit" class="btn signup-btn">
-            Send
-          </button>
-        </form>
-        
-      </div>
-    </div> <!-- /container -->
 
-    <!-- Le javascript
-    ================================================== -->
-    <!-- Placed at the end of the document so the pages load faster -->
-    <script src="http://yandex.st/jquery/2.0.2/jquery.js"></script>
-    <script src="static/js/bootstrap.js"></script>
-  </body>
-</html>
+{% endblock %}
