@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block inner %}
+
+<div>
+    <h3>Active</h3>
+    
+    <table class="table table-stripped">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Workflow #</th>
+                <th>Status</th>
+            </tr>
+            
+        </thead>
+        <tbody>
+            {% for exp in exps %}
+            <tr>
+                <th> {{ exp.e_id }}</th>
+                <th> {{ exp.workflow }}</th>
+                <th> {{ exp.status }}</th>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+</div>
+
+
+<div>
+    <h3>Problematic</h3>
+</div>
+
+<div>
+    <h3>Finished</h3>
+</div>
+
+{% endblock %}

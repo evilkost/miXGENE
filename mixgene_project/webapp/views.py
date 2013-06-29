@@ -8,6 +8,9 @@ from django.views.decorators.csrf import csrf_protect
 
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
+from django.contrib.auth.decorators import login_required
+
+from webapp.models import Experiment, Workflow
 
 def index(request):
     template = loader.get_template('index.html')
@@ -48,20 +51,22 @@ def create_user(request):
         # add user created page, or auto
         return redirect("/")
 
-    
-"""
-def login(request):
-    username = request.POST['username']
-    password = request.POST['password']
-    user = authenticate(username=username, password=password)
-    if user is not None:
-        if user.is_active:
-            login(request, user)
-            return redirecrt(request.path)
-        else:
-            # Return a 'disabled account' error message
-            return redirecrt(request.path)
-    else:
-        return redirecrt(request.path)
-        # Return an 'invalid login' error message.
-"""
+
+@login_required(login_url='/auth/login/')
+def experiments(request):
+    template = loader.get_template('experiments.html')
+    context = RequestContext(request, {
+        "exps": Experiment.objects.filter(author=request.user),
+        "next": "/experiments",
+        "exp_page_active": True,
+    })
+    return HttpResponse(template.render(context))
+
+@login_required(login_url='/auth/login/')    
+def add_experiment(request):
+    template = loader.get_template('add_experiment.html')
+    context = RequestContext(request, {
+        "next":"/add_experiment",
+        "exp_add_page_active": True,
+    })
+    return HttpResponse(template.render(context))

@@ -6,7 +6,10 @@ admin.autodiscover()
 from webapp import views
 
 urlpatterns = patterns('',
-    url(r'^$', views.index, name='index'),
+    url(r'^$', 'webapp.views.index', name='index'),
+    url(r'^experiments$', 'webapp.views.experiments', name='experiments'),
+    url(r'^add_experiment$', 'webapp.views.add_experiment', name='add_experiment'),
+    
     url(r'^auth/login/$', 'django.contrib.auth.views.login', {'template_name': 'auth/login.html'}),
     url(r'^auth/logout/$', 'django.contrib.auth.views.logout', {}),
     url(r'^auth/create_user/$', 'webapp.views.create_user', {}),
