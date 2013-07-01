@@ -1,5 +1,5 @@
 # Django settings for mixgene project.
-# copy by 
+# copy by
 #   cp settings.py{.public,} and replace placeholder with private information
 ## TODO: replace this schema with config file for local information
 
@@ -24,6 +24,21 @@ DATABASES = {
         'PORT': '',                      # Set to empty string for default.
     }
 }
+
+## Celery
+import djcelery
+djcelery.setup_loader()
+
+BROKER_URL = 'redis://localhost:6379/0'
+BROKER_TRANSPORT_OPTIONS = {'visibility_timeout': 36000} # 10-hours
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+
+CELERY_ENABLE_UTC = True
+CELERY_TIMEZONE = 'Europe/Moscow'
+
+
+## End celery settings
+
 
 # Hosts/domain names that are valid for this site; required if DEBUG is False
 # See https://docs.djangoproject.com/en/1.5/ref/settings/#allowed-hosts
@@ -128,8 +143,10 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'south',
+    'djcelery',
 
     'webapp',
+    'workflow',,
     # Uncomment the next line to enable the admin:
     'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:

@@ -3,7 +3,7 @@
 sudo apt-get update
 sudo apt-get upgrade
  
-sudo apt-get install python python-pip mysql-server mysql-common mysql-client python-mysqldb nginx
+sudo apt-get install python python-pip mysql-server mysql-common mysql-client python-mysqldb nginx redis-server
 # during installation you will be asked for a password for the root
 # underworldHj53
 
@@ -22,8 +22,7 @@ quit
 
 
 # installing Django from PIP
-sudo pip install Django --upgrade
-sudo pip install South --upgrade
+sudo pip install -U Django South Celery django-celery redis
 
 
 # init base db tables and prepare for migrations
