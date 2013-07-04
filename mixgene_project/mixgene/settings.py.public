@@ -25,13 +25,17 @@ DATABASES = {
     }
 }
 
+
+REDIS_HOST = 'localhost'
+REDIS_PORT = 6379
+
 ## Celery
 import djcelery
 djcelery.setup_loader()
 
-BROKER_URL = 'redis://localhost:6379/0'
-BROKER_TRANSPORT_OPTIONS = {'visibility_timeout': 36000} # 10-hours
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+BROKER_URL = 'redis://%s:%s/0' % (REDIS_HOST, REDIS_PORT)
+BROKER_TRANSPORT_OPTIONS = {'visibility_timeout': 360000} # 100-hours
+CELERY_RESULT_BACKEND = BROKER_URL
 
 CELERY_ENABLE_UTC = True
 CELERY_TIMEZONE = 'Europe/Moscow'
