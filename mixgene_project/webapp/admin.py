@@ -1,5 +1,5 @@
 from django.contrib import admin
-from webapp.models import Experiment, Workflow
+from webapp.models import Experiment, WorkflowLayout
 
 admin.site.register(Experiment)
-admin.site.register(Workflow)
+admin.site.register(WorkflowLayout)
