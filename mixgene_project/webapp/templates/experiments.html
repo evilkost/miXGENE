@@ -4,15 +4,16 @@
 
 <div>
     <h3>Active</h3>
-    
+
     <table class="table table-stripped">
         <thead>
             <tr>
                 <th>#</th>
                 <th>Workflow #</th>
                 <th>Status</th>
+                <th>Details</th>
             </tr>
-            
+
         </thead>
         <tbody>
             {% for exp in exps %}
@@ -20,11 +21,16 @@
                 <th> {{ exp.e_id }}</th>
                 <th> {{ exp.workflow }}</th>
                 <th> {{ exp.status }}</th>
+                <th>
+                    <a href="{% url 'webapp.views.exp_details' exp.e_id %}">
+                        {% url 'webapp.views.exp_details' exp.e_id %}
+                    </a>
+                </th>
             </tr>
             {% endfor %}
         </tbody>
     </table>
-    
+
 </div>
 
 

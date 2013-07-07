@@ -4,4 +4,29 @@
 
 <h1>Under heavy construction!</h1>
 
+    <form class="form-horizontal" action="{% url 'webapp.views.create_experiment' %}" method="post">
+        {% csrf_token %}
+
+        <div class="control-group">
+            <label class="control-label" for="id_wfl"> Select workflow layout</label>
+            <div class="controls">
+                <select name="id_wfl" >
+                    {% for layout in all_layouts %}
+                       <option value="{{ layout.w_id }}"> {{ layout.wfl_class }} </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+
+        <div class="control-group form-actions">
+            <div class="controls">
+                <button  class="btn btn-primary" type="submit" >Configure experiment </button>
+                <input type="hidden" name="next" value="{{ next }}" />
+            </div>
+        </div>
+
+    </form>
+
+
 {% endblock %}

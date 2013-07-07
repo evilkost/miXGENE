@@ -3,10 +3,12 @@ import cPickle as pickle
 from celery import task
 from mixgene.util import get_redis_instance
 
-"""
-Reserved fields in context:
-'exp_id' : experiment id,
+from webapp.models import Experiment
 
+"""
+Reserved fields in context with `exp_` prefix:
+'exp_id' : experiment id,
+'exp_status' : status of experiment
 """
 class AtomicTask(object):
     def __init__(self, name, func, inmap, outmap):
@@ -57,7 +59,7 @@ def exc_task(ctx, task_obj, c_subtask):
         print "Shouldn't be there"
 
 
-@task(name='worflow.tasks.exc_seq')
+@task(name='workflow.tasks.exc_seq')
 def exc_seq(ctx, seq_task, num, c_subtask):
     # TODO: update context after each subtask
     print "enter exc_seq, name %s, num %s" % (seq_task.name, num)
@@ -68,14 +70,21 @@ def exc_seq(ctx, seq_task, num, c_subtask):
         exc_task.s(ctx, seq_task.subtasks[num], next_in_chain).apply_async()
 
 
+@task(name='workflow.tasks.set_exp_status')
+def set_exp_status(ctx):
+    new_status = ctx.get('exp_status', 'done')
+    exp = Experiment.objects.get(e_id = ctx['exp_id'])
+    exp.status = new_status
+    exp.save()
+
 PAR_REDIS_PREFIX_RETURN_SUBTASK="PRPR:"
 PAR_REDIS_PREFIX_DONE="PRPD:"
 PAR_REDIS_PREFIX_RESULT_CONTEXT="PRPC:"
 @task(name='workflow.tasks.par_collect')
 def par_collect(ctx, pre_ctx, subtask_name, parent_task):
     r = get_redis_instance()
-    key_done = PAR_REDIS_PREFIX_DONE + ctx['exp_id']
-    key_context = PAR_REDIS_PREFIX_RESULT_CONTEXT + ctx['exp_id'] + ":" + subtask_name
+    key_done = "%s%s" % (PAR_REDIS_PREFIX_DONE, ctx['exp_id'])
+    key_context = "%s%s:%s" % (PAR_REDIS_PREFIX_RESULT_CONTEXT, ctx['exp_id'], subtask_name)
     member = subtask_name
     r.zadd(key_done, member, 1)
     r.set(key_context, pickle.dumps(ctx) )
@@ -86,11 +95,11 @@ def par_collect(ctx, pre_ctx, subtask_name, parent_task):
         ctx = {}
         ctx.update(pre_ctx)
         for st in parent_task.subtasks:
-            key_context = PAR_REDIS_PREFIX_RESULT_CONTEXT + ctx['exp_id'] + ":" + st.name
+            key_context = "%s%s:%s" % (PAR_REDIS_PREFIX_RESULT_CONTEXT, ctx['exp_id'], st.name)
             res_ctx = pickle.loads(r.get(key_context))
             ctx.update(res_ctx)
 
-        key_subtask = PAR_REDIS_PREFIX_RETURN_SUBTASK + ctx['exp_id'] + ":" + parent_task.name
+        key_subtask = "%s%s:%s" % (PAR_REDIS_PREFIX_RETURN_SUBTASK, ctx['exp_id'], parent_task.name)
         c_subtask = pickle.loads(r.get(key_subtask))
         c_subtask.apply_async((ctx, ))
 
@@ -99,7 +108,7 @@ def par_collect(ctx, pre_ctx, subtask_name, parent_task):
 def exc_par(ctx, par_task, c_subtask):
     print "enter exc_par, name %s" % (par_task.name,)
     r = get_redis_instance()
-    key_subtask = PAR_REDIS_PREFIX_RETURN_SUBTASK + ctx['exp_id'] + ":" + par_task.name
+    key_subtask = "%s%s:%s" % (PAR_REDIS_PREFIX_RETURN_SUBTASK, ctx['exp_id'], par_task.name)
     csbp = pickle.dumps(c_subtask)
     #print "%s, %s" % (key_subtask, csbp)
     r.set(key_subtask, csbp )
