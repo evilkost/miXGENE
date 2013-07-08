@@ -2,8 +2,8 @@
 
 sudo apt-get update
 sudo apt-get upgrade
- 
-sudo apt-get install python python-pip mysql-server mysql-common mysql-client python-mysqldb nginx redis-server
+
+sudo apt-get install python python-pip mysql-server mysql-common mysql-client python-mysqldb nginx redis-server gunicorn
 # during installation you will be asked for a password for the root
 # underworldHj53
 

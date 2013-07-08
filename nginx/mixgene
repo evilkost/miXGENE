@@ -1,0 +1,32 @@
+upstream gunicorn {
+        server 127.0.0.1:9431;
+}
+
+
+server {
+    listen  10330 default;
+    server_name  217.172.23.200;
+    access_log  /var/log/nginx.localhost.access.log;
+
+
+    location /static/ {
+        autoindex on;
+        alias /home/kost/res/mixgene_workdir/static/bootstrap/;
+    }
+    location / {
+        proxy_pass  http://gunicorn;
+        proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
+        proxy_redirect off;
+        proxy_buffering off;
+        proxy_set_header        Host            $host:$server_port;
+        proxy_set_header        X-Real-IP       $remote_addr;
+        proxy_set_header        X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+
+
+    ## Disable viewing .htaccess & .htpassword
+    location ~ /\.ht {
+        deny  all;
+    }
+}
