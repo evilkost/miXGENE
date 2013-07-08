@@ -23,6 +23,22 @@ def index(request):
     })
     return HttpResponse(template.render(context))
 
+
+def about(request):
+    template = loader.get_template('about.html')
+    context = RequestContext(request, {
+        "next":"/",
+    })
+    return HttpResponse(template.render(context))
+
+def contact(request):
+    template = loader.get_template('contact.html')
+    context = RequestContext(request, {
+        "next":"/",
+    })
+    return HttpResponse(template.render(context))
+
+
 @csrf_protect
 @never_cache
 def create_user(request):

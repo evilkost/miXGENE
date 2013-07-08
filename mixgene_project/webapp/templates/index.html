@@ -2,13 +2,36 @@
 
 {% block inner %}
     <div class="row">
-      
+
       <div class="span7 offset1">
         <h1>miXGENE web app main page</h1>
         {% if  user.is_authenticated %}
-            <h3>Hello {{user.username}} ! </h3>
+            <h3>Welcome back {{user.username}} ! </h3>
         {% endif %}
-        <p>Use this document as a way to quick start any new project.<br> All you get is this message and a barebones HTML document.</p>
+        <h4>TODO list:</h4>
+        <ul>
+            <li>
+                Creating experiments without configuration
+            </li>
+            <li>
+                File upload input &amp; linking with experiments
+            </li>
+            <li>
+                Execute R by means of rpy2 and store results to files and/or to redis or db.
+            </li>
+        </ul>
+
+
+        <h4>Ideas list:</h4>
+        <ul>
+            <li>
+                Be able to use results from one experiment in another
+            </li>
+            <li>
+                Download datasets from NCBI
+            </li>
+        </ul>
+
       </div>
 
 {% endblock %}

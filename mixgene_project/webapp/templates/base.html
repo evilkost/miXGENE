@@ -15,8 +15,8 @@
                     <li {% if exp_add_page_active %} class="active" {% endif %}>
                         <a href="{% url 'webapp.views.add_experiment' %}">Add experiment</a>
                     </li>
-                    <li><a href="#about">About</a></li>
-                    <li><a href="#contact">Contact</a></li>
+                    <li><a href="{% url 'webapp.views.about' %}">About</a></li>
+                    <li><a href="{% url 'webapp.views.contact' %}">Contact</a></li>
                 </ul>
             </div>
 
@@ -24,22 +24,22 @@
             <form class="" action="{% url 'django.contrib.auth.views.logout' %}"  method=POST>
                 {% csrf_token %}
                 <button  class="btn btn-warning pull-right" type="submit">Logout</a>
-                <input type="hidden" name="next" id="next" value="{{ next}}" > 
+                <input type="hidden" name="next" id="next" value="{{ next}}" >
             </form>
 
             {% else %}
             <form class="navbar-form pull-right" action="{% url 'webapp.views.create_user' %}" method=POST>
                 {% csrf_token %}
                 <button  class="btn btn-primary" href="create_new_user">Registration</button>
-            </form>            
+            </form>
             <form class="navbar-form pull-right" action="{% url 'django.contrib.auth.views.login' %}" method=POST>
                 {% csrf_token %}
                 <input class="span2" type="text" name="username" id="id_username" placeholder="Username">
                 <input class="span2" type="password" name="password"  id="id_password" placeholder="Password">
 
-                <input type="hidden" name="next" id="next" value="{{ next}}" > 
+                <input type="hidden" name="next" id="next" value="{{ next}}" >
                 <button type="submit" class="btn">Sign in</button>
-            </form>                                  
+            </form>
             {% endif %}
         </div>
     </div>
@@ -47,6 +47,19 @@
 <!-- end top navigation -->
 
 
-{% block inner %}{% endblock %}
-
+{% block inner %}
 {% endblock %}
+
+<div class="navbar navbar-inverse navbar-fixed-bottom">
+    <div class="navbar-inner">
+        <div class="pull-right">
+            <h5> All used 3rd-party software is listed on
+                <a href="{% url 'webapp.views.about' %}"> About</a> page
+            </h5>
+        </div>
+    </div>
+</div>
+
+
+{% endblock body %}
+

@@ -7,6 +7,10 @@ from webapp import views
 
 urlpatterns = patterns('',
     url(r'^$', 'webapp.views.index', name='index'),
+    url(r'^about$', 'webapp.views.about', name='about'),
+    url(r'^contact$', 'webapp.views.contact', name='contact'),
+
+
     url(r'^experiments$', 'webapp.views.experiments', name='experiments'),
     url(r'^experiment/(?P<exp_id>\d+)/$', 'webapp.views.exp_details', name='exp_details'),
 

@@ -10,6 +10,8 @@
             <tr>
                 <th>#</th>
                 <th>Workflow #</th>
+                <th>Created</th>
+                <th>Updated</th>
                 <th>Status</th>
                 <th>Details</th>
             </tr>
@@ -20,6 +22,8 @@
             <tr>
                 <th> {{ exp.e_id }}</th>
                 <th> {{ exp.workflow }}</th>
+                <th> {{ exp.dt_created }}</th>
+                <th> {{ exp.dt_updated }}</th>
                 <th> {{ exp.status }}</th>
                 <th>
                     <a href="{% url 'webapp.views.exp_details' exp.e_id %}">
