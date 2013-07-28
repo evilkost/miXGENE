@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block inner %}
+
+<div class="row span9 offset2" >
+    Results:
+    <table class="table table-stripped" >
+        <thead>
+            <tr>
+                <th>Variable</th>
+                <th>Value</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <th>Sum</th> <th>{{ ctx.sum }}</th>
+            </tr>
+            <tr>
+                <th>Number of columns</th> <th>{{ ctx.ncol }}</th>
+            </tr>
+            <tr>
+                <th>Number of rows</th> <th>{{ ctx.nrow }}</th>
+            </tr>
+        </tbody>
+    </table>
+
+</div>
+
+
+
+{% endblock %}

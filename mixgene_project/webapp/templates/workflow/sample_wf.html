@@ -3,6 +3,9 @@
 {% block inner %}
 
 <div class="row span6 offset2" >
+    <h5>Status: {{ exp.status }} </h5>
+    <p>This workflow consists of three <i>sleep</i> task. Two of them is executed consequently and third is executed independently in parallel. Workflow instance finish after all subtasks. Please define sleep time for subtasks.
+    </p>
     <form class="form-vertical" method=post action="{% url 'webapp.views.create_exp_instance' %}"/>
         {% csrf_token %}
 
@@ -15,7 +18,7 @@
             Run immidiately
         </label>
 
-        <input type="hidden" name="id_wfl" value="{{ layout_id }}" />
+        <input type="hidden" name="exp_id" value="{{ exp.e_id }}" />
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">Proceed</button>
         </div>

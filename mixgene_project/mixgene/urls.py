@@ -19,6 +19,8 @@ urlpatterns = patterns('',
     url(r'^create_experiment/', 'webapp.views.create_experiment', name='create_experiment'),
     url(r'^create_exp_instance/', 'webapp.views.create_exp_instance', name='create_exp_instance'),
 
+    url(r'^upload_data/', 'webapp.views.upload_data', name='upload_data'),
+
     url(r'^auth/login/$', 'django.contrib.auth.views.login', {'template_name': 'auth/login.html'}),
     url(r'^auth/logout/$', 'django.contrib.auth.views.logout', {}),
     url(r'^auth/create_user/$', 'webapp.views.create_user', {}),

@@ -2,48 +2,48 @@
 
 {% block inner %}
 
-<div>
-    <h3>Active</h3>
+<div class="row">
+    <div class="span11 offset1">
+        <h3>Active</h3>
+        <table class="table table-stripped">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Workflow #</th>
+                    <th>Created</th>
+                    <th>Updated</th>
+                    <th>Status</th>
+                    <th>Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for exp in exps %}
+                <tr>
+                    <th> {{ exp.e_id }}</th>
+                    <th> {{ exp.workflow }}</th>
+                    <th> {{ exp.dt_created }}</th>
+                    <th> {{ exp.dt_updated }}</th>
+                    <th> {{ exp.status }}</th>
+                    <th>
+                        <a href="{% url 'webapp.views.exp_details' exp.e_id %}">
+                            {% url 'webapp.views.exp_details' exp.e_id %}
+                        </a>
+                    </th>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 
-    <table class="table table-stripped">
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>Workflow #</th>
-                <th>Created</th>
-                <th>Updated</th>
-                <th>Status</th>
-                <th>Details</th>
-            </tr>
-
-        </thead>
-        <tbody>
-            {% for exp in exps %}
-            <tr>
-                <th> {{ exp.e_id }}</th>
-                <th> {{ exp.workflow }}</th>
-                <th> {{ exp.dt_created }}</th>
-                <th> {{ exp.dt_updated }}</th>
-                <th> {{ exp.status }}</th>
-                <th>
-                    <a href="{% url 'webapp.views.exp_details' exp.e_id %}">
-                        {% url 'webapp.views.exp_details' exp.e_id %}
-                    </a>
-                </th>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-</div>
-
-
-<div>
+<br />
+<div class="span11 offset1">
     <h3>Problematic</h3>
 </div>
 
-<div>
+<br />
+<div class="span11 offset1">
     <h3>Finished</h3>
 </div>
 
+</div>
 {% endblock %}

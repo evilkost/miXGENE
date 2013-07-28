@@ -16,7 +16,16 @@ class Experiment(models.Model):
     workflow = models.ForeignKey(WorkflowLayout)
     author = models.ForeignKey(User)
 
+    """
+        status evolution:
+        1. created
+        2. configured
+        3. running
+        4. done OR
+        5. failed
+    """
     status = models.TextField(default="created")
+
 
     dt_created = models.DateTimeField(auto_now_add=True)
     dt_updated = models.DateTimeField(auto_now=True)
@@ -25,3 +34,16 @@ class Experiment(models.Model):
 
     def __unicode__(self):
         return u"%s" % self.e_id
+
+
+def content_file_name(instance, filename):
+    return '/'.join(map(str, ['data', instance.exp.author.id, instance.exp.e_id, filename]))
+
+class UploadedData(models.Model):
+    exp = models.ForeignKey(Experiment)
+    var_name = models.CharField(max_length=255)
+    filename = models.CharField(max_length=255, default="default")
+    data = models.FileField(null=True, upload_to=content_file_name)
+
+    def __unicode__(self):
+        return u"%s:%s" % (self.exp.e_id, self.var_name)

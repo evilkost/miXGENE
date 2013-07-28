@@ -20,12 +20,16 @@ def write_result(ctx):
     print ctx['exp_id']
     r.set("SAMPLE_WORKFLOW_LAYOUT:exp_id=%s:result" % ctx['exp_id'], "DONE")
 
+#TODO: class GenericWfL(object):
+
+
 class SampleWfL(object):
     """
         TODO: Or generate from json DSL
     """
 
     def __init__(self):
+        self.name = "Sleep sample"
         self.description = """Sample Workflow Layout
 
         using seq and par subtasks
@@ -35,6 +39,8 @@ class SampleWfL(object):
         """
         self.template = "workflow/sample_wf.html"
         self.template_result = "workflow/sample_wf_result.html"
+
+        self.data_files_vars = []
 
     def get_workflow(self, request):
         at1 = AtomicTask("at_1", wait_task, {'t1': 'sleep_time'}, {})
@@ -53,3 +59,46 @@ class SampleWfL(object):
 
         return (main_task, ctx)
         #return exc_task.s(ctx, main_task, write_result)
+
+@task(name='workflow.layout.r_test_algo')
+def r_test_algo(ctx):
+    import  rpy2.robjects as R
+    from rpy2.robjects.packages import importr
+    test = importr("test")
+    from webapp.models import Experiment, UploadedData
+    exp = Experiment.objects.get(e_id = ctx['exp_id'])
+    ud = UploadedData.objects.get(exp=exp, var_name="data.csv")
+    filename = ud.data.file.name
+
+    rread_csv = R.r['read.csv']
+    rwrite_csv = R.r['write.csv']
+    rtest = R.r['test']
+
+    rx = rread_csv(filename)
+    rres = rtest(rx)
+
+    names_to_res = ['sum', 'nrow', 'ncol',]
+
+    for i in range(len(rres.names)):
+        if rres.names[i] in names_to_res:
+            ctx[rres.names[i]] = rres[i][0]
+
+    return ctx
+
+class TestRAlgo(object):
+
+    def __init__(self):
+        self.name = "Test R Algo"
+        self.description = ""
+        self.template = "workflow/test_r_wf.html"
+        self.template_result = "workflow/test_r_result.html"
+
+        self.data_files_vars = [
+            "data.csv",
+        ]
+
+    def get_workflow(self, request):
+        ctx = {}
+        main_task = AtomicTask("rtest", r_test_algo, {}, {})
+
+        return (main_task, ctx)

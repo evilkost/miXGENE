@@ -2,10 +2,13 @@
 
 {% block inner %}
 
-<h1> {{ layout.name }} </h1>
-<h2> {{ exp.e_id }} </h2>
-{{ exp.status }}
-
+<div class="row">
+    <div class="span6 offset1">
+        <h1>Workflow #{{ layout.name }} </h1>
+        <h2>Experiment # {{ exp.e_id }} </h2>
+        <p> Status: {{ exp.status }} </p>
+    </div>
+<div>
 
 
 {% endblock %}
