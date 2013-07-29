@@ -1,7 +1,6 @@
 from celery import task
 
 from workflow.tasks import AtomicTask, SeqTask, ParTask, exc_task
-from mixgene.util import get_redis_instance
 
 import time
 
@@ -16,9 +15,7 @@ def wait_task(ctx):
 
 @task(name='workflow.layout.write_result')
 def write_result(ctx):
-    r = get_redis_instance()
     print ctx['exp_id']
-    r.set("SAMPLE_WORKFLOW_LAYOUT:exp_id=%s:result" % ctx['exp_id'], "DONE")
 
 #TODO: class GenericWfL(object):
 

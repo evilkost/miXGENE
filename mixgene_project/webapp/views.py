@@ -12,12 +12,13 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 
-from webapp.models import Experiment, WorkflowLayout, UploadedData
+from webapp.models import Experiment, WorkflowLayout, UploadedData, delete_exp
 from webapp.forms import UploadForm
-from workflow.tasks import exc_task, set_exp_status, CTX_STORE_REDIS_PREFIX
+from workflow.tasks import exc_task, set_exp_status
 from workflow.layout import write_result
 from mixgene.util import dyn_import
 from mixgene.util import get_redis_instance
+from mixgene.redis_helper import ExpKeys
 
 
 def index(request):
@@ -128,7 +129,7 @@ def exp_details(request, exp_id):
         template = loader.get_template(wf.template)
 
     r = get_redis_instance()
-    key_context = "%s%s" % (CTX_STORE_REDIS_PREFIX, exp.e_id)
+    key_context = ExpKeys.get_context_store_key(exp.e_id)
     pickled_ctx = r.get(key_context)
     if pickled_ctx is not None:
         ctx = pickle.loads(pickled_ctx)
