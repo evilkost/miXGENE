@@ -13,6 +13,7 @@ urlpatterns = patterns('',
 
     url(r'^experiments$', 'webapp.views.experiments', name='experiments'),
     url(r'^experiment/(?P<exp_id>\d+)/$', 'webapp.views.exp_details', name='exp_details'),
+    url(r'^experiment/(?P<exp_id>\d+)/(?P<action>\w+)/$', 'webapp.views.alter_exp', name='alter_exp'),
 
     url(r'^add_experiment$', 'webapp.views.add_experiment', name='add_experiment'),
 

@@ -14,6 +14,7 @@
                     <th>Updated</th>
                     <th>Status</th>
                     <th>Details</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -27,7 +28,13 @@
                     <th>
                         <a href="{% url 'webapp.views.exp_details' exp.e_id %}">
                             {% url 'webapp.views.exp_details' exp.e_id %}
-                        </a>
+                        </a></th>
+                    <th>
+                        <form class="navbar-form" action="{% url 'webapp.views.alter_exp'  exp.e_id 'delete' %}" method="post">
+                            {% csrf_token %}
+                            <button class="btn btn-danger" type="submit" >Delete </button>
+                            <input type="hidden" name="next" value="{{ next }}" />
+                        </form>
                     </th>
                 </tr>
                 {% endfor %}

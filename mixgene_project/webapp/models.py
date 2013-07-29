@@ -1,6 +1,13 @@
+import os, shutil
 from django.db import models
 
 from django.contrib.auth.models import User
+
+from mixgene.settings import MEDIA_ROOT
+from mixgene.util import get_redis_instance
+from mixgene.redis_helper import ExpKeys
+from mixgene.util import dyn_import
+
 
 # Create your models here.
 class WorkflowLayout(models.Model):
@@ -34,6 +41,44 @@ class Experiment(models.Model):
 
     def __unicode__(self):
         return u"%s" % self.e_id
+
+
+def delete_exp(exp):
+    """
+        @param exp: Instance of Experiment  to be deleted
+        @return None
+            We need to clean 3 areas:
+            - keys in redis storage
+            - uploaded and created files
+            - delete exp object through ORM
+    """
+    # redis
+    r = get_redis_instance()
+    keys_to_delete = r.smembers(ExpKeys.get_all_exp_keys_key(exp.e_id))
+    r.delete(keys_to_delete)
+    r.delete(ExpKeys.get_all_exp_keys_key(exp.e_id))
+
+    # uploaded data
+    data_files = UploadedData.objects.filter(exp=exp)
+    for f in data_files:
+        try:
+            os.remove(f.data.path)
+        except:
+            pass
+        f.delete()
+    try:
+        to_del = '/'.join(map(str, [MEDIA_ROOT, 'data', exp.author.id, exp.e_id]))
+        shutil.rmtree(to_del)
+    except:
+        pass
+
+    # workflow specific operations
+    wfl_class = dyn_import(exp.workflow.wfl_class)
+    wf = wfl_class()
+    wf.on_delete(exp)
+
+    # deleting an experiment
+    exp.delete()
 
 
 def content_file_name(instance, filename):

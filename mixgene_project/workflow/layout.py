@@ -47,7 +47,6 @@ class SampleWfL(object):
         seqt = SeqTask("seqt", [at1, at2])
         main_task = ParTask("part", [seqt, at3])
 
-
         #TODO: dedicated method to parse request -> context, maybe
         ctx = {}
         ctx['t1'] = int(request.POST.get('t1'))
@@ -56,6 +55,9 @@ class SampleWfL(object):
 
         return (main_task, ctx)
         #return exc_task.s(ctx, main_task, write_result)
+
+    def on_delete(self, experiment):
+        pass
 
 @task(name='workflow.layout.r_test_algo')
 def r_test_algo(ctx):
@@ -83,7 +85,6 @@ def r_test_algo(ctx):
     return ctx
 
 class TestRAlgo(object):
-
     def __init__(self):
         self.name = "Test R Algo"
         self.description = ""
@@ -99,3 +100,6 @@ class TestRAlgo(object):
         main_task = AtomicTask("rtest", r_test_algo, {}, {})
 
         return (main_task, ctx)
+
+    def on_delete(self, experiment):
+        pass

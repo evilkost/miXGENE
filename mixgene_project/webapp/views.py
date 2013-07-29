@@ -146,10 +146,19 @@ def exp_details(request, exp_id):
         "exp": exp,
         "layout": layout,
         "ctx": ctx,
+        "next": "/experiment/%s" % exp.e_id
     })
     return HttpResponse(template.render(context))
 
 
+@login_required(login_url='/auth/login/')
+def alter_exp(request, exp_id, action):
+    exp = Experiment.objects.get(e_id = exp_id)
+    if action == 'delete' and exp.author == request.user:
+        delete_exp(exp)
+
+
+    return redirect(request.POST.get("next") or "/experiment/%s" % exp.e_id) # TODO use reverse
 
 @login_required(login_url='/auth/login/')
 def add_experiment(request):

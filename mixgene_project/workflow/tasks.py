@@ -87,6 +87,7 @@ def set_exp_status(ctx):
     r = get_redis_instance()
     key_context = ExpKeys.get_context_store_key(ctx['exp_id'])
     r.set(key_context, pickle.dumps(ctx) )
+    r.sadd(ExpKeys.get_all_exp_keys_key(ctx['exp_id']), key_context)
     print "SET_EXP_STATUS"
     print ctx
 
@@ -98,6 +99,8 @@ def par_collect(ctx, pre_ctx, subtask_name, parent_task):
     member = subtask_name
     r.zadd(key_done, member, 1)
     r.set(key_context, pickle.dumps(ctx) )
+    r.sadd(ExpKeys.get_all_exp_keys_key(ctx['exp_id']), key_done)
+    r.sadd(ExpKeys.get_all_exp_keys_key(ctx['exp_id']), key_context)
 
     entire_zset = r.zrange(key_done, 0, -1, withscores=True)
     print entire_zset
@@ -120,8 +123,8 @@ def exc_par(ctx, par_task, c_subtask):
     r = get_redis_instance()
     key_subtask = ExpKeys.get_par_return_subtask_key(ctx['exp_id'], par_task.name)
     csbp = pickle.dumps(c_subtask)
-    #print "%s, %s" % (key_subtask, csbp)
     r.set(key_subtask, csbp )
+    r.sadd(ExpKeys.get_all_exp_keys_key(ctx['exp_id']), key_subtask)
     for st in par_task.subtasks:
         cb_subtask = par_collect.s(ctx, st.name, par_task)
         exc_task.s(ctx, st, cb_subtask).apply_async()
