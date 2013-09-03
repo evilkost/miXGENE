@@ -154,8 +154,13 @@ def exp_details(request, exp_id):
 @login_required(login_url='/auth/login/')
 def alter_exp(request, exp_id, action):
     exp = Experiment.objects.get(e_id = exp_id)
-    if action == 'delete' and exp.author == request.user:
+    if exp.author == request.user:
+        return redirect("/") # TODO: show alert about wrong experiment
+
+    if action == 'delete': # TODO: check that exp state allows deletion
         delete_exp(exp)
+    #elif action == 'run':
+
 
 
     return redirect(request.POST.get("next") or "/experiment/%s" % exp.e_id) # TODO use reverse
@@ -172,9 +177,7 @@ def add_experiment(request):
     return HttpResponse(template.render(context))
 
 @login_required(login_url='auth/login/')
-def create_experiment(request):
-    layout_id = int(request.POST['id_wfl'])
-
+def create_experiment(request, layout_id):
     layout = WorkflowLayout.objects.get(w_id=layout_id)
     wfl_class = dyn_import(layout.wfl_class)
     wf = wfl_class()
@@ -182,6 +185,7 @@ def create_experiment(request):
     exp = Experiment(
         author=request.user,
         workflow=layout,
+        status='initiated', # TODO: until layout configuration will be implemented
     )
     exp.save()
 

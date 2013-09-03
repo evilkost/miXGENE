@@ -11,7 +11,7 @@ server {
 
     location /static/ {
         autoindex on;
-        alias /home/kost/res/mixgene_workdir/static/bootstrap/;
+        alias /home/kost/res/mixgene_workdir/static/;
     }
     location / {
         proxy_pass  http://gunicorn;

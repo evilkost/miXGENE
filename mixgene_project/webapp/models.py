@@ -14,8 +14,11 @@ class WorkflowLayout(models.Model):
     w_id = models.AutoField(primary_key=True)
     wfl_class = models.TextField(null=True)  ## i.e.: 'workflow.layout.SampleWfL'
 
+    title = models.TextField(default="")
+    description = models.TextField(default="")
+
     def __unicode__(self):
-        return u"%s" % self.w_id
+        return u"%s" % self.title
 
 
 class Experiment(models.Model):
@@ -26,7 +29,8 @@ class Experiment(models.Model):
     """
         status evolution:
         1. created
-        2. configured
+        2. initiated [ not implemented yet, currently 1-> 3 ]
+        3. configured
         3. running
         4. done OR
         5. failed
