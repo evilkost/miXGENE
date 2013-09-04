@@ -1,6 +1,6 @@
 from celery import task
 
-from workflow.tasks import AtomicTask, SeqTask, ParTask, exc_task
+from workflow.actions import AtomicAction, SeqActions, ParActions, exc_action
 
 import time
 
@@ -18,7 +18,6 @@ def write_result(ctx):
     print ctx['exp_id']
 
 #TODO: class GenericWfL(object):
-
 
 class SampleWfL(object):
     """
@@ -40,12 +39,12 @@ class SampleWfL(object):
         self.data_files_vars = []
 
     def get_workflow(self, request):
-        at1 = AtomicTask("at_1", wait_task, {'t1': 'sleep_time'}, {})
-        at2 = AtomicTask("at_2", wait_task, {'t2': 'sleep_time'}, {})
-        at3 = AtomicTask("at_3", wait_task, {'t3': 'sleep_time'}, {})
+        at1 = AtomicAction("at_1", wait_task, {'t1': 'sleep_time'}, {})
+        at2 = AtomicAction("at_2", wait_task, {'t2': 'sleep_time'}, {})
+        at3 = AtomicAction("at_3", wait_task, {'t3': 'sleep_time'}, {})
 
-        seqt = SeqTask("seqt", [at1, at2])
-        main_task = ParTask("part", [seqt, at3])
+        seqt = SeqActions("seqt", [at1, at2])
+        main_task = ParActions("part", [seqt, at3])
 
         #TODO: dedicated method to parse request -> context, maybe
         ctx = {}
@@ -54,7 +53,7 @@ class SampleWfL(object):
         ctx['t3'] = int(request.POST.get('t3'))
 
         return (main_task, ctx)
-        #return exc_task.s(ctx, main_task, write_result)
+        #return exc_action.s(ctx, main_task, write_result)
 
     def on_delete(self, experiment):
         pass
@@ -97,7 +96,7 @@ class TestRAlgo(object):
 
     def get_workflow(self, request):
         ctx = {}
-        main_task = AtomicTask("rtest", r_test_algo, {}, {})
+        main_task = AtomicAction("rtest", r_test_algo, {}, {})
 
         return (main_task, ctx)
 

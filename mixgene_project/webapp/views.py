@@ -14,7 +14,7 @@ from django.contrib.auth.decorators import login_required
 
 from webapp.models import Experiment, WorkflowLayout, UploadedData, delete_exp
 from webapp.forms import UploadForm
-from workflow.tasks import exc_task, set_exp_status
+from workflow.actions import exc_action, set_exp_status
 from workflow.layout import write_result
 from mixgene.util import dyn_import
 from mixgene.util import get_redis_instance
@@ -219,7 +219,7 @@ def create_exp_instance(request):
 
     #import ipdb; ipdb.set_trace()
     ctx['exp_id'] = exp.e_id
-    exc_task.s(ctx, main_task, set_exp_status).apply_async()
+    exc_action.s(ctx, main_task, set_exp_status).apply_async()
     # on finish should update status
 
     return redirect("/experiments")

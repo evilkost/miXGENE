@@ -11,7 +11,7 @@ Reserved fields in context with `exp_` prefix:
 'exp_id' : experiment id,
 'exp_status' : status of experiment
 """
-class AtomicTask(object):
+class AtomicAction(object):
     def __init__(self, name, func, inmap, outmap):
         self.kind = 'atomic'
         self.name = name
@@ -35,27 +35,30 @@ class AtomicTask(object):
         ctx.update(raw_res)
         return ctx
 
-class SeqTask(object):
+
+class SeqActions(object):
     def __init__(self, name, subtasks):
         self.kind = 'seq'
         self.name = name
         self.subtasks = subtasks
 
-class ParTask(object):
+
+class ParActions(object):
     def __init__(self, name, subtasks):
         self.kind = 'par'
         self.name = name
         self.subtasks = subtasks
 
-@task(name='workflow.tasks.exc_task')
-def exc_task(ctx, task_obj, c_subtask):
+
+@task(name='workflow.tasks.exc_action')
+def exc_action(ctx, task_obj, c_subtask):
     if task_obj.kind == 'atomic':
         res = task_obj.do(ctx)
         ctx.update(res)
         c_subtask.apply_async((ctx,))
     elif task_obj.kind == 'seq':
         print "calling exc seq"
-        exc_seq.s(ctx, task_obj, 0, c_subtask).apply_async()
+        exc_sequence.s(ctx, task_obj, 0, c_subtask).apply_async()
     elif task_obj.kind == 'par':
         print "calling exc seq"
         exc_par.s(ctx, task_obj, c_subtask).apply_async()
@@ -63,17 +66,15 @@ def exc_task(ctx, task_obj, c_subtask):
         print "Shouldn't be there"
 
 
-@task(name='workflow.tasks.exc_seq')
-def exc_seq(ctx, seq_task, num, c_subtask):
+@task(name='workflow.tasks.exc_sequence')
+def exc_sequence(ctx, seq_actions, num, c_subtask):
     # TODO: update context after each subtask
-    print "enter exc_seq, name %s, num %s" % (seq_task.name, num)
-    if len(seq_task.subtasks) == num:
+    print "enter exc_sequence, name %s, num %s" % (seq_actions.name, num)
+    if len(seq_actions.subtasks) == num:
         c_subtask.apply_async((ctx, ))
     else:
-        next_in_chain = exc_seq.s(seq_task, num + 1, c_subtask)
-        exc_task.s(ctx, seq_task.subtasks[num], next_in_chain).apply_async()
-
-
+        next_in_chain = exc_sequence.s(seq_actions, num + 1, c_subtask)
+        exc_action.s(ctx, seq_actions.subtasks[num], next_in_chain).apply_async()
 
 
 @task(name='workflow.tasks.set_exp_status')
@@ -90,6 +91,7 @@ def set_exp_status(ctx):
     r.sadd(ExpKeys.get_all_exp_keys_key(ctx['exp_id']), key_context)
     print "SET_EXP_STATUS"
     print ctx
+
 
 @task(name='workflow.tasks.par_collect')
 def par_collect(ctx, pre_ctx, subtask_name, parent_task):
@@ -127,7 +129,7 @@ def exc_par(ctx, par_task, c_subtask):
     r.sadd(ExpKeys.get_all_exp_keys_key(ctx['exp_id']), key_subtask)
     for st in par_task.subtasks:
         cb_subtask = par_collect.s(ctx, st.name, par_task)
-        exc_task.s(ctx, st, cb_subtask).apply_async()
+        exc_action.s(ctx, st, cb_subtask).apply_async()
 
 
 @task(name='workflow.tasks.do_func')
@@ -152,17 +154,17 @@ def xadd(context):
     return ctx
 
 def usage_example():
-    at1 = AtomicTask('at:1', xadd, {1: 1, 2: 2}, {2: 'r1'})
-    at2 = AtomicTask('at:2', xadd, {1: 1, 2: 2}, {2: 'r2'})
-    at3 = AtomicTask('at:3', xadd, {1: 1, 2: 2}, {2: 2})
+    at1 = AtomicAction('at:1', xadd, {1: 1, 2: 2}, {2: 'r1'})
+    at2 = AtomicAction('at:2', xadd, {1: 1, 2: 2}, {2: 'r2'})
+    at3 = AtomicAction('at:3', xadd, {1: 1, 2: 2}, {2: 2})
 
 
-    ct = SeqTask('ct:1', [at1, at2, at3])
-    ct2 = SeqTask('ct:2', [at1, ct, at2])
+    ct = SeqActions('ct:1', [at1, at2, at3])
+    ct2 = SeqActions('ct:2', [at1, ct, at2])
 
-    pt = ParTask('pt:1', [at1, at2, ct2])
+    pt = ParActions('pt:1', [at1, at2, ct2])
 
-    exc_task.s({1:1, 2:2, 'exp_id': str(time.time())}, pt, xprint).apply_async()
+    exc_action.s({1:1, 2:2, 'exp_id': str(time.time())}, pt, xprint).apply_async()
 
 
 
