@@ -53,9 +53,7 @@ def upload_data(request):
             exp = Experiment.objects.get(e_id=exp_id)
             # check 1: does this expirement use such variable
 
-            layout = exp.workflow
-            wfl_class = dyn_import(layout.wfl_class)
-            wf = wfl_class()
+            wf = exp.workflow.get_class_instance()
             if form.cleaned_data['var_name'] in wf.data_files_vars:
                 #check 2: 'var_name' wasn't uploaded before
                 uploaded_before = UploadedData.objects.filter(exp=exp, var_name=form.cleaned_data['var_name'])
@@ -120,8 +118,7 @@ def exp_details(request, exp_id):
     exp = Experiment.objects.get(e_id = exp_id)
     data_files = UploadedData.objects.filter(exp = exp)
     layout = exp.workflow
-    wfl_class = dyn_import(layout.wfl_class)
-    wf = wfl_class()
+    wf = layout.get_class_instance()
 
     if exp.status in ['done', 'failed']:
         template = loader.get_template(wf.template_result)
@@ -154,10 +151,7 @@ def alter_exp(request, exp_id, action):
     if action == 'delete': # TODO: check that exp state allows deletion
         delete_exp(exp)
 
-    layout = exp.workflow
-    wfl_class = dyn_import(layout.wfl_class)
-    wf = wfl_class()
-
+    wf = exp.workflow.get_class_instance()
     if action == 'run':
         # check status & if all right run experiment
         wf.run_experiment(exp)
@@ -172,6 +166,7 @@ def alter_exp(request, exp_id, action):
         exp.save()
 
     return redirect(request.POST.get("next") or "/experiment/%s" % exp.e_id) # TODO use reverse
+
 
 @login_required(login_url='/auth/login/')
 def add_experiment(request):
@@ -197,9 +192,6 @@ def create_experiment(request, layout_id):
     exp.save()
     exp.update_ctx({"exp_id": exp.e_id})
 
-    print "exp get ctx",  exp.get_ctx()
-
-
     template = loader.get_template(wf.template)
     context = RequestContext(request, {
         "exp_add_page_active": True,
@@ -207,5 +199,4 @@ def create_experiment(request, layout_id):
         "wf": wf,
         "exp": exp,
     })
-
     return redirect("/experiment/%s" % exp.e_id) # TODO use reverse

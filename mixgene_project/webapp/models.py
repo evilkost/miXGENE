@@ -21,6 +21,10 @@ class WorkflowLayout(models.Model):
     def __unicode__(self):
         return u"%s" % self.title
 
+    def get_class_instance(self):
+        wfl_class = dyn_import(self.wfl_class)
+        return wfl_class()
+
 
 class Experiment(models.Model):
     e_id = models.AutoField(primary_key=True)
