@@ -79,15 +79,17 @@ def exc_sequence(ctx, seq_actions, num, c_subtask):
 
 @task(name='workflow.tasks.set_exp_status')
 def set_exp_status(ctx):
+    r = get_redis_instance()
+
     new_status = ctx.get('exp_status', 'done')
     exp = Experiment.objects.get(e_id = ctx['exp_id'])
     exp.status = new_status
-    exp.save()
 
+    exp.save()
     #TODO: split into two functions or change name
-    r = get_redis_instance()
     key_context = ExpKeys.get_context_store_key(ctx['exp_id'])
-    r.set(key_context, pickle.dumps(ctx) )
+    exp.update_ctx(ctx, r)
+
     r.sadd(ExpKeys.get_all_exp_keys_key(ctx['exp_id']), key_context)
     print "SET_EXP_STATUS"
     print ctx

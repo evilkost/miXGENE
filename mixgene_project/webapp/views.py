@@ -128,17 +128,9 @@ def exp_details(request, exp_id):
     else:
         template = loader.get_template(wf.template)
 
-    r = get_redis_instance()
-    key_context = ExpKeys.get_context_store_key(exp.e_id)
-    pickled_ctx = r.get(key_context)
-    if pickled_ctx is not None:
-        ctx = pickle.loads(pickled_ctx)
-    else:
-        ctx = {"error": "context wasn't stored"}
-
+    ctx = exp.get_ctx()
     context = RequestContext(request, {
         "exp_page_active": True,
-
         "data_files": data_files,
         "data_files_var_names_uploaded": [df.var_name for df in data_files],
         "data_files_var_names_required": wf.data_files_vars,
@@ -146,7 +138,9 @@ def exp_details(request, exp_id):
         "exp": exp,
         "layout": layout,
         "ctx": ctx,
-        "next": "/experiment/%s" % exp.e_id
+        "next": "/experiment/%s" % exp.e_id,
+        "runnable": exp.status == "configured",
+        "configurable": exp.status in ["initiated", "configured"],
     })
     return HttpResponse(template.render(context))
 
@@ -154,14 +148,28 @@ def exp_details(request, exp_id):
 @login_required(login_url='/auth/login/')
 def alter_exp(request, exp_id, action):
     exp = Experiment.objects.get(e_id = exp_id)
-    if exp.author == request.user:
+    if exp.author != request.user:
         return redirect("/") # TODO: show alert about wrong experiment
 
     if action == 'delete': # TODO: check that exp state allows deletion
         delete_exp(exp)
-    #elif action == 'run':
 
+    layout = exp.workflow
+    wfl_class = dyn_import(layout.wfl_class)
+    wf = wfl_class()
 
+    if action == 'run':
+        # check status & if all right run experiment
+        wf.run_experiment(exp)
+
+    if action == 'update':
+        new_ctx, errors = wf.validate_exp(exp, request)
+        if errors is None:
+            exp.status = "configured"
+        else:
+            exp.status = "initiated"
+        exp.update_ctx(new_ctx)
+        exp.save()
 
     return redirect(request.POST.get("next") or "/experiment/%s" % exp.e_id) # TODO use reverse
 
@@ -171,7 +179,6 @@ def add_experiment(request):
     context = RequestContext(request, {
         "next":"/add_experiment",
         "exp_add_page_active": True,
-
         "all_layouts": WorkflowLayout.objects.all()
     })
     return HttpResponse(template.render(context))
@@ -188,40 +195,17 @@ def create_experiment(request, layout_id):
         status='initiated', # TODO: until layout configuration will be implemented
     )
     exp.save()
+    exp.update_ctx({"exp_id": exp.e_id})
+
+    print "exp get ctx",  exp.get_ctx()
+
 
     template = loader.get_template(wf.template)
     context = RequestContext(request, {
-        #"next":"/add_experiment",
         "exp_add_page_active": True,
-
         "layout": layout,
         "wf": wf,
         "exp": exp,
     })
 
     return redirect("/experiment/%s" % exp.e_id) # TODO use reverse
-    #return HttpResponse(template.render(context))
-
-
-@login_required(login_url='auth/login/')
-def create_exp_instance(request):
-    #layout_id = int(request.POST['id_wfl'])
-    exp_id = int(request.POST['exp_id'])
-    exp = Experiment.objects.get(e_id=exp_id)
-    exp.status = 'configured'
-    exp.save()
-    #layout = WorkflowLayout.objects.get(w_id=layout_id)
-    layout = exp.workflow
-    wfl_class = dyn_import(layout.wfl_class)
-    wf = wfl_class()
-
-    main_task, ctx = wf.get_workflow(request)
-
-    #import ipdb; ipdb.set_trace()
-    ctx['exp_id'] = exp.e_id
-    exc_action.s(ctx, main_task, set_exp_status).apply_async()
-    # on finish should update status
-
-    return redirect("/experiments")
-
-

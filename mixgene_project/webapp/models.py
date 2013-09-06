@@ -1,6 +1,7 @@
 import os, shutil
-from django.db import models
+import cPickle as pickle
 
+from django.db import models
 from django.contrib.auth.models import User
 
 from mixgene.settings import MEDIA_ROOT
@@ -27,6 +28,7 @@ class Experiment(models.Model):
     author = models.ForeignKey(User)
 
     """
+        TODO: use enumeration
         status evolution:
         1. created
         2. initiated [ not implemented yet, currently 1-> 3 ]
@@ -41,10 +43,37 @@ class Experiment(models.Model):
     dt_created = models.DateTimeField(auto_now_add=True)
     dt_updated = models.DateTimeField(auto_now=True)
 
+    # currently not used
     wfl_setup = models.TextField(default="")  ## json encoded setup for WorkflowLayout
 
     def __unicode__(self):
         return u"%s" % self.e_id
+
+    def get_ctx(self, redis_instance=None):
+        if redis_instance is None:
+            r = get_redis_instance()
+        else:
+            r = redis_instance
+
+        key_context = ExpKeys.get_context_store_key(self.e_id)
+        pickled_ctx = r.get(key_context)
+        if pickled_ctx is not None:
+            ctx = pickle.loads(pickled_ctx)
+        else:
+            ctx = dict() #{"error": "context wasn't stored"}
+        return ctx
+
+    def update_ctx(self, new_ctx, redis_instance=None):
+        if redis_instance is None:
+            r = get_redis_instance()
+        else:
+            r = redis_instance
+
+        ctx = self.get_ctx(redis_instance=r)
+        ctx.update(new_ctx)
+
+        key_context = ExpKeys.get_context_store_key(self.e_id)
+        r.set(key_context, pickle.dumps(ctx))
 
 
 def delete_exp(exp):
