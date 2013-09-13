@@ -79,6 +79,9 @@ class Experiment(models.Model):
         key_context = ExpKeys.get_context_store_key(self.e_id)
         r.set(key_context, pickle.dumps(ctx))
 
+    def get_data_folder(self):
+        return '/'.join(map(str, [MEDIA_ROOT, 'data', self.author.id, self.e_id]))
+
 
 def delete_exp(exp):
     """
@@ -104,8 +107,7 @@ def delete_exp(exp):
             pass
         f.delete()
     try:
-        to_del = '/'.join(map(str, [MEDIA_ROOT, 'data', exp.author.id, exp.e_id]))
-        shutil.rmtree(to_del)
+        shutil.rmtree(exp.get_data_folder())
     except:
         pass
 

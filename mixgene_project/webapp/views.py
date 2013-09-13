@@ -14,10 +14,12 @@ from django.contrib.auth.decorators import login_required
 
 from webapp.models import Experiment, WorkflowLayout, UploadedData, delete_exp
 from webapp.forms import UploadForm
+
 from workflow.actions import exc_action, set_exp_status
 from workflow.layout import write_result
-from mixgene.util import dyn_import
-from mixgene.util import get_redis_instance
+from workflow.common_tasks import fetch_GEO_gse_matrix
+
+from mixgene.util import dyn_import, get_redis_instance, mkdir
 from mixgene.redis_helper import ExpKeys
 
 
@@ -69,6 +71,31 @@ def upload_data(request):
 
     return redirect(request.POST['next'])
 
+
+@csrf_protect
+@never_cache
+def geo_fetch_data(request):
+    if request.method == "POST":
+        print "invoked"
+        exp_id = int(request.POST['exp_id'])
+        dataset_id = request.POST['dataset_id']
+        dataset_var = request.POST['dataset_var']
+
+        exp = Experiment.objects.get(e_id=exp_id)
+
+        ctx = exp.get_ctx()
+        ctx["exp_fetching_data_var"].add(dataset_var)
+        exp.update_ctx(ctx)
+
+        #TODO: check "GSE" prefix
+        uid = dataset_id[3:]
+        dir_path = exp.get_data_folder()
+        st = fetch_GEO_gse_matrix.s(exp, dataset_var, uid, dir_path)
+        st.apply_async()
+        return redirect(request.POST['next'])
+
+    else:
+        return redirect("/")
 
 @csrf_protect
 @never_cache
@@ -190,7 +217,12 @@ def create_experiment(request, layout_id):
         status='initiated', # TODO: until layout configuration will be implemented
     )
     exp.save()
-    exp.update_ctx({"exp_id": exp.e_id})
+    exp.update_ctx({
+        "exp_id": exp.e_id,
+        "exp_fetching_data_var": set(),
+    })
+
+    mkdir(exp.get_data_folder())
 
     template = loader.get_template(wf.template)
     context = RequestContext(request, {

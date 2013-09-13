@@ -1,5 +1,6 @@
 # similar to Debian control dependencies
 
+wget
 python >= 2.5
 mysql-server >= 5.0
 redis-server >= 2:2.6

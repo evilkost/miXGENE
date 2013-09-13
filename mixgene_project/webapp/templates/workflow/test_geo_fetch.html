@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block inner %}
+<div class="span15 offset1" >
+    <h5>Status: {{ exp.status }}
+    {% if runnable %}
+        <a href="{% url 'webapp.views.alter_exp' exp.e_id 'run' %}" class="btn btn-warning" > Run experiment</a>
+    {% endif %}
+    </h5>
+
+    <p>This workflow only cleans matrix file from ncbi geo and show some statistics
+    </p>
+
+    {{ ctx.exp_fetching_data_var }}
+
+    <form class="form-vertical" method=post action="{% url 'webapp.views.geo_fetch_data' %}"/>
+        {% csrf_token %}
+
+        <input type="text" placeholder="GSE123..." name="dataset_id" value="{{ ctx.dataset_id }}" /> <br />
+
+        <input type="hidden" name="dataset_var" value="foo_ds" />
+        <input type="hidden" name="exp_id" value="{{ exp.e_id }}" />
+        <input type="hidden" name="next" value="{{ next }}" />
+        <div class="form-actions">
+            <button type="submit" name="fetch" class="btn btn-primary">Download</button>
+        </div>
+    </form>
+
+
+
+
+
+</div>
+{% endblock %}
+
