@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block inner %}
+
+<div class="container">
+
+    <h1>Workflow: {{ layout.title }} </h1>
+
+    <h2> Status: {{ exp.status }} </h2>
+
+    <h3>PCA results</h3>
+    <div>
+        <p> {{ ctx.pca_result.graph_2d_scatter_plot }} </p>
+        <p> {{ ctx.pca_result.graph_name }} </p>
+        <p> {{ ctx.pca_result.graph_caption }} </p>
+    </div>
+
+
+
+<div>
+
+
+{% endblock %}
+

@@ -3,6 +3,7 @@ from celery import task
 
 from workflow.actions import AtomicAction, SeqActions, ParActions, exc_action, set_exp_status
 from webapp.models import Experiment, UploadedData
+from wrappers import r_test_algo, pca_test
 
 @task(name='workflow.layout.wait_task')
 def wait_task(ctx):
@@ -87,33 +88,6 @@ class SampleWfL(AbstractWorkflowLayout):
         main_action = ParActions("part", [seqt, at3])
         return main_action
 
-
-@task(name='workflow.layout.r_test_algo')
-def r_test_algo(ctx):
-    import  rpy2.robjects as R
-    from rpy2.robjects.packages import importr
-    test = importr("test")
-    from webapp.models import Experiment, UploadedData
-    exp = Experiment.objects.get(e_id = ctx['exp_id'])
-    ctx = exp.get_ctx()
-
-    filename = ctx["data.csv"]
-
-    rread_csv = R.r['read.csv']
-    rwrite_csv = R.r['write.csv']
-    rtest = R.r['test']
-
-    rx = rread_csv(filename)
-    rres = rtest(rx)
-
-    names_to_res = ['sum', 'nrow', 'ncol',]
-    for i in range(len(rres.names)):
-        if rres.names[i] in names_to_res:
-            ctx[rres.names[i]] = rres[i][0]
-
-    return ctx
-
-
 class TestRAlgo(AbstractWorkflowLayout):
     def __init__(self):
         self.template = "workflow/test_r_wf.html"
@@ -140,6 +114,7 @@ class TestRAlgo(AbstractWorkflowLayout):
             errors = {"message": "Data not uploaded"}
         return (exp.get_ctx(), errors)
 
+
 class TestGeoFetcher(AbstractWorkflowLayout):
     def __init__(self):
         self.template = "workflow/test_geo_fetch.html"
@@ -152,4 +127,33 @@ class TestGeoFetcher(AbstractWorkflowLayout):
     def validate_exp(self, exp, request):
         errors = {}
         return (exp.get_ctx(), errors)
+
+
+class TestMultiAlgoForm(forms.Form):
+    samples_num = forms.IntegerField(min_value=1, max_value=150)
+
+class TestMultiAlgo(AbstractWorkflowLayout):
+    def __init__(self):
+        self.template = "workflow/test_multi_algo.html"
+        self.template_result = "workflow/test_multi_algo_result.html"
+        self.data_files_vars = []
+
+    def validate_exp(self, exp, request):
+
+        ctx = exp.get_ctx()
+        fm = TestMultiAlgoForm(data=request.POST)
+        if fm.is_valid():
+            errors = None
+            ctx.update(fm.cleaned_data)
+        else:
+            errors = {"message": "some_errors"}
+
+
+        ctx.update({"points_filename": "pca_points.csv"})
+        return (ctx, errors)
+
+    def get_main_action(self, ctx):
+        pca_action = AtomicAction("pca_action", pca_test, {}, {})
+
+        return ParActions("main_action", [pca_action])
 

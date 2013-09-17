@@ -82,6 +82,9 @@ class Experiment(models.Model):
     def get_data_folder(self):
         return '/'.join(map(str, [MEDIA_ROOT, 'data', self.author.id, self.e_id]))
 
+    def get_data_file_path(self, filename):
+        return self.get_data_folder() + "/" + filename
+
 
 def delete_exp(exp):
     """

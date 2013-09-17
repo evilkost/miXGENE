@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block inner %}
+<div class="container" >
+    <h5>Status: {{ exp.status }}
+    {% if runnable %}
+        <a href="{% url 'webapp.views.alter_exp' exp.e_id 'run' %}" class="btn btn-warning" > Run experiment</a>
+    {% endif %}
+    </h5>
+
+    <p>
+    Test workflow for 3 R algo: pca, linsvm, tt.
+    Please set number of samples from iris set to be processed.
+    </p>
+
+    {% if configurable %}
+    <form class="form-vertical" method=post action="{% url 'webapp.views.alter_exp' exp.e_id 'update' %}"/>
+        {% csrf_token %}
+        <input type="text" placeholder="1..150" name="samples_num" value="{{ ctx.samples_num }}" /> <br />
+
+        <input type="hidden" name="exp_id" value="{{ exp.e_id }}" />
+        <div class="form-actions">
+            <button type="submit" name="update_configuration" class="btn btn-primary">Save configuration</button>
+
+        </div>
+    </form>
+    {% endif %}
+</div>
+{% endblock %}
