@@ -88,6 +88,33 @@ class SampleWfL(AbstractWorkflowLayout):
         main_action = ParActions("part", [seqt, at3])
         return main_action
 
+
+@task(name='workflow.layout.r_test_algo')
+def r_test_algo(ctx):
+    import  rpy2.robjects as R
+    from rpy2.robjects.packages import importr
+    test = importr("test")
+    from webapp.models import Experiment, UploadedData
+    exp = Experiment.objects.get(e_id = ctx['exp_id'])
+    ctx = exp.get_ctx()
+
+    filename = ctx["data.csv"]
+
+    rread_csv = R.r['read.csv']
+    rwrite_csv = R.r['write.csv']
+    rtest = R.r['test']
+
+    rx = rread_csv(filename)
+    rres = rtest(rx)
+
+    names_to_res = ['sum', 'nrow', 'ncol',]
+    for i in range(len(rres.names)):
+        if rres.names[i] in names_to_res:
+            ctx[rres.names[i]] = rres[i][0]
+
+    return ctx
+
+
 class TestRAlgo(AbstractWorkflowLayout):
     def __init__(self):
         self.template = "workflow/test_r_wf.html"
@@ -128,7 +155,6 @@ class TestGeoFetcher(AbstractWorkflowLayout):
         errors = {}
         return (exp.get_ctx(), errors)
 
-
 class TestMultiAlgoForm(forms.Form):
     samples_num = forms.IntegerField(min_value=1, max_value=150)
 
@@ -156,4 +182,3 @@ class TestMultiAlgo(AbstractWorkflowLayout):
         pca_action = AtomicAction("pca_action", pca_test, {}, {})
 
         return ParActions("main_action", [pca_action])
-
