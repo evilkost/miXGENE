@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block inner %}
-<div class="span15 offset1" >
+<div class="container" >
     <h5>Status: {{ exp.status }}
     {% if runnable %}
         <a href="{% url 'webapp.views.alter_exp' exp.e_id 'run' %}" class="btn btn-warning" > Run experiment</a>

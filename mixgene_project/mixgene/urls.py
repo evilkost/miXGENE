@@ -26,6 +26,9 @@ urlpatterns = patterns('',
     url(r'^auth/logout/$', 'django.contrib.auth.views.logout', {}),
     url(r'^auth/create_user/$', 'webapp.views.create_user', {}),
 
+
+    url(r'^get_flot_2d_scatter/(?P<exp_id>\d+)/(?P<filename>.+)$', 'webapp.views.get_flot_2d_scatter', name='get_flot_2d_scatter'),
+
     # Examples:
     # url(r'^$', 'mixgene.views.home', name='home'),
     # url(r'^mixgene/', include('mixgene.foo.urls')),

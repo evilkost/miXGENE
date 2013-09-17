@@ -1,15 +1,12 @@
 {% extends "base.html" %}
 
 {% block inner %}
-
 <div class="span15 offset1" >
     <h5>Status: {{ exp.status }}
     {% if runnable %}
         <a href="{% url 'webapp.views.alter_exp' exp.e_id 'run' %}" class="btn btn-warning" > Run experiment</a>
     {% endif %}
     </h5>
-
-
 
     <p>This workflow consists of three <i>sleep</i> task. Two of them is executed consequently and third is executed independently in parallel. Workflow instance finish after all subtasks. Please define sleep time for subtasks.
     </p>

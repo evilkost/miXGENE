@@ -23,7 +23,7 @@
             {% if  user.is_authenticated %}
             <form class="" action="{% url 'django.contrib.auth.views.logout' %}"  method=POST>
                 {% csrf_token %}
-                <button  class="btn btn-warning pull-right" type="submit">Logout</a>
+                <button  class="btn btn-warning pull-right" type="submit">Logout</button>
                 <input type="hidden" name="next" id="next" value="{{ next}}" >
             </form>
 

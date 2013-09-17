@@ -36,7 +36,7 @@ def r_test_algo(ctx):
 def pca_test(ctx):
     importr("miXGENE", lib_loc=R_LIB_CUSTOM_PATH)
     exp = Experiment.objects.get(e_id = ctx['exp_id'])
-    
+
     samples_num = ctx['samples_num']
 
     tmp = (R.r['iris']).rx(R.IntVector(range(1,samples_num)), R.IntVector(range(1,4)))
@@ -49,7 +49,7 @@ def pca_test(ctx):
     R.r['write.table'](points, exp.get_data_file_path(ctx['points_filename']))
 
     pca_result = {}
-    pca_result['graph_2d_scatter_plot'] = ctx['points_filename']
+    pca_result['graph_2d_scatter_plot_filename'] = ctx['points_filename']
     pca_result['graph_name'] = pca.do_slot('main')[0]
     pca_result['graph_caption'] = pca.do_slot('caption')[0]
 

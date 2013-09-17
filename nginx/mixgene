@@ -1,5 +1,5 @@
 upstream gunicorn {
-        server 127.0.0.1:9431;
+    server 127.0.0.1:9431;
 }
 
 
@@ -13,6 +13,11 @@ server {
         autoindex on;
         alias /home/kost/res/mixgene_workdir/static/;
     }
+    location /media/ {
+        autoindex on;
+        alias /home/kost/res/mixgene_workdir/media/;
+    }
+
     location / {
         proxy_pass  http://gunicorn;
         proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;

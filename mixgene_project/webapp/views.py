@@ -1,4 +1,7 @@
 import cPickle as pickle
+import csv
+import json
+from collections import defaultdict
 
 from django.http import HttpResponse
 from django.template import RequestContext, loader
@@ -140,7 +143,8 @@ def experiments(request):
     })
     return HttpResponse(template.render(context))
 
-@login_required(login_url='/auth/login/')
+#@login_required(login_url='/auth/login/')
+
 def exp_details(request, exp_id):
     exp = Experiment.objects.get(e_id = exp_id)
     data_files = UploadedData.objects.filter(exp = exp)
@@ -155,10 +159,13 @@ def exp_details(request, exp_id):
     ctx = exp.get_ctx()
     context = RequestContext(request, {
         "exp_page_active": True,
+
         "data_files": data_files,
         "data_files_var_names_uploaded": [df.var_name for df in data_files],
         "data_files_var_names_required": wf.data_files_vars,
         "show_uploads": len(data_files) != wf.data_files_vars,
+
+        "data_files_url_prefix": "/media/data/%s/%s/" % (exp.author.id, exp.e_id),
         "exp": exp,
         "layout": layout,
         "ctx": ctx,
@@ -232,3 +239,43 @@ def create_experiment(request, layout_id):
         "exp": exp,
     })
     return redirect("/experiment/%s" % exp.e_id) # TODO use reverse
+
+#@login_required(login_url='/auth/login/')
+def get_flot_2d_scatter(request, exp_id, filename):
+    exp = Experiment.objects.get(e_id = exp_id)
+    filepath = exp.get_data_file_path(filename)
+
+    points_by_class = defaultdict(list)
+    with open(filepath) as inp:
+        cr = csv.reader(inp, delimiter=' ', quotechar='"')
+        axes_names = cr.next()
+        for cls, x1, x2 in cr:
+            points_by_class[cls].append([float(x1), float(x2)])
+
+    cls_set = points_by_class.keys()
+
+    series_list = []
+    for cls in cls_set:
+        series_list.append({
+            "label": cls,
+            "data": points_by_class[cls]
+        })
+    result = {
+        "series_list": series_list,
+        "x_axis_name": axes_names[0],
+        "y_axis_name": axes_names[1],
+    }
+    
+    resp = HttpResponse(content_type="application/json")
+    json.dump(result, resp)
+    return resp
+    """ json
+    {
+        "label": "Europe (EU27)",
+        "data": [[1999, 3.0], [2000, 3.9], [2001, 2.0], [2002, 1.2], [2003, 1.3], [2004, 2.5], [2005, 2.0], [2006, 3.1], [2007, 2.9], [2008, 0.9]]
+    }
+    """
+
+
+
+
