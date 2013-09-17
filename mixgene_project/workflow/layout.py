@@ -64,7 +64,6 @@ class SampleWfL(AbstractWorkflowLayout):
         ->-par task-|                                 |->- finish
                     |----->------at3--------->--------|
     """
-
     def __init__(self):
         self.template = "workflow/sample_wf.html"
         self.template_result = "workflow/sample_wf_result.html"
@@ -96,8 +95,9 @@ def r_test_algo(ctx):
     test = importr("test")
     from webapp.models import Experiment, UploadedData
     exp = Experiment.objects.get(e_id = ctx['exp_id'])
-    ud = UploadedData.objects.get(exp=exp, var_name="data.csv")
-    filename = ud.data.file.name
+    ctx = exp.get_ctx()
+
+    filename = ctx["data.csv"]
 
     rread_csv = R.r['read.csv']
     rwrite_csv = R.r['write.csv']
@@ -129,17 +129,27 @@ class TestRAlgo(AbstractWorkflowLayout):
         #import ipdb; ipdb.set_trace()
         uploaded_name = [x.var_name for x in UploadedData.objects.filter(exp=exp)]
         errors = None
+        ctx_filenames = {}
         if all(var in uploaded_name for var in self.data_files_vars):
             uploads_done = True
+            for x in UploadedData.objects.filter(exp=exp):
+                ctx_filenames[x.var_name] = x.data.file.name
+            exp.update_ctx(ctx_filenames)
         else:
             uploads_done = False
             errors = {"message": "Data not uploaded"}
-
         return (exp.get_ctx(), errors)
 
-    """
-    def get_workflow(self, request):
-        ctx = {}
-        main_task = AtomicAction("rtest", r_test_algo, {}, {})
-        return (main_task, ctx)
-    """
+class TestGeoFetcher(AbstractWorkflowLayout):
+    def __init__(self):
+        self.template = "workflow/test_geo_fetch.html"
+        self.template_result = "workflow/test_r_result.html"
+        self.data_files_vars = []
+
+    def get_main_action(self, ctx):
+        return AtomicAction("rtest", r_test_algo, {}, {})
+
+    def validate_exp(self, exp, request):
+        errors = {}
+        return (exp.get_ctx(), errors)
+
