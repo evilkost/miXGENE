@@ -3,7 +3,7 @@ from celery import task
 
 from workflow.actions import AtomicAction, SeqActions, ParActions, exc_action, set_exp_status
 from webapp.models import Experiment, UploadedData
-from wrappers import r_test_algo, pca_test
+from wrappers import r_test_algo, pca_test, svm_test, tt_test
 
 @task(name='workflow.layout.wait_task')
 def wait_task(ctx):
@@ -174,11 +174,17 @@ class TestMultiAlgo(AbstractWorkflowLayout):
         else:
             errors = {"message": "some_errors"}
 
+        ctx.update({
+            "pca_points_filename": "pca_points.csv",
+            "svm_factors_filename": "linsvm_factor_vec.csv",
+            "tt_test_filename": "tt_table.csv",
 
-        ctx.update({"points_filename": "pca_points.csv"})
+            "linsvm_header": ["sample #", "class" ],
+        })
         return (ctx, errors)
 
     def get_main_action(self, ctx):
-        pca_action = AtomicAction("pca_action", pca_test, {}, {})
-
-        return ParActions("main_action", [pca_action])
+        pca_action = AtomicAction("pca_action", pca_test, {"pca_points_filename": "filename"}, {"result": "pca_result"})
+        svm_action = AtomicAction("svm_action", svm_test, {"svm_factors_filename": "filename"}, {"result": "svm_result"})
+        tt_action = AtomicAction("tt_action", tt_test, {"tt_test_filename": "filename"}, {"result": "tt_result"})
+        return ParActions("main_action", [pca_action, svm_action, tt_action])

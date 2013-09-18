@@ -60,7 +60,7 @@ def exc_action(ctx, task_obj, c_subtask):
         print "calling exc seq"
         exc_sequence.s(ctx, task_obj, 0, c_subtask).apply_async()
     elif task_obj.kind == 'par':
-        print "calling exc seq"
+        print "calling exc par"
         exc_par.s(ctx, task_obj, c_subtask).apply_async()
     else:
         print "Shouldn't be there"
@@ -97,6 +97,7 @@ def set_exp_status(ctx):
 
 @task(name='workflow.tasks.par_collect')
 def par_collect(ctx, pre_ctx, subtask_name, parent_task):
+    print "enter collect task"
     r = get_redis_instance()
     key_done = ExpKeys.get_par_done_key(ctx['exp_id'])
     key_context = ExpKeys.get_par_context_result_key(ctx['exp_id'], subtask_name)

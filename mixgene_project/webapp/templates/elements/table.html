@@ -1,0 +1,19 @@
+<table class="table">
+    
+    {% if skip_header %}
+    {% else %}
+    <thead>
+        <tr>
+            {% for cell in header %}<th>{{ cell }}</th>{% endfor %}
+        </tr>
+    </thead>
+    {% endif %}
+    <tbody>
+        {% for row in rows %}
+            <tr>
+                {% for cell in row %}<th>{{ cell }}</th>
+                {% endfor %}
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>

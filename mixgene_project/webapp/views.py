@@ -265,16 +265,55 @@ def get_flot_2d_scatter(request, exp_id, filename):
         "x_axis_name": axes_names[0],
         "y_axis_name": axes_names[1],
     }
-    
+
     resp = HttpResponse(content_type="application/json")
     json.dump(result, resp)
     return resp
-    """ json
-    {
-        "label": "Europe (EU27)",
-        "data": [[1999, 3.0], [2000, 3.9], [2001, 2.0], [2002, 1.2], [2003, 1.3], [2004, 2.5], [2005, 2.0], [2006, 3.1], [2007, 2.9], [2008, 0.9]]
-    }
-    """
+
+
+def get_csv_as_table(request, exp_id, filename):
+    exp = Experiment.objects.get(e_id = exp_id)
+    ctx = exp.get_ctx()
+    filepath = exp.get_data_file_path(filename)
+    template = loader.get_template('elements/table.html')
+
+    has_row_names = bool(request.POST.get('has_row_names', False)) # if has_row_names and has_col_names
+    has_col_names = bool(request.POST.get('has_col_names', False)) # than first column has no value!
+    row_names_header = request.POST.get('row_names_header', '')
+
+
+    get_header_from_ctx = bool(request.POST.get('get_header_from_ctx', False))
+    ctx_header_key = request.POST.get('ctx_header_key')
+
+    csv_delimiter = request.POST.get('delimiter', ' ')
+    csv_quotechar = request.POST.get('quotechar', '"')
+
+    #import ipdb; ipdb.set_trace()
+    rows = []
+    header = []
+    with open(filepath) as inp:
+        cr = csv.reader(inp, delimiter=csv_delimiter, quotechar=csv_quotechar)
+        if has_col_names:
+            header = cr.next()
+            if has_row_names:
+                header.insert(0, row_names_header)
+
+        if get_header_from_ctx:
+            header = ctx[ctx_header_key]
+
+        rows = [ line for line in cr]
+
+
+
+    context = RequestContext(request, {
+        "rows": rows,
+        "header": header,
+    })
+
+
+    return HttpResponse(template.render(context))
+
+
 
 
 

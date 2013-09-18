@@ -10,25 +10,95 @@
 
     <h2> Status: {{ exp.status }} </h2>
 
-    <h3>PCA results</h3>
-    <div>
-        <!--
-            <p> {{ ctx.pca_result.graph_2d_scatter_plot_filename }} </p>
-            <p> {{ ctx.pca_result.graph_name }} </p>
-            <p> {{ ctx.pca_result.graph_caption }} </p>
-            {{ data_files_url_prefix }}
-        -->
 
+    <div class="well">
+        <h3>PCA results</h3>
         <a id="flot_source" class="hidden" href="{% url 'get_flot_2d_scatter'  exp.e_id ctx.pca_result.graph_2d_scatter_plot_filename %}" >points</a>
         <div class="demo-container">
             <div id="placeholder" class="demo-placeholder"></div>
         </div>
+    </div>
+
+    <div class="well">
+        <h3>linSVM results</h3>
+        <h5>Accuracy: {{ ctx.svm_result.acc }}%. Obtained model: </h5>
+        <div class="well">
+            {{ ctx.svm_result.model }}
+        </div>
+        <div class="well">
+            <b>Predictions:</b>
+            <button class="btn" id="table_visibility_switch">
+                <span class="tbs_text"> <i class="icon-chevron-up"></i>Hide table </span>
+                <span class="tbs_text" style="display: none"><i class="icon-chevron-down"></i>Show table </span>
+            </button>
+            <div  id="factor_table" > </div>
+        </div>
+        <script type="text/javascript">
+            $(function() {
+                $(document).ready(function () {
+                    var dataurl = '{% url 'get_csv_as_table' exp.e_id ctx.svm_result.svm_factors_filename %}';
+
+                    function onDataReceived(response) {
+                        $("#factor_table").html(response);
+                    }
+                    $.ajax({
+                        url: dataurl,
+                        type: "POST",
+                        data: {
+                            csrfmiddlewaretoken: '{{ csrf_token }}',
+                            has_row_names: true,
+                            has_col_names: true,
+                            get_header_from_ctx: true,
+                            ctx_header_key: 'linsvm_header'
+                        },
+                        dataType: "html",
+                        success: onDataReceived
+                    });
+                });
+            });
+            $(function() {
+                $("#table_visibility_switch").click(function(){
+                    $("#factor_table").toggle();
+                    $(".tbs_text").toggle();
+                });
+            });
+        </script>
 
     </div>
 
+    <!-- replace with django include mixTable result renderer -->
+    <div class="well">
+        <h3>tt_test results</h3>
+        <p>Caption {{ ctx.tt_result.caption }} </p>
+        <p>Working units {{ ctx.tt_result.working_units }} </p>
 
+        <div class="well">
+            <div id="tt_test_table"></div>
+        </div>
+        <script type="text/javascript">
+            $(function() {
+                $(document).ready(function () {
+                    var dataurl = '{% url 'get_csv_as_table' exp.e_id ctx.tt_result.filename %}';
 
-<div>
+                    function onDataReceived(response) {
+                        $("#tt_test_table").html(response);
+                    }
+                    $.ajax({
+                        url: dataurl,
+                        type: "POST",
+                        data: {
+                            csrfmiddlewaretoken: '{{ csrf_token }}',
+                            has_col_names: '{{ ctx.tt_result.has_col_names }}',
+                            has_row_names: '{{ ctx.tt_result.has_row_names }}'
+                        },
+                        dataType: "html",
+                        success: onDataReceived
+                    });
+                });
+            });
+        </script>
+    </div>
+</div>
 
 
 {% endblock %}
