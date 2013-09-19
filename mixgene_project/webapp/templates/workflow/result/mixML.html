@@ -1,0 +1,48 @@
+{% load static %}
+
+<!-- expecting django variable  result -->
+
+<div class="well">
+    <h3>{{ title }}</h3>
+    <h5>Accuracy: {{ result.acc }}%. Obtained model: </h5>
+    <div class="well">
+        {{ result.model }}
+    </div>
+    <div class="well">
+        <b>Predictions:</b>
+        <button class="btn" id="table_visibility_switch">
+            <span class="tbs_text"> <i class="icon-chevron-up"></i>Hide table </span>
+            <span class="tbs_text" style="display: none"><i class="icon-chevron-down"></i>Show table </span>
+        </button>
+        <div  id="factor_table" > </div>
+    </div>
+    <script type="text/javascript">
+        $(function() {
+            $(document).ready(function () {
+                var dataurl = '{% url 'get_csv_as_table' exp.e_id result.filename %}';
+                function onDataReceived(response) {
+                    $("#factor_table").html(response); // TODO: parameterise id & classes
+                }
+                $.ajax({
+                    url: dataurl,
+                    type: "POST",
+                    data: {
+                        csrfmiddlewaretoken: '{{ csrf_token }}',
+                        has_row_names: true,
+                        has_col_names: true,
+                        get_header_from_ctx: true,
+                        ctx_header_key: 'linsvm_header' // TODO: parameterise
+                    },
+                    dataType: "html",
+                    success: onDataReceived
+                });
+            });
+        });
+        $(function() {
+            $("#table_visibility_switch").click(function(){
+                $("#factor_table").toggle();
+                $(".tbs_text").toggle();
+            });
+        });
+    </script>
+</div>

@@ -1,0 +1,35 @@
+{% load static %}
+
+<!-- expecting django variable  result -->
+
+<div class="well">
+    <h3>{{ title }}</h3>
+    <p>Caption {{ result.caption }} </p>
+    <p>Working units {{ result.working_units }} </p>
+
+    <div class="well">
+        <div id="tt_test_table"></div>
+    </div>
+    <script type="text/javascript">
+        $(function() {
+            $(document).ready(function () {
+                var dataurl = '{% url 'get_csv_as_table' exp.e_id result.filename %}';
+
+                function onDataReceived(response) {
+                    $("#tt_test_table").html(response); // TODO: parameterise
+                }
+                $.ajax({
+                    url: dataurl,
+                    type: "POST",
+                    data: {
+                        csrfmiddlewaretoken: '{{ csrf_token }}',
+                        has_col_names: '{{ result.has_col_names }}',
+                        has_row_names: '{{ result.has_row_names }}'
+                    },
+                    dataType: "html",
+                    success: onDataReceived
+                });
+            });
+        });
+    </script>
+</div>
