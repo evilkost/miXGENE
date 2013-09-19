@@ -142,17 +142,44 @@ class TestRAlgo(AbstractWorkflowLayout):
         return (exp.get_ctx(), errors)
 
 
+@task(name='workflow.layout.geo_fetch_dummy')
+def geo_fetch_dummy(ctx):
+    matrix = ctx['exp_file_vars']['matrix']
+    result = {
+        "caption": "Dataset id: %s" % matrix.geo_uid,
+        "filename": matrix.filename,
+        #"filepath":
+
+        "has_col_names": True,
+        "has_row_names": False,
+        "csv_delimiter": "\t",
+    }
+    ctx.update({"geo_fetch_result": result})
+    return ctx
+
+
+
 class TestGeoFetcher(AbstractWorkflowLayout):
     def __init__(self):
         self.template = "workflow/test_geo_fetch.html"
-        self.template_result = "workflow/test_r_result.html"
+        self.template_result = "workflow/test_geo_fetch_result.html"
         self.data_files_vars = []
 
+        self.file_vars = {
+            "matrix": "test matrix grom ncbi geo",
+        }
+
     def get_main_action(self, ctx):
-        return AtomicAction("rtest", r_test_algo, {}, {})
+        return AtomicAction("geo_fetch_dummy", geo_fetch_dummy, {}, {})
 
     def validate_exp(self, exp, request):
-        errors = {}
+        ctx = exp.get_ctx()
+
+        file_vars_fetched = ctx['exp_file_vars'].keys()
+        if all([f in self.file_vars.keys() for f in file_vars_fetched]):
+            errors = None
+        else:
+            errors = {"message": "Data not uploaded"}
         return (exp.get_ctx(), errors)
 
 class TestMultiAlgoForm(forms.Form):

@@ -2,14 +2,14 @@
 
 <!-- expecting django variable  result -->
 
-<div class="well">
+<!-- div class="well" -->
     <h3>{{ title }}</h3>
     <p>Caption {{ result.caption }} </p>
-    <p>Working units {{ result.working_units }} </p>
+    <!-- p>Working units {{ result.working_units }} </p -->
 
-    <div class="well">
+    <!-- div class="well" -->
         <div id="tt_test_table"></div>
-    </div>
+    <!-- /div -->
     <script type="text/javascript">
         $(function() {
             $(document).ready(function () {
@@ -24,7 +24,9 @@
                     data: {
                         csrfmiddlewaretoken: '{{ csrf_token }}',
                         has_col_names: '{{ result.has_col_names }}',
-                        has_row_names: '{{ result.has_row_names }}'
+                        has_row_names: '{{ result.has_row_names }}',
+                        delimiter: '{{ result.csv_delimiter }}',
+                        rows_num_limit: 150
                     },
                     dataType: "html",
                     success: onDataReceived
@@ -32,4 +34,4 @@
             });
         });
     </script>
-</div>
+<!-- /div -->

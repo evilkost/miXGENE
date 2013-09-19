@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block inner %}
+{% load static %}
+
+<div class="row">
+    <div class="offset1 span8">
+        <h1>Workflow: {{ layout.title }} </h1>
+        <h2> Status: {{ exp.status }} </h2>
+
+
+        {% include "workflow/result/mixTable.html" with result=ctx.geo_fetch_result title="Fetched from NCBI geo"  %}
+    </div>
+</div>
+{% endblock %}
+
+

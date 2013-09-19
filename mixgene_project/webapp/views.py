@@ -79,21 +79,22 @@ def upload_data(request):
 @never_cache
 def geo_fetch_data(request):
     if request.method == "POST":
-        print "invoked"
         exp_id = int(request.POST['exp_id'])
-        dataset_id = request.POST['dataset_id']
-        dataset_var = request.POST['dataset_var']
-
         exp = Experiment.objects.get(e_id=exp_id)
 
+        var_name = request.POST['var_name']
+        geo_uid = request.POST['geo_uid']
+
+        #dataset_var_raw = request.POST['dataset_var_raw']
+        #dataset_var = request.POST['dataset_var']
+
         ctx = exp.get_ctx()
-        ctx["exp_fetching_data_var"].add(dataset_var)
+        ctx["exp_fetching_data_var"].add(var_name)
         exp.update_ctx(ctx)
 
         #TODO: check "GSE" prefix
-        uid = dataset_id[3:]
-        dir_path = exp.get_data_folder()
-        st = fetch_GEO_gse_matrix.s(exp, dataset_var, uid, dir_path)
+
+        st = fetch_GEO_gse_matrix.s(exp, var_name, geo_uid)
         st.apply_async()
         return redirect(request.POST['next'])
 
@@ -191,6 +192,8 @@ def alter_exp(request, exp_id, action):
         wf.run_experiment(exp)
 
     if action == 'update':
+        exp.validate(request)
+        """
         new_ctx, errors = wf.validate_exp(exp, request)
         if errors is None:
             exp.status = "configured"
@@ -198,6 +201,7 @@ def alter_exp(request, exp_id, action):
             exp.status = "initiated"
         exp.update_ctx(new_ctx)
         exp.save()
+        """
 
     return redirect(request.POST.get("next") or "/experiment/%s" % exp.e_id) # TODO use reverse
 
@@ -227,6 +231,7 @@ def create_experiment(request, layout_id):
     exp.update_ctx({
         "exp_id": exp.e_id,
         "exp_fetching_data_var": set(),
+        "exp_file_vars": {}, # var_name->FileInput object
     })
 
     mkdir(exp.get_data_folder())
@@ -281,40 +286,36 @@ def get_csv_as_table(request, exp_id, filename):
     has_col_names = bool(request.POST.get('has_col_names', False)) # than first column has no value!
     row_names_header = request.POST.get('row_names_header', '')
 
-
     get_header_from_ctx = bool(request.POST.get('get_header_from_ctx', False))
     ctx_header_key = request.POST.get('ctx_header_key')
 
-    csv_delimiter = request.POST.get('delimiter', ' ')
-    csv_quotechar = request.POST.get('quotechar', '"')
+    csv_delimiter = str(request.POST.get('delimiter', ' '))
+    csv_quotechar = str(request.POST.get('quotechar', '"'))
 
-    #import ipdb; ipdb.set_trace()
+    rows_num_limit = int(request.POST.get('rows_num_limit', 100))
+
     rows = []
     header = []
     with open(filepath) as inp:
+
         cr = csv.reader(inp, delimiter=csv_delimiter, quotechar=csv_quotechar)
         if has_col_names:
             header = cr.next()
             if has_row_names:
                 header.insert(0, row_names_header)
-
         if get_header_from_ctx:
             header = ctx[ctx_header_key]
-
-        rows = [ line for line in cr]
-
-
+        row_num = 0
+        while(row_num <= rows_num_limit):
+            try:
+                rows.append(cr.next())
+            except:
+                break
+            row_num += 1
 
     context = RequestContext(request, {
         "rows": rows,
         "header": header,
     })
 
-
     return HttpResponse(template.render(context))
-
-
-
-
-
-

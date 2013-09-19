@@ -9,7 +9,9 @@
 
     {% include "workflow/result/mixPlot.html" with result=ctx.pca_result title="PCA result" %}
     {% include "workflow/result/mixML.html" with result=ctx.svm_result  title="linSVM results" %}
-    {% include "workflow/result/mixTable.html" with result=ctx.tt_result title="tt result" %}
+    <div class="well">
+        {% include "workflow/result/mixTable.html" with result=ctx.tt_result title="tt result" %}
+    </div>
 
 </div>
 {% endblock %}

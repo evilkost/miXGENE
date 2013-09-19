@@ -46,6 +46,7 @@ class mixPlot(object):
 
         self.has_col_names = True
         self.has_row_names = True
+        self.csv_delimiter = " "
 
 
 @task(name='worflow.wrappers.pca_test')
@@ -80,6 +81,7 @@ class mixML(object):
 
         self.has_col_names = True
         self.has_row_names = True
+        self.csv_delimiter = " "
 
 
 @task(name='worflow.wrappers.svm_test')
@@ -109,6 +111,7 @@ class mixTable(object):
 
         self.has_col_names = True
         self.has_row_names = True
+        self.csv_delimiter = " "
 
 
 @task(name='worflow.wrappers.tt_test')

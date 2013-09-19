@@ -85,6 +85,14 @@ class Experiment(models.Model):
     def get_data_file_path(self, filename):
         return self.get_data_folder() + "/" + filename
 
+    def validate(self, request):
+        new_ctx, errors = self.workflow.get_class_instance().validate_exp(self, request)
+        if errors is None:
+            self.status = "configured"
+        else:
+            self.status = "initiated"
+        self.update_ctx(new_ctx)
+        self.save()
 
 def delete_exp(exp):
     """
@@ -132,5 +140,25 @@ class UploadedData(models.Model):
     filename = models.CharField(max_length=255, default="default")
     data = models.FileField(null=True, upload_to=content_file_name)
 
+    """ hmmm
+    src_type = models.CharField(max_length=31, default="user") # choices ["user", "ncbi_geo"]
+    geo_id = models.CharField(max_length=65, default="") # used only if src_type == ncbi_geo
+    """
+
     def __unicode__(self):
         return u"%s:%s" % (self.exp.e_id, self.var_name)
+
+
+class FileInput(object):
+    def __init__(self, type, var_name, filename, **kwargs):
+        if type in ['user', 'ncbi_geo']:
+            self.type = type
+        else:
+            raise Exception("file type should be either `user` or `ncbi_geo`, not %s" % type)
+
+        self.filename = filename
+        self.var_name = var_name
+
+        self.geo_uid = kwargs.get('geo_uid') # used only
+        self.is_fetch_done = False
+        

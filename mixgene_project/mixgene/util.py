@@ -46,6 +46,12 @@ def fetch_file_from_url(url, target_file, do_unpuck=True):
             if retcode != 0:
                 raise Exception("failed to unpack file %s " % target_file)
 
+def clean_GEO_file(src_path, target_path):
+    with open(src_path, 'r') as src, open(target_path, 'w') as target:
+        for line in src:
+            if len(line)>0 and line[0] != "!":
+                target.write(line)
+
 
 def geo_folder_name(prefix, uid):
     """
@@ -62,12 +68,14 @@ def geo_folder_name(prefix, uid):
 NCBI_GEO_ROOT = "ftp://ftp.ncbi.nlm.nih.gov/geo"
 NCBI_GEO_SERIES = NCBI_GEO_ROOT + "/series"
 
-def prepare_GEO_ftp_url(uid, db_type, format_type):
+def prepare_GEO_ftp_url(geo_uid, format_type):
     """
         Supported types:
             db: "GSE",
             format: "matrix",
     """
+    db_type = geo_uid[:3]
+    uid = geo_uid[3:]
     if db_type == "GSE":
         pre_url = "%s/%s/%s" % (NCBI_GEO_SERIES, geo_folder_name(db_type, uid), db_type + str(uid))
         if format_type == "matrix":
