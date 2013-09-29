@@ -3,11 +3,13 @@
 <!-- expecting django variable  result -->
 
 <script language="javascript" type="text/javascript" src="{% static 'js/flot_ajax_2d_scatter.js' %}"></script>
-<div class="well">
-    <h3>{{ title }}</h3>
-    <!-- TODO: parameterise id -->
-    <a id="flot_source" class="hidden" href="{% url 'get_flot_2d_scatter'  exp.e_id result.filename %}" >points</a>
-    <div class="demo-container">
+
+<!-- TODO: parameterise id -->
+
+<div class="panel panel-default">
+    <div class="panel-heading"><h3>{{ title }}</h3></div>
+    <div class="panel-body demo-container">
+        <a id="flot_source" class="hidden" href="{% url 'get_flot_2d_scatter'  exp.e_id result.filename %}" >points</a>
         <div id="placeholder" class="demo-placeholder"></div>
     </div>
 </div>

@@ -3,20 +3,25 @@
 {% block inner %}
 
 
-    <div class="row offset1">
+    <div class="container">
 
         <h1>Choose appropriate scenario and continue to provide input data</h1>
-        <ul class="thumbnails">
+
+
             {% for layout in all_layouts %}
-                <li class="span4">
-                    <div class="thumbnail">
-                        <h3> {{ layout.title }}</h3>
-                        <p> {{ layout.description }}</p>
-                        <a href="{% url 'webapp.views.create_experiment' layout.w_id %}" class="btn btn-primary"> Create </a>
-                    </div>
-                </li>
+            <div class="col-sm-6 col-md-3">
+                <div class="thumbnail">
+
+                    <h3> {{ layout.title }}</h3>
+                    <p> {{ layout.description }}</p>
+                    <center>
+                        <a href="{% url 'webapp.views.create_experiment' layout.w_id %}" class="btn btn-primary btn-lg btn-block"> Create </a>
+                    </center>
+
+                </div>
+            </div>
             {% endfor %}
-        </ul>
+
 
     </div>
 

@@ -3,42 +3,49 @@
 {% block body %}
 
 <!-- top navigation -->
-<div class="navbar navbar-inverse navbar-fixed-top">
-    <div class="navbar-inner">
-        <div class="container">
-            <a class="brand" href="/">miXGENE</a>
-            <div class="nav-collapse collapse">
-                <ul class="nav">
-                    <li {% if exp_page_active %} class="active" {% endif %}>
-                        <a href="{% url 'webapp.views.experiments' %}">My experiments</a>
-                    </li>
-                    <li {% if exp_add_page_active %} class="active" {% endif %}>
-                        <a href="{% url 'webapp.views.add_experiment' %}">Add experiment</a>
-                    </li>
-                    <li><a href="{% url 'webapp.views.about' %}">About</a></li>
-                    <li><a href="{% url 'webapp.views.contact' %}">Contact</a></li>
-                </ul>
-            </div>
+<div class="navbar navbar-inverse navbar-fixed-top"  role="navigation">
+    <div class="container">
+        <div class="navbar-header">
+            <a class="navbar-brand" href="/">miXGENE</a>
+
+            <ul class="nav navbar-nav">
+                <li {% if exp_page_active %} class="active" {% endif %}>
+                    <a href="{% url 'webapp.views.experiments' %}">My experiments</a>
+                </li>
+                <li {% if exp_add_page_active %} class="active" {% endif %}>
+                    <a href="{% url 'webapp.views.add_experiment' %}">Add experiment</a>
+                </li>
+                <li><a href="{% url 'webapp.views.about' %}">About</a></li>
+                <li><a href="{% url 'webapp.views.contact' %}">Contact</a></li>
+            </ul>
 
             {% if  user.is_authenticated %}
-            <form class="" action="{% url 'django.contrib.auth.views.logout' %}"  method=POST>
+            <form class="navbar-form navbar-right" action="{% url 'django.contrib.auth.views.logout' %}"  method=POST>
                 {% csrf_token %}
-                <button  class="btn btn-warning pull-right" type="submit">Logout</button>
-                <input type="hidden" name="next" id="next" value="{{ next}}" >
+                <div class="form-group">
+                    <button  class="btn btn-warning pull-right" type="submit">Logout</button>
+                    <input type="hidden" name="next" id="next" value="{{ next}}" >
+                </div>
             </form>
 
             {% else %}
-            <form class="navbar-form pull-right" action="{% url 'webapp.views.create_user' %}" method=POST>
+            <form class="navbar-form navbar-right" action="{% url 'webapp.views.create_user' %}" method=POST>
                 {% csrf_token %}
-                <button  class="btn btn-primary" href="create_new_user">Registration</button>
+                <div class="form-group">
+                    <button  class="btn btn-primary" href="create_new_user">Registration</button>
+                </div>
             </form>
-            <form class="navbar-form pull-right" action="{% url 'django.contrib.auth.views.login' %}" method=POST>
+            <form class="navbar-form navbar-right" action="{% url 'django.contrib.auth.views.login' %}" method=POST>
                 {% csrf_token %}
-                <input class="span2" type="text" name="username" id="id_username" placeholder="Username">
-                <input class="span2" type="password" name="password"  id="id_password" placeholder="Password">
-
+                <div class="form-group">
+                    <input class="form-control" type="text" name="username" id="id_username" placeholder="Username">
+                </div>
+                <div class="form-group">
+                    <input class="form-control" type="password" name="password"  id="id_password" placeholder="Password">
+                </div>
                 <input type="hidden" name="next" id="next" value="{{ next}}" >
-                <button type="submit" class="btn">Sign in</button>
+                <button type="submit" class="btn btn-success">Sign in</button>
+
             </form>
             {% endif %}
         </div>
@@ -50,9 +57,9 @@
 {% block inner %}
 {% endblock %}
 
-<div class="navbar navbar-bottom">
-    <div class="navbar-inner">
-        <div class="pull-right">
+<div id="footer">
+    <div class="container">
+        <div class="navbar navbar-default navbar-fixed-bottom" role="navigation">
             <h5> All used 3rd-party software is listed on
                 <a href="{% url 'webapp.views.about' %}"> About</a> page
             </h5>

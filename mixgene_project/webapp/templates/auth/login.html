@@ -7,37 +7,46 @@
     <h2>Login form</h2>
     <form method="post" action="{% url 'django.contrib.auth.views.login' %}" class="form-horizontal">
         {% csrf_token %}
+        <input type="hidden" name="next" value="{{ next }}" />
+
         {% if form.errors %}
         <div class="alert alert-error">
-            You haven't an account or your username and password didn't match. <br />
+            You haven't an account or your username and password doesn't match. <br />
             Please try again.
         </div>
         {% endif %}
 
-        <div class="control-group">
-            <label class="control-label" for="id_username"> Username </label>
-            <div class="controls">
-                <div class="input-prepend">
-                    <span class="add-on"><i class="icon-user"></i></span>
-                    <input id="id_username" maxlength="254" name="username" type="text" />
+
+        <div class="form-group">
+            <label class="control-label col-lg-1"> Username </label>
+            <div class="col-lg-5">
+                <div class="input-group">
+                    <span class="input-group-addon">
+                        <span class="glyphicon glyphicon-user"></span>
+                    </span>
+                    <input class="form-control" id="id_username" maxlength="254" name="username" type="text" />
                 </div>
             </div>
         </div>
-        <div class="control-group">
-            <label class="control-label" for="id_password"> Password </label>
-            <div class="controls">
-                <div class="input-prepend">
-                    <span class="add-on"><i class="icon-exclamation-sign"></i></span>
-                    <input id="id_password" name="password" type="password" />
+
+        <div class="form-group">
+            <label class="control-label col-lg-1"> Password </label>
+            <div class="col-lg-5">
+                <div class="input-group">
+                    <span class="input-group-addon">
+                        <span class="glyphicon glyphicon-exclamation-sign"></span>
+                    </span>
+                    <input class="form-control"  id="id_password" name="password" type="password" />
                 </div>
             </div>
         </div>
-        <div class="control-group">
-            <div class="controls">
-                <button class="btn btn-primary" type="submit" > Login </button>
-                <input type="hidden" name="next" value="{{ next }}" />
+
+        <div class="form-group">
+            <div class="col-lg-offset-1 col-lg-5">
+                <button  class="btn btn-primary" type="submit" >Create user</button>
             </div>
         </div>
+
     </form>
 
 </div>

@@ -1,57 +1,65 @@
 {% extends "base.html" %}
 
 {% block inner %}
-<div class="container">
+<div class="container" xmlns="http://www.w3.org/1999/html">
     <h2>Create new user</h2>
 
-    <form class="form-horizontal" action="{% url 'webapp.views.create_user' %}" method="post">
+    <form class="form-horizontal"  role="form" action="{% url 'webapp.views.create_user' %}" method="post">
         {% csrf_token %}
+        <input type="hidden" name="next" value="{{ next }}" />
 
-        <div class="control-group">
-            <label class="control-label" for="id_username"> Username </label>
-            <div class="controls">
-                <div class="input-prepend">
-                    <span class="add-on"><i class="icon-user"></i></span>
-                    <input id="id_username" maxlength="254" name="username" type="text" />
+        <div class="form-group">
+            <label class="control-label col-lg-1"> Username </label>
+            <div class="col-lg-5">
+                <div class="input-group">
+                    <span class="input-group-addon">
+                        <span class="glyphicon glyphicon-user"></span>
+                    </span>
+                    <input class="form-control" id="id_username" maxlength="254" name="username" type="text" />
                 </div>
             </div>
         </div>
 
-        <div class="control-group">
-            <label class="control-label" for="id_email"> E-mail </label>
-            <div class="controls">
-                <div class="input-prepend">
-                    <span class="add-on"><i class="icon-envelope"></i></span>
-                    <input id="id_email" maxlength="254" name="email" type="text" />
+        <div class="form-group">
+            <label class="control-label col-lg-1"> E-mail </label>
+            <div class="col-lg-5">
+                <div class="input-group">
+                    <span class="input-group-addon">
+                        <span class="glyphicon glyphicon-envelope"></span>
+                    </span>
+                    <input class="form-control" id="id_email" maxlength="254" name="email" type="text" />
                 </div>
 
             </div>
         </div>
 
-        <div class="control-group">
-            <label class="control-label" for="id_password1"> Password </label>
-            <div class="controls">
-                <div class="input-prepend">
-                    <span class="add-on"><i class="icon-exclamation-sign"></i></span>
-                    <input id="id_password1" name="password1" type="password" />
+        <div class="form-group">
+            <label class="control-label col-lg-1"> Password </label>
+            <div class="col-lg-5">
+                <div class="input-group">
+                    <span class="input-group-addon">
+                        <span class="glyphicon glyphicon-exclamation-sign"></span>
+                    </span>
+                    <input class="form-control"  id="id_password1" name="password1" type="password" />
                 </div>
             </div>
         </div>
 
-        <div class="control-group">
-            <label class="control-label" for="id_password2"> Repeat password </label>
-            <div class="controls">
-                <div class="input-prepend">
-                    <span class="add-on"><i class="icon-exclamation-sign"></i></span>
-                    <input id="id_password2" name="password2" type="password" />
+        <div class="form-group">
+            <label class="control-label col-lg-1"> Repeat password </label>
+            <div class="col-lg-5">
+                <div class="input-group">
+                    <span class="input-group-addon">
+                        <span class="glyphicon glyphicon-exclamation-sign"></span>
+                    </span>
+                    <input class="form-control"  id="id_password2" name="password2" type="password" />
                 </div>
             </div>
         </div>
 
-        <div class="control-group">
-            <div class="controls">
-                <button  class="btn btn-primary" type="submit" >Create user </button>
-                <input type="hidden" name="next" value="{{ next }}" />
+        <div class="form-group">
+            <div class="col-lg-offset-1 col-lg-5">
+                <button  class="btn btn-primary" type="submit" >Create user</button>
             </div>
         </div>
     </form>

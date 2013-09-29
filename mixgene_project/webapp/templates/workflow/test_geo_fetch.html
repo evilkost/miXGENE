@@ -19,6 +19,16 @@
 
         <input type="text" placeholder="GSE123..." name="geo_uid" value="{{ ctx.exp_file_vars.matrix.geo_uid }}" /> <br />
 
+
+        <label class="radio">
+            <input type="radio" name="file_format"  value="soft" checked />
+            SOFT formatted family file(s)
+        </label>
+        <label class="radio">
+            <input type="radio" name="file_format"  value="txt"/>
+            Series Matrix File(s)
+        </label>
+
         <input type="hidden" name="var_name" value="matrix" />
         <input type="hidden" name="exp_id" value="{{ exp.e_id }}" />
         <input type="hidden" name="next" value="{{ next }}" />
