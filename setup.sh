@@ -7,6 +7,9 @@ sudo apt-get install python python-pip mysql-server mysql-common mysql-client py
 # during installation you will be asked for a password for the root
 # underworldHj53
 
+sudo apt-get install r-base-core libxml2-dev r-cran-xml
+
+
 mysql -u root -p
 # enter root's password
 # SQL begin

@@ -20,7 +20,7 @@ from webapp.forms import UploadForm
 
 from workflow.actions import exc_action, set_exp_status
 from workflow.layout import write_result
-from workflow.common_tasks import fetch_GEO_gse_matrix
+from workflow.common_tasks import fetch_GEO_gse
 
 from mixgene.util import dyn_import, get_redis_instance, mkdir
 from mixgene.redis_helper import ExpKeys
@@ -29,7 +29,7 @@ from mixgene.redis_helper import ExpKeys
 def index(request):
     template = loader.get_template('index.html')
     context = RequestContext(request, {
-        "next":"/",
+        "next": "/",
     })
     return HttpResponse(template.render(context))
 
@@ -37,14 +37,15 @@ def index(request):
 def about(request):
     template = loader.get_template('about.html')
     context = RequestContext(request, {
-        "next":"/",
+        "next": "/",
     })
     return HttpResponse(template.render(context))
+
 
 def contact(request):
     template = loader.get_template('contact.html')
     context = RequestContext(request, {
-        "next":"/",
+        "next": "/",
     })
     return HttpResponse(template.render(context))
 
@@ -84,9 +85,7 @@ def geo_fetch_data(request):
 
         var_name = request.POST['var_name']
         geo_uid = request.POST['geo_uid']
-
-        #dataset_var_raw = request.POST['dataset_var_raw']
-        #dataset_var = request.POST['dataset_var']
+        file_format = request.POST['file_format']
 
         ctx = exp.get_ctx()
         ctx["exp_fetching_data_var"].add(var_name)
@@ -94,7 +93,7 @@ def geo_fetch_data(request):
 
         #TODO: check "GSE" prefix
 
-        st = fetch_GEO_gse_matrix.s(exp, var_name, geo_uid)
+        st = fetch_GEO_gse.s(exp, var_name, geo_uid, file_format)
         st.apply_async()
         return redirect(request.POST['next'])
 
@@ -158,6 +157,7 @@ def exp_details(request, exp_id):
         template = loader.get_template(wf.template)
 
     ctx = exp.get_ctx()
+    #import ipdb; ipdb.set_trace()
     context = RequestContext(request, {
         "exp_page_active": True,
 
@@ -169,6 +169,7 @@ def exp_details(request, exp_id):
         "data_files_url_prefix": "/media/data/%s/%s/" % (exp.author.id, exp.e_id),
         "exp": exp,
         "layout": layout,
+        "wf": wf,
         "ctx": ctx,
         "next": "/experiment/%s" % exp.e_id,
         "runnable": exp.status == "configured",
@@ -232,6 +233,9 @@ def create_experiment(request, layout_id):
         "exp_id": exp.e_id,
         "exp_fetching_data_var": set(),
         "exp_file_vars": {}, # var_name->FileInput object
+
+        "input_vars": wf.input_vars,
+        "result_vars": wf.result_vars,
     })
 
     mkdir(exp.get_data_folder())
@@ -295,9 +299,8 @@ def get_csv_as_table(request, exp_id, filename):
     rows_num_limit = int(request.POST.get('rows_num_limit', 100))
 
     rows = []
-    header = []
+    header = None
     with open(filepath) as inp:
-
         cr = csv.reader(inp, delimiter=csv_delimiter, quotechar=csv_quotechar)
         if has_col_names:
             header = cr.next()
@@ -306,13 +309,14 @@ def get_csv_as_table(request, exp_id, filename):
         if get_header_from_ctx:
             header = ctx[ctx_header_key]
         row_num = 0
-        while(row_num <= rows_num_limit):
+        while row_num <= rows_num_limit:
             try:
                 rows.append(cr.next())
             except:
                 break
             row_num += 1
 
+    print header
     context = RequestContext(request, {
         "rows": rows,
         "header": header,

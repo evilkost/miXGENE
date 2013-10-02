@@ -95,6 +95,18 @@ def set_exp_status(ctx):
     print ctx
 
 
+@task(name='workflow.tasks.collect_results')
+def collect_results(ctx):
+    exp = Experiment.objects.get(e_id = ctx['exp_id'])
+    result_vars = ctx['result_vars']
+    ctx['results'] = {}
+    for var in result_vars:
+        if var in ctx:
+            ctx['results'][var] = ctx[var]
+
+    exp.update_ctx(ctx)
+    return ctx
+
 @task(name='workflow.tasks.par_collect')
 def par_collect(ctx, pre_ctx, subtask_name, parent_task):
     print "enter collect task"

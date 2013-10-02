@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 
 {% block inner %}
-    <div class="row">
+    <div class="container">
 
-      <div class="span7 offset1">
+
         <h1>miXGENE web app main page</h1>
         {% if  user.is_authenticated %}
             <h2>Welcome back <b>{{user.username}}</b> ! </h2>
@@ -48,7 +48,6 @@
             </li>
         </ul>
 
-      </div>
     </div>
 
 {% endblock %}

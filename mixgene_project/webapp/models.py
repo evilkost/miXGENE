@@ -25,6 +25,22 @@ class WorkflowLayout(models.Model):
         wfl_class = dyn_import(self.wfl_class)
         return wfl_class()
 
+#TODO: Introduce this class, use redis hashes underneath
+"""
+class ExpContext(object):
+    #
+    #    Replace for ctx dict.
+    #    It's used to store current variable of experiment in redis between workflow steps,
+    #        to acquire input parameters and store results.
+    #
+
+    def __init__(self, e_id):
+        self.e_id = e_id
+
+    def get_exp(self):
+        return Experiment.objects.get(e_id=self.e_id)
+"""
+
 
 class Experiment(models.Model):
     e_id = models.AutoField(primary_key=True)
@@ -42,7 +58,6 @@ class Experiment(models.Model):
         5. failed
     """
     status = models.TextField(default="created")
-
 
     dt_created = models.DateTimeField(auto_now_add=True)
     dt_updated = models.DateTimeField(auto_now=True)
@@ -134,6 +149,7 @@ def delete_exp(exp):
 def content_file_name(instance, filename):
     return '/'.join(map(str, ['data', instance.exp.author.id, instance.exp.e_id, filename]))
 
+
 class UploadedData(models.Model):
     exp = models.ForeignKey(Experiment)
     var_name = models.CharField(max_length=255)
@@ -159,6 +175,8 @@ class FileInput(object):
         self.filename = filename
         self.var_name = var_name
 
-        self.geo_uid = kwargs.get('geo_uid') # used only
+        self.geo_uid = kwargs.get('geo_uid') # used only for files fetched from ncbi
+        self.file_format = kwargs.get('file_format')
+
         self.is_fetch_done = False
-        
+

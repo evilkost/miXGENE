@@ -6,15 +6,13 @@
 
 <div class="panel panel-default">
     <div class="panel-heading">
-        <h3>{{ title }}</h3>
+        <h3>{{ result.title }}</h3>
     </div>
     <div class="panel-body">
-
-        <p>Caption {{ result.caption }} </p>
         <!-- p>Working units {{ result.working_units }} </p -->
 
         <!-- div class="well" -->
-            <div id="tt_test_table"></div>
+            <div id="{{ result.uuid }}"></div>
         <!-- /div -->
         <script type="text/javascript">
             $(function() {
@@ -22,7 +20,7 @@
                     var dataurl = '{% url 'get_csv_as_table' exp.e_id result.filename %}';
 
                     function onDataReceived(response) {
-                        $("#tt_test_table").html(response); // TODO: parameterise
+                        $("#{{ result.uuid }}").html(response);
                     }
                     $.ajax({
                         url: dataurl,

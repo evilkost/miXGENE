@@ -7,9 +7,9 @@
     <h1>Workflow: {{ layout.title }} </h1>
     <h2> Status: {{ exp.status }} </h2>
 
-    {% include "workflow/result/mixPlot.html" with result=ctx.pca_result title="PCA result" %}
-    {% include "workflow/result/mixML.html" with result=ctx.svm_result  title="linSVM results" %}
-    {% include "workflow/result/mixTable.html" with result=ctx.tt_result title="tt result" %}
+    {% for _, result in ctx.results.iteritems %}
+        {% include result.template %}
+    {% endfor %}
 
 </div>
 {% endblock %}
