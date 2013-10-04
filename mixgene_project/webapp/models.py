@@ -163,20 +163,3 @@ class UploadedData(models.Model):
 
     def __unicode__(self):
         return u"%s:%s" % (self.exp.e_id, self.var_name)
-
-
-class FileInput(object):
-    def __init__(self, type, var_name, filename, **kwargs):
-        if type in ['user', 'ncbi_geo']:
-            self.type = type
-        else:
-            raise Exception("file type should be either `user` or `ncbi_geo`, not %s" % type)
-
-        self.filename = filename
-        self.var_name = var_name
-
-        self.geo_uid = kwargs.get('geo_uid') # used only for files fetched from ncbi
-        self.file_format = kwargs.get('file_format')
-
-        self.is_fetch_done = False
-

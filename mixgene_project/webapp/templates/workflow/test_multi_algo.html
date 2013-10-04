@@ -9,8 +9,8 @@
     </h5>
 
     <p>
-    Test workflow for 3 R algo: pca, linsvm, tt.
-    Please set number of samples from iris set to be processed.
+        <h3> {{ layout.title }} </h3>
+        {{ layout.description }}
     </p>
 
     {% if configurable %}
@@ -18,9 +18,7 @@
         {% csrf_token %}
         <input type="hidden" name="exp_id" value="{{ exp.e_id }}" />
 
-        {% for input_var in ctx.input_vars %}
-
-
+        {% for var_name, input_var in ctx.input_vars.iteritems %}
             <div class="form-group">
                 {% if input_var.input_type == "checkbox" %}
                 <div class="col-lg-offset-1 col-lg-10">

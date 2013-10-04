@@ -20,7 +20,7 @@ from webapp.forms import UploadForm
 
 from workflow.actions import exc_action, set_exp_status
 from workflow.layout import write_result
-from workflow.common_tasks import fetch_GEO_gse
+from workflow.common_tasks import fetch_geo_gse
 
 from mixgene.util import dyn_import, get_redis_instance, mkdir
 from mixgene.redis_helper import ExpKeys
@@ -55,24 +55,27 @@ def upload_data(request):
     if request.method == "POST":
         form = UploadForm(request.POST, request.FILES)
         if form.is_valid():
-            exp_id=form.cleaned_data['exp_id']
+            exp_id = form.cleaned_data['exp_id']
             exp = Experiment.objects.get(e_id=exp_id)
-            # check 1: does this expirement use such variable
-
-            wf = exp.workflow.get_class_instance()
-            if form.cleaned_data['var_name'] in wf.data_files_vars:
-                #check 2: 'var_name' wasn't uploaded before
-                uploaded_before = UploadedData.objects.filter(exp=exp, var_name=form.cleaned_data['var_name'])
+            ctx = exp.get_ctx()
+            var_name = form.cleaned_data['var_name']
+            inp_var = ctx["input_vars"][var_name]
+            if inp_var is None:
+                print "var_name %s isn't used by exp %s " % (var_name, exp_id )
+                #TODO: hmm shouldn't actually happen
+            else:
+                uploaded_before = UploadedData.objects.filter(exp=exp, var_name=var_name)
                 if len(uploaded_before) == 0:
-                    ud = UploadedData(exp=exp, var_name=form.cleaned_data['var_name'])
-                    ud.save()
+                    ud = UploadedData(exp=exp, var_name=var_name)
                     ud.data = form.cleaned_data['data']
                     ud.save()
+
+                    inp_var.is_done = True
+                    inp_var.set_file_type("user")
+                    inp_var.filename = ud.data.name.split("/")[-1]
+                    exp.update_ctx(ctx)
                 else:
                     print "var_name %s was already uploaded " % (var_name, )
-            else:
-                print "var_name %s isn't used by exp %s " % (var_name, exp_id )
-
     return redirect(request.POST['next'])
 
 
@@ -88,12 +91,12 @@ def geo_fetch_data(request):
         file_format = request.POST['file_format']
 
         ctx = exp.get_ctx()
-        ctx["exp_fetching_data_var"].add(var_name)
+        ctx["input_vars"][var_name].is_being_fetched = True
         exp.update_ctx(ctx)
 
         #TODO: check "GSE" prefix
 
-        st = fetch_GEO_gse.s(exp, var_name, geo_uid, file_format)
+        st = fetch_geo_gse.s(exp, var_name, geo_uid, file_format)
         st.apply_async()
         return redirect(request.POST['next'])
 
@@ -106,7 +109,7 @@ def create_user(request):
     if 'username' not in request.POST:
         template = loader.get_template('auth/user_creation.html')
         context = RequestContext(request, {
-            "next":"/",
+            "next": "/",
         })
         return HttpResponse(template.render(context))
 
@@ -124,8 +127,7 @@ def create_user(request):
         else:
             #TODO: check whether we already have user with the same name or email
             #TODO: add (or not) email validation ? captcha?
-
-            user = User.objects.create_user(username, email, password)
+            User.objects.create_user(username, email, password)
             user = authenticate(username=username, password=password)
             login(request, user)
 
@@ -145,9 +147,9 @@ def experiments(request):
 
 #@login_required(login_url='/auth/login/')
 
+
 def exp_details(request, exp_id):
     exp = Experiment.objects.get(e_id = exp_id)
-    data_files = UploadedData.objects.filter(exp = exp)
     layout = exp.workflow
     wf = layout.get_class_instance()
 
@@ -160,11 +162,6 @@ def exp_details(request, exp_id):
     #import ipdb; ipdb.set_trace()
     context = RequestContext(request, {
         "exp_page_active": True,
-
-        "data_files": data_files,
-        "data_files_var_names_uploaded": [df.var_name for df in data_files],
-        "data_files_var_names_required": wf.data_files_vars,
-        "show_uploads": len(data_files) != wf.data_files_vars,
 
         "data_files_url_prefix": "/media/data/%s/%s/" % (exp.author.id, exp.e_id),
         "exp": exp,

@@ -49,7 +49,9 @@ def fetch_file_from_url(url, target_file, do_unpuck=True):
 def clean_GEO_file(src_path, target_path):
     with open(src_path, 'r') as src, open(target_path, 'w') as target:
         for line in src:
-            if len(line)>0 and line[0] != "!":
+            if len(line)==0 or line[0] == "!" or line in [" ", " \n", "\n", "\r\n"]:
+                pass
+            else:
                 target.write(line)
 
 
@@ -68,22 +70,30 @@ def geo_folder_name(prefix, uid):
 NCBI_GEO_ROOT = "ftp://ftp.ncbi.nlm.nih.gov/geo"
 NCBI_GEO_SERIES = NCBI_GEO_ROOT + "/series"
 
-def prepare_GEO_ftp_url(geo_uid, format_type):
+
+def prepare_GEO_ftp_url(geo_uid, file_format):
     """
         Supported types:
             db: "GSE",
-            format: "matrix",
+            format: "txt", "soft"
     """
     db_type = geo_uid[:3]
     uid = geo_uid[3:]
+
+    print "\t".join([geo_uid, db_type, uid, file_format])
     if db_type == "GSE":
         pre_url = "%s/%s/%s" % (NCBI_GEO_SERIES, geo_folder_name(db_type, uid), db_type + str(uid))
-        if format_type == "matrix":
-            filename = "%s%s_series_matrix.txt" % (db_type, uid)
+        if file_format == "txt":
+            filename = "%s_series_matrix.txt" % geo_uid
             compressed_filename = filename + ".gz"
             url = "%s/matrix/%s" % (pre_url, compressed_filename)
+        elif file_format == "soft":
+            filename = "%s_family.soft" % geo_uid
+            compressed_filename = filename + ".gz"
+            url = "%s/soft/%s" % (pre_url, compressed_filename)
+        else:
+            raise Exception("format %s isn't supported yet" % file_format)
+    else:
+        raise Exception("db_type %s isn't supported yet" % db_type)
+
     return url, compressed_filename, filename
-
-
-
-

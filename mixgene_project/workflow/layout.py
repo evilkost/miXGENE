@@ -1,8 +1,12 @@
 import time
+from uuid import uuid1
+
 from celery import task
 
 from workflow.actions import AtomicAction, SeqActions, ParActions, exc_action, set_exp_status, collect_results
-from webapp.models import Experiment, UploadedData
+from webapp.models import UploadedData, Experiment
+from workflow.input import CheckBoxInputVar, FileInputVar
+from workflow.result import mixTable
 from wrappers import r_test_algo, pca_test, svm_test, tt_test, mix_global_test
 
 @task(name='workflow.layout.wait_task')
@@ -24,8 +28,9 @@ class AbstractWorkflowLayout(object):
     """
         Sceletone to create custom workflows
     """
-    def __init_(self):
-        pass
+    def __init__(self, *args, **kwargs):
+        self.input_vars = {}
+        self.result_vars = []
 
     def validate_ctx(self, exp, request):
         """
@@ -66,9 +71,9 @@ class SampleWfL(AbstractWorkflowLayout):
                     |----->------at3--------->--------|
     """
     def __init__(self):
+        super(SampleWfL, self).__init__()
         self.template = "workflow/sample_wf.html"
         self.template_result = "workflow/sample_wf_result.html"
-        self.data_files_vars = []
 
     def validate_exp(self, exp, request):
         ctx = exp.get_ctx()
@@ -89,66 +94,15 @@ class SampleWfL(AbstractWorkflowLayout):
         return main_action
 
 
-@task(name='workflow.layout.r_test_algo')
-def r_test_algo(ctx):
-    import  rpy2.robjects as R
-    from rpy2.robjects.packages import importr
-    test = importr("test")
-    from webapp.models import Experiment, UploadedData
-    exp = Experiment.objects.get(e_id=ctx['exp_id'])
-    ctx = exp.get_ctx()
-
-    filename = ctx["data.csv"]
-
-    rread_csv = R.r['read.csv']
-    rwrite_csv = R.r['write.csv']
-    rtest = R.r['test']
-
-    rx = rread_csv(filename)
-    rres = rtest(rx)
-
-    names_to_res = ['sum', 'nrow', 'ncol',]
-    for i in range(len(rres.names)):
-        if rres.names[i] in names_to_res:
-            ctx[rres.names[i]] = rres[i][0]
-
-    return ctx
-
-
-class TestRAlgo(AbstractWorkflowLayout):
-    def __init__(self):
-        self.template = "workflow/test_r_wf.html"
-        self.template_result = "workflow/test_r_result.html"
-        self.data_files_vars = [
-            u"data.csv",
-        ]
-
-    def get_main_action(self, ctx):
-        return AtomicAction("rtest", r_test_algo, {}, {})
-
-    def validate_exp(self, exp, request):
-        #import ipdb; ipdb.set_trace()
-        uploaded_name = [x.var_name for x in UploadedData.objects.filter(exp=exp)]
-        errors = None
-        ctx_filenames = {}
-        if all(var in uploaded_name for var in self.data_files_vars):
-            uploads_done = True
-            for x in UploadedData.objects.filter(exp=exp):
-                ctx_filenames[x.var_name] = x.data.file.name
-            exp.update_ctx(ctx_filenames)
-        else:
-            uploads_done = False
-            errors = {"message": "Data not uploaded"}
-        return (exp.get_ctx(), errors)
-
-
 @task(name='workflow.layout.geo_fetch_dummy')
 def geo_fetch_dummy(ctx):
-    matrix = ctx['exp_file_vars']['matrix']
+    matrix = ctx['input_vars']['matrix']
+    exp = Experiment.objects.get(e_id=ctx['exp_id'])
     result = {
+        "title": "Test geo fetcher",
         "caption": "Dataset id: %s" % matrix.geo_uid,
         "filename": matrix.filename,
-        #"filepath":
+        "uuid": str(uuid1()),
 
         "has_col_names": True,
         "has_row_names": False,
@@ -158,16 +112,22 @@ def geo_fetch_dummy(ctx):
     return ctx
 
 
-
 class TestGeoFetcher(AbstractWorkflowLayout):
     def __init__(self):
+        super(TestGeoFetcher, self).__init__()
+
         self.template = "workflow/test_geo_fetch.html"
         self.template_result = "workflow/test_geo_fetch_result.html"
-        self.data_files_vars = []
 
         self.file_vars = {
-            "matrix": "test matrix grom ncbi geo",
+            "matrix_1": "test matrix grom ncbi geo",
         }
+
+        self.input_vars.update({
+            "matrix": FileInputVar("matrix", "Matrix", "Test matrix in csv format"),
+        })
+
+
 
     def get_main_action(self, ctx):
         return AtomicAction("geo_fetch_dummy", geo_fetch_dummy, {}, {})
@@ -191,32 +151,18 @@ class TestMultiAlgoForm(forms.Form):
     do_t_test = forms.BooleanField(required=False)
 
 
-class AbsInputVar(object):
-    def __init__(self, name, title, description, *args, **kwargs):
-        self.name = name
-        self.title = title
-        self.description = description
-
-
-class CheckBoxInputVar(AbsInputVar):
-    def __init__(self, *args, **kwargs):
-        super(CheckBoxInputVar, self).__init__(*args, **kwargs)
-        self.input_type = "checkbox"
-        self.value = kwargs.get('is_checked', True)
-
-
 class TestMultiAlgo(AbstractWorkflowLayout):
     def __init__(self):
+        super(TestMultiAlgo, self).__init__()
         self.template = "workflow/test_multi_algo.html"
         self.template_result = "workflow/test_multi_algo_result.html"
-        self.data_files_vars = []
 
-        self.input_vars = [
-            CheckBoxInputVar("do_pca", "", "Enable PCA", is_checked=False),
-            CheckBoxInputVar("do_global_test", "", "Enable Global test", is_checked=False),
-            CheckBoxInputVar("do_linsvm", "", "Enable linear SVM classifier", is_checked=False),
-            CheckBoxInputVar("do_t_test", "", "Enable T-test", is_checked=True),
-        ]
+        self.input_vars.update({
+            "do_pca": CheckBoxInputVar("do_pca", "", "Enable PCA", is_checked=False),
+            "do_global_test":  CheckBoxInputVar("do_global_test", "", "Enable Global test", is_checked=False),
+            "do_linsvm": CheckBoxInputVar("do_linsvm", "", "Enable linear SVM classifier", is_checked=False),
+            "do_t_test": CheckBoxInputVar("do_t_test", "", "Enable T-test", is_checked=True),
+        })
         self.result_vars = ["pca_result", "mgt_result", "svm_result", "tt_result", ]
 
     def validate_exp(self, exp, request):
@@ -225,8 +171,8 @@ class TestMultiAlgo(AbstractWorkflowLayout):
         if fm.is_valid():
             if any(fm.cleaned_data[f] for f in ["do_global_test", "do_linsvm", "do_pca", "do_t_test"]):
                 errors = None
-                for inp_var in ctx["input_vars"]:
-                    if inp_var.name in fm.cleaned_data:
+                for var_name, inp_var in ctx["input_vars"].iteritems():
+                    if var_name in fm.cleaned_data:
                         inp_var.value = fm.cleaned_data[inp_var.name]
             else:
                 errors = {"message": "At least one test should be enabled!"}
@@ -247,11 +193,25 @@ class TestMultiAlgo(AbstractWorkflowLayout):
         pca_action = AtomicAction("pca_action", pca_test, {"pca_points_filename": "filename"}, {"result": "pca_result"})
         svm_action = AtomicAction("svm_action", svm_test, {"svm_factors_filename": "filename"}, {"result": "svm_result"})
         tt_action = AtomicAction("tt_action", tt_test, {"tt_test_filename": "filename"}, {"result": "tt_result"})
-
         mix_global_test_action = AtomicAction("mix_global_test", mix_global_test,
                                               {"mix_global_test_filename": "filename"}, {"result": "mgt_result"})
 
         par_actions =[]
+
+        #for var_name, inp_var in ctx["input_var"].iteritems():
+        if ctx["input_vars"]["do_global_test"].value:
+            par_actions.append(mix_global_test_action)
+
+        if ctx["input_vars"]["do_linsvm"].value:
+            par_actions.append(svm_action)
+
+        if ctx["input_vars"]["do_pca"].value:
+            par_actions.append(pca_action)
+
+        if ctx["input_vars"]["do_t_test"].value:
+            par_actions.append(tt_action)
+
+        """
         for inp_var in ctx["input_vars"]:
             if inp_var.name == "do_global_test" and inp_var.value:
                 par_actions.append(mix_global_test_action)
@@ -261,10 +221,7 @@ class TestMultiAlgo(AbstractWorkflowLayout):
                 par_actions.append(pca_action)
             if inp_var.name == "do_t_test" and inp_var.value:
                 par_actions.append(tt_action)
-
-
-
+        """
         alg_actions = ParActions("alg_action", par_actions)
-
         collect_res_action = AtomicAction("collect_results", collect_results, {}, {})
         return SeqActions("main_action", [alg_actions, collect_res_action])
