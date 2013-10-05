@@ -7,7 +7,8 @@ from workflow.actions import AtomicAction, SeqActions, ParActions, exc_action, s
 from webapp.models import UploadedData, Experiment
 from workflow.input import CheckBoxInputVar, FileInputVar
 from workflow.result import mixTable
-from wrappers import r_test_algo, pca_test, svm_test, tt_test, mix_global_test
+from wrappers import r_test_algo, pca_test, svm_test, tt_test, mix_global_test, leukemia_data_provider
+
 
 @task(name='workflow.layout.wait_task')
 def wait_task(ctx):
@@ -190,15 +191,16 @@ class TestMultiAlgo(AbstractWorkflowLayout):
         return (ctx, errors)
 
     def get_main_action(self, ctx):
+        get_leukemia_data_action = AtomicAction("get_dataset", leukemia_data_provider, {}, {})
+
         pca_action = AtomicAction("pca_action", pca_test, {"pca_points_filename": "filename"}, {"result": "pca_result"})
         svm_action = AtomicAction("svm_action", svm_test, {"svm_factors_filename": "filename"}, {"result": "svm_result"})
         tt_action = AtomicAction("tt_action", tt_test, {"tt_test_filename": "filename"}, {"result": "tt_result"})
         mix_global_test_action = AtomicAction("mix_global_test", mix_global_test,
                                               {"mix_global_test_filename": "filename"}, {"result": "mgt_result"})
 
-        par_actions =[]
+        par_actions = []
 
-        #for var_name, inp_var in ctx["input_var"].iteritems():
         if ctx["input_vars"]["do_global_test"].value:
             par_actions.append(mix_global_test_action)
 
@@ -211,17 +213,11 @@ class TestMultiAlgo(AbstractWorkflowLayout):
         if ctx["input_vars"]["do_t_test"].value:
             par_actions.append(tt_action)
 
-        """
-        for inp_var in ctx["input_vars"]:
-            if inp_var.name == "do_global_test" and inp_var.value:
-                par_actions.append(mix_global_test_action)
-            if inp_var.name == "do_linsvm" and inp_var.value:
-                par_actions.append(svm_action)
-            if inp_var.name == "do_pca" and inp_var.value:
-                par_actions.append(pca_action)
-            if inp_var.name == "do_t_test" and inp_var.value:
-                par_actions.append(tt_action)
-        """
         alg_actions = ParActions("alg_action", par_actions)
         collect_res_action = AtomicAction("collect_results", collect_results, {}, {})
-        return SeqActions("main_action", [alg_actions, collect_res_action])
+
+        return SeqActions("main_action", [
+            get_leukemia_data_action,
+            alg_actions,
+            collect_res_action
+        ])

@@ -6,15 +6,15 @@ from rpy2.robjects.packages import importr
 from mixgene.settings import R_LIB_CUSTOM_PATH
 from webapp.models import Experiment
 from workflow.result import mixPlot, mixML, mixTable
+from workflow.vars import MixData, MixPheno
 
+importr("miXGENE", lib_loc=R_LIB_CUSTOM_PATH)
+R.r['options'](warn=-1)
 
 @task(name='workflow.wrappers.r_test_algo')
 def r_test_algo(ctx):
-
     importr("test", lib_loc=R_LIB_CUSTOM_PATH)
-
     exp = Experiment.objects.get(e_id = ctx['exp_id'])
-
 
     filename = ctx["data.csv"]
 
@@ -33,21 +33,56 @@ def r_test_algo(ctx):
     return ctx
 
 
-@task(name='worflow.wrappers.pca_test')
-def pca_test(ctx):
+@task(name='workflow.wrappers.leukemia_data_provider')
+def leukemia_data_provider(ctx):
     importr("miXGENE", lib_loc=R_LIB_CUSTOM_PATH)
     R.r['options'](warn=-1)
 
     exp = Experiment.objects.get(e_id=ctx['exp_id'])
 
-    rdata = R.r['data']
-    rdata('leukemia.symbols')
-    rdata('leukemia.pheno')
-    rdata('msigdb.symbols')
+    r_data = R.r['data']
+    r_data('leukemia.symbols')
+    r_data('leukemia.pheno')
+    rls = R.r['leukemia.symbols']
+    rlp = R.r['leukemia.pheno']
 
-    #pca.results <- mixPca(leukemia.symbols, leukemia.pheno, center = T, scale = F)
-    rMPCA = R.r['mixPca']
-    pca = rMPCA(dataset=R.r['leukemia.symbols'], dataset_factor=R.r['leukemia.pheno'])
+    leukemia_symbols = MixData()
+    leukemia_pheno = MixPheno()
+
+    leukemia_symbols.filename = "leukemia.symbols.csv"
+    leukemia_symbols.filepath = exp.get_data_file_path(leukemia_symbols.filename)
+
+    leukemia_symbols.org = list(rls.do_slot("org"))
+    leukemia_symbols.units = list(rls.do_slot("units"))
+
+    R.r['write.table'](rls.do_slot('data'), leukemia_symbols.filepath,
+                       row_names=leukemia_symbols.has_row_names,
+                       col_names=leukemia_symbols.has_col_names)
+
+    leukemia_pheno.filename = "leukemia.pheno.csv"
+    leukemia_pheno.filepath = exp.get_data_file_path(leukemia_pheno.filename)
+
+
+    leukemia_pheno.org = list(rlp.do_slot("org"))
+    leukemia_pheno.units = list(rlp.do_slot("units"))
+
+    R.r['write.table'](rlp.do_slot('phenotype'), leukemia_pheno.filepath,
+                       row_names=leukemia_pheno.has_row_names,
+                       col_names=leukemia_pheno.has_col_names)
+
+    ctx["leukemia_symbols"] = leukemia_symbols
+    ctx["leukemia_pheno"] = leukemia_pheno
+    return ctx
+
+
+@task(name='worflow.wrappers.pca_test')
+def pca_test(ctx):
+    exp = Experiment.objects.get(e_id=ctx['exp_id'])
+
+    pca = R.r['mixPca'](
+        dataset=ctx["leukemia_symbols"].to_r_obj(),
+        dataset_factor=ctx["leukemia_pheno"].to_r_obj()
+    )
 
     result = mixPlot(exp, pca, ctx['filename'])
     result.title = "PCA test"
@@ -57,22 +92,14 @@ def pca_test(ctx):
 
 @task(name='worflow.wrappers.svm_test')
 def svm_test(ctx):
-    importr("miXGENE", lib_loc=R_LIB_CUSTOM_PATH)
-    R.r['options'](warn=-1)
-
     exp = Experiment.objects.get(e_id=ctx['exp_id'])
 
-    rdata = R.r['data']
-    rdata('leukemia.symbols')
-    rdata('leukemia.pheno')
-    rdata('msigdb.symbols')
+    svm = R.r['mixSvmLin'](
+        dataset=ctx["leukemia_symbols"].to_r_obj(),
+        dataset_factor=ctx["leukemia_pheno"].to_r_obj()
+    )
 
-    rMSVML = R.r['mixSvmLin']
-    svm = rMSVML(dataset=R.r['leukemia.symbols'], dataset_factor=R.r['leukemia.pheno'])
     result = mixML(exp, svm, ctx['filename'])
-
-    #svmlin.results <- mixSvmLin(dataset=leukemia.symbols, dataset.factor=leukemia.pheno)
-
     result.title = "SVM result"
     ctx.update({"result": result})
     return ctx
@@ -80,42 +107,30 @@ def svm_test(ctx):
 
 @task(name='worflow.wrappers.tt_test')
 def tt_test(ctx):
-    importr("miXGENE", lib_loc=R_LIB_CUSTOM_PATH)
-    R.r['options'](warn=-1)
-
     exp = Experiment.objects.get(e_id = ctx['exp_id'])
 
-    rdata = R.r['data']
-    rdata('leukemia.symbols')
-    rdata('leukemia.pheno')
-    rdata('msigdb.symbols')
-
-
-    # ttest.results <- mixTtest(dataset=leukemia.symbols, dataset.factor=leukemia.pheno)
-    rMTT = R.r['mixTtest']
-    raw_res = rMTT(dataset=R.r['leukemia.symbols'], dataset_factor=R.r['leukemia.pheno'])
-    result = mixTable(exp, raw_res, ctx['filename'])
+    tt = R.r['mixTtest'](
+        dataset=ctx["leukemia_symbols"].to_r_obj(),
+        dataset_factor=ctx["leukemia_pheno"].to_r_obj()
+    )
+    result = mixTable(exp, tt, ctx['filename'])
     result.title = "T-test"
     ctx.update({"result": result})
     return ctx
 
 @task(name='workflow.wrappers.mix_global_test')
 def mix_global_test(ctx):
-    importr("miXGENE", lib_loc=R_LIB_CUSTOM_PATH)
-    R.r['options'](warn=-1)
-
     exp = Experiment.objects.get(e_id = ctx['exp_id'])
 
     rdata = R.r['data']
-    rdata('leukemia.symbols')
-    rdata('leukemia.pheno')
     rdata('msigdb.symbols')
 
-
-    rMGT = R.r['mixGlobaltest']
-    raw_res = rMGT(dataset=R.r['leukemia.symbols'], dataset_factor=R.r['leukemia.pheno'], gene_sets=R.r['msigdb.symbols'])
-
-    result = mixTable(exp, raw_res, ctx['filename'])
+    global_test = R.r['mixGlobaltest'](
+        dataset=ctx["leukemia_symbols"].to_r_obj(),
+        dataset_factor=ctx["leukemia_pheno"].to_r_obj(),
+        gene_sets=R.r['msigdb.symbols']
+    )
+    result = mixTable(exp, global_test, ctx['filename'])
     result.title = "Global test"
     ctx.update({"result": result})
     return ctx

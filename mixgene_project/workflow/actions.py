@@ -21,6 +21,7 @@ class AtomicAction(object):
         self.outmap = outmap #    local_name -> outer_name
 
     def do(self, ctx):
+        print "executing atomic action: %s" % self.name
         params = {}
         params.update(ctx)
         for name, local_name in self.inmap.iteritems():
