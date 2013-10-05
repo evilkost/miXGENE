@@ -31,8 +31,8 @@ class FileInputVar(AbsInputVar):
         self.geo_uid = None
 
     def set_file_type(self, file_type):
-        if file_type in ['user', 'ncbi_geo']:
+        if file_type in ['user', 'ncbi_geo', 'gmt']:
             self.file_type = file_type
         else:
-            raise Exception("file type should be either `user` or `ncbi_geo`, not %s" % type)
+            raise Exception("file type should be in [`user`, `ncbi_geo`, `gmt`], not %s" % type)
 
