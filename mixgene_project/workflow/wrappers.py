@@ -71,7 +71,7 @@ def leukemia_data_provider(ctx):
                        col_names=leukemia_pheno.has_col_names)
 
     ctx["leukemia_symbols"] = leukemia_symbols
-    ctx["leukemia_pheno"] = leukemia_pheno
+    ctx["leukemia_phenotype"] = leukemia_pheno
     return ctx
 
 
@@ -80,8 +80,8 @@ def pca_test(ctx):
     exp = Experiment.objects.get(e_id=ctx['exp_id'])
 
     pca = R.r['mixPca'](
-        dataset=ctx["leukemia_symbols"].to_r_obj(),
-        dataset_factor=ctx["leukemia_pheno"].to_r_obj()
+        dataset=ctx[ctx["symbols_var"]].to_r_obj(),
+        dataset_factor=ctx[ctx["phenotype_var"]].to_r_obj(),
     )
 
     result = mixPlot(exp, pca, ctx['filename'])
@@ -95,8 +95,8 @@ def svm_test(ctx):
     exp = Experiment.objects.get(e_id=ctx['exp_id'])
 
     svm = R.r['mixSvmLin'](
-        dataset=ctx["leukemia_symbols"].to_r_obj(),
-        dataset_factor=ctx["leukemia_pheno"].to_r_obj()
+        dataset=ctx[ctx["symbols_var"]].to_r_obj(),
+        dataset_factor=ctx[ctx["phenotype_var"]].to_r_obj(),
     )
 
     result = mixML(exp, svm, ctx['filename'])
@@ -110,8 +110,8 @@ def tt_test(ctx):
     exp = Experiment.objects.get(e_id = ctx['exp_id'])
 
     tt = R.r['mixTtest'](
-        dataset=ctx["leukemia_symbols"].to_r_obj(),
-        dataset_factor=ctx["leukemia_pheno"].to_r_obj()
+        dataset=ctx[ctx["symbols_var"]].to_r_obj(),
+        dataset_factor=ctx[ctx["phenotype_var"]].to_r_obj(),
     )
     result = mixTable(exp, tt, ctx['filename'])
     result.title = "T-test"
@@ -126,8 +126,8 @@ def mix_global_test(ctx):
     rdata('msigdb.symbols')
 
     global_test = R.r['mixGlobaltest'](
-        dataset=ctx["leukemia_symbols"].to_r_obj(),
-        dataset_factor=ctx["leukemia_pheno"].to_r_obj(),
+        dataset=ctx[ctx["symbols_var"]].to_r_obj(),
+        dataset_factor=ctx[ctx["phenotype_var"]].to_r_obj(),
         gene_sets=R.r['msigdb.symbols']
     )
     result = mixTable(exp, global_test, ctx['filename'])

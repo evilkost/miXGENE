@@ -1,0 +1,10 @@
+<div class="form-group">
+    <div class="col-lg-offset-1 col-lg-10">
+        <div class="checkbox">
+            <label class="control-label">
+                <input class="checkbox" name="{{ input_var.name}}" type="checkbox" {% if input_var.value == True %} checked {% endif %}> </input>
+                {{ input_var.description }}
+            </label>
+        </div>
+    </div>
+</div>

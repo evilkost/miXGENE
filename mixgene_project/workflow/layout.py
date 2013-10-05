@@ -5,6 +5,7 @@ from celery import task
 
 from workflow.actions import AtomicAction, SeqActions, ParActions, exc_action, set_exp_status, collect_results
 from webapp.models import UploadedData, Experiment
+from workflow.common_tasks import soft_to_r_objects
 from workflow.input import CheckBoxInputVar, FileInputVar
 from workflow.result import mixTable
 from wrappers import r_test_algo, pca_test, svm_test, tt_test, mix_global_test, leukemia_data_provider
@@ -32,6 +33,7 @@ class AbstractWorkflowLayout(object):
     def __init__(self, *args, **kwargs):
         self.input_vars = {}
         self.result_vars = []
+        self.init_ctx = {}
 
     def validate_ctx(self, exp, request):
         """
@@ -163,31 +165,38 @@ class TestMultiAlgo(AbstractWorkflowLayout):
             "do_global_test":  CheckBoxInputVar("do_global_test", "", "Enable Global test", is_checked=False),
             "do_linsvm": CheckBoxInputVar("do_linsvm", "", "Enable linear SVM classifier", is_checked=False),
             "do_t_test": CheckBoxInputVar("do_t_test", "", "Enable T-test", is_checked=True),
+
         })
         self.result_vars = ["pca_result", "mgt_result", "svm_result", "tt_result", ]
 
-    def validate_exp(self, exp, request):
-        ctx = exp.get_ctx()
-        fm = TestMultiAlgoForm(data=request.POST)
-        if fm.is_valid():
-            if any(fm.cleaned_data[f] for f in ["do_global_test", "do_linsvm", "do_pca", "do_t_test"]):
-                errors = None
-                for var_name, inp_var in ctx["input_vars"].iteritems():
-                    if var_name in fm.cleaned_data:
-                        inp_var.value = fm.cleaned_data[inp_var.name]
-            else:
-                errors = {"message": "At least one test should be enabled!"}
-        else:
-            errors = {"message": "some_errors"}
-
-        ctx.update({
+        self.init_ctx = {
             "pca_points_filename": "pca_points.csv",
             "svm_factors_filename": "linsvm_factor_vec.csv",
             "tt_test_filename": "tt_table.csv",
             "mix_global_test_filename": "mix_global_test.csv",
 
             "linsvm_header": ["sample #", "class" ],
-        })
+
+            "symbols_var": "leukemia_symbols",
+            "phenotype_var": "leukemia_phenotype",
+        }
+
+    def validate_exp(self, exp, request):
+        ctx = exp.get_ctx()
+        errors = {"message": "some_errors"}
+        if request is not None:
+            fm = TestMultiAlgoForm(data=request.POST)
+            if fm.is_valid():
+                if any(fm.cleaned_data[f] for f in ["do_global_test", "do_linsvm", "do_pca", "do_t_test"]):
+                    errors = None
+                    for var_name, inp_var in ctx["input_vars"].iteritems():
+                        if var_name in fm.cleaned_data:
+                            inp_var.value = fm.cleaned_data[inp_var.name]
+                else:
+                    errors = {"message": "At least one test should be enabled!"}
+
+
+        ctx.update()
         return (ctx, errors)
 
     def get_main_action(self, ctx):
@@ -218,6 +227,85 @@ class TestMultiAlgo(AbstractWorkflowLayout):
 
         return SeqActions("main_action", [
             get_leukemia_data_action,
+            alg_actions,
+            collect_res_action
+        ])
+
+class TestMultiAlgo2(AbstractWorkflowLayout):
+    def __init__(self):
+        super(TestMultiAlgo2, self).__init__()
+        self.template = "workflow/test_multi_algo.html"
+        self.template_result = "workflow/test_multi_algo_result.html"
+
+        self.input_vars.update({
+            "do_pca": CheckBoxInputVar("do_pca", "", "Enable PCA", is_checked=False),
+            "do_global_test":  CheckBoxInputVar("do_global_test", "", "Enable Global test", is_checked=False),
+            "do_linsvm": CheckBoxInputVar("do_linsvm", "", "Enable linear SVM classifier", is_checked=False),
+            "do_t_test": CheckBoxInputVar("do_t_test", "", "Enable T-test", is_checked=True),
+
+            "dataset": FileInputVar("dataset", "Dataset", "Test dataset, please provide file in SOFT format")
+        })
+        self.result_vars = ["pca_result", "mgt_result", "svm_result", "tt_result", ]
+
+        self.init_ctx = {
+            "pca_points_filename": "pca_points.csv",
+            "svm_factors_filename": "linsvm_factor_vec.csv",
+            "tt_test_filename": "tt_table.csv",
+            "mix_global_test_filename": "mix_global_test.csv",
+
+            "linsvm_header": ["sample #", "class" ],
+
+            "symbols_var": "symbols",
+            "phenotype_var": "phenotype",
+            "dataset_var": "dataset",
+        }
+
+    def validate_exp(self, exp, request):
+        ctx = exp.get_ctx()
+        errors = {"message": "some_errors"}
+        if request is not None:
+            fm = TestMultiAlgoForm(data=request.POST)
+            if fm.is_valid():
+                if any(fm.cleaned_data[f] for f in ["do_global_test", "do_linsvm", "do_pca", "do_t_test"]):
+                    errors = None
+                    for var_name, inp_var in ctx["input_vars"].iteritems():
+                        if var_name in fm.cleaned_data:
+                            inp_var.value = fm.cleaned_data[inp_var.name]
+                else:
+                    errors = {"message": "At least one test should be enabled!"}
+
+
+        ctx.update()
+        return (ctx, errors)
+
+    def get_main_action(self, ctx):
+        prepare_dataset = AtomicAction("prepare_dataset", soft_to_r_objects, {}, {})
+
+        pca_action = AtomicAction("pca_action", pca_test, {"pca_points_filename": "filename"}, {"result": "pca_result"})
+        svm_action = AtomicAction("svm_action", svm_test, {"svm_factors_filename": "filename"}, {"result": "svm_result"})
+        tt_action = AtomicAction("tt_action", tt_test, {"tt_test_filename": "filename"}, {"result": "tt_result"})
+        mix_global_test_action = AtomicAction("mix_global_test", mix_global_test,
+                                              {"mix_global_test_filename": "filename"}, {"result": "mgt_result"})
+
+        par_actions = []
+
+        if ctx["input_vars"]["do_global_test"].value:
+            par_actions.append(mix_global_test_action)
+
+        if ctx["input_vars"]["do_linsvm"].value:
+            par_actions.append(svm_action)
+
+        if ctx["input_vars"]["do_pca"].value:
+            par_actions.append(pca_action)
+
+        if ctx["input_vars"]["do_t_test"].value:
+            par_actions.append(tt_action)
+
+        alg_actions = ParActions("alg_action", par_actions)
+        collect_res_action = AtomicAction("collect_results", collect_results, {}, {})
+
+        return SeqActions("main_action", [
+            prepare_dataset,
             alg_actions,
             collect_res_action
         ])

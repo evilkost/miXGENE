@@ -19,19 +19,13 @@
         <input type="hidden" name="exp_id" value="{{ exp.e_id }}" />
 
         {% for var_name, input_var in ctx.input_vars.iteritems %}
-            <div class="form-group">
-                {% if input_var.input_type == "checkbox" %}
-                <div class="col-lg-offset-1 col-lg-10">
-                    <div class="checkbox">
-                        <label class="control-label">
-                            <input class="checkbox" name="{{ input_var.name}}" type="checkbox" {% if input_var.value == True %} checked {% endif %}> </input>
-                            {{ input_var.description }}
-                        </label>
-                    </div>
-                </div>
-                {% endif %}
-
-            </div>
+            <p> {{ var_name }} {{ input_var.input_type }} </p>
+            {% if input_var.input_type == "checkbox" %}
+                {% include "workflow/input/checkbox.html" %}
+            {% endif %}
+            {% if input_var.input_type == "file" %}
+                {% include "workflow/input/file_input.html" %}
+            {% endif %}
         {% endfor %}
         <!--
         <input type="text" placeholder="1..150" name="samples_num" value="{{ ctx.samples_num }}" /> <br />

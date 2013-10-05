@@ -26,6 +26,7 @@ class FileInputVar(AbsInputVar):
 
         self.file_type = None
         self.filename = None
+        self.filepath = None
         self.file_format = None
         self.geo_uid = None
 

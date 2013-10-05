@@ -223,17 +223,17 @@ def create_experiment(request, layout_id):
     exp = Experiment(
         author=request.user,
         workflow=layout,
-        status='initiated', # TODO: until layout configuration will be implemented
+        status='initiated',  # TODO: until layout configuration will be implemented
     )
     exp.save()
-    exp.update_ctx({
+    ctx = wf.init_ctx
+    ctx.update({
         "exp_id": exp.e_id,
-        "exp_fetching_data_var": set(),
-        "exp_file_vars": {}, # var_name->FileInput object
 
         "input_vars": wf.input_vars,
         "result_vars": wf.result_vars,
     })
+    exp.update_ctx(ctx)
 
     mkdir(exp.get_data_folder())
 
