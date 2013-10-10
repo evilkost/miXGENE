@@ -1,5 +1,6 @@
 import rpy2.robjects as R
 from rpy2.robjects.packages import importr
+from workflow.parsers import parse_gmt
 
 from mixgene.settings import R_LIB_CUSTOM_PATH
 importr("miXGENE", lib_loc=R_LIB_CUSTOM_PATH)
@@ -72,3 +73,25 @@ class MixPheno(object):
         r_obj.do_slot_assign("phenotype", fact_vec)
 
         return r_obj
+
+
+
+class GeneSets(object):
+    def __init__(self):
+        """
+            Stores in .gmt file format
+        """
+        self.r_class = "mixGeneSets"
+
+        self.gene_units = None
+        self.set_units = None
+
+        self.filename = None
+        self.filepath = None
+
+    def get_gmt(self):
+        return parse_gmt(self.filepath)
+
+    def to_r_obj(self):
+        gmt = parse_gmt(self.filepath)
+        return gmt.to_r_obj()

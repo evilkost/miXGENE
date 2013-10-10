@@ -5,7 +5,7 @@ from celery import task
 
 from workflow.actions import AtomicAction, SeqActions, ParActions, exc_action, set_exp_status, collect_results
 from webapp.models import UploadedData, Experiment
-from workflow.common_tasks import soft_to_r_objects
+from workflow.common_tasks import preprocess_soft, converse_probes_to_genes
 from workflow.input import CheckBoxInputVar, FileInputVar
 from workflow.result import mixTable
 from wrappers import r_test_algo, pca_test, svm_test, tt_test, mix_global_test, leukemia_data_provider
@@ -24,8 +24,8 @@ def wait_task(ctx):
 def write_result(ctx):
     print ctx['exp_id']
 
-#TODO: Or generate from json DSL
 
+#TODO: Or generate from json DSL
 class AbstractWorkflowLayout(object):
     """
         Sceletone to create custom workflows
@@ -177,7 +177,7 @@ class TestMultiAlgo(AbstractWorkflowLayout):
 
             "linsvm_header": ["sample #", "class" ],
 
-            "symbols_var": "leukemia_symbols",
+            "expression_var": "leukemia_symbols",
             "phenotype_var": "leukemia_phenotype",
         }
 
@@ -255,8 +255,11 @@ class TestMultiAlgo2(AbstractWorkflowLayout):
 
             "linsvm_header": ["sample #", "class" ],
 
-            "symbols_var": "symbols",
+            "expression_var": "expression",
+            "expression_trans_var": "expression",
             "phenotype_var": "phenotype",
+            "gene_sets_var": "gene_sets",
+
             "dataset_var": "dataset",
         }
 
@@ -279,7 +282,10 @@ class TestMultiAlgo2(AbstractWorkflowLayout):
         return (ctx, errors)
 
     def get_main_action(self, ctx):
-        prepare_dataset = AtomicAction("prepare_dataset", soft_to_r_objects, {}, {})
+        prepare_dataset = AtomicAction("prepare_dataset", preprocess_soft, {}, {})
+
+        convers_probes = AtomicAction("convers_probes", converse_probes_to_genes, {}, {})
+
 
         pca_action = AtomicAction("pca_action", pca_test, {"pca_points_filename": "filename"}, {"result": "pca_result"})
         svm_action = AtomicAction("svm_action", svm_test, {"svm_factors_filename": "filename"}, {"result": "svm_result"})
@@ -306,6 +312,7 @@ class TestMultiAlgo2(AbstractWorkflowLayout):
 
         return SeqActions("main_action", [
             prepare_dataset,
+            convers_probes,
             alg_actions,
             collect_res_action
         ])

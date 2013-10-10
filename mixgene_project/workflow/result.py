@@ -51,7 +51,9 @@ class mixTable(object):
         self.title = "mixTable"
 
         self.caption = rMixTable.do_slot('caption')[0]
-        self.working_units = list(rMixTable.do_slot('working.units'))
+
+        # FIXME: produce long-long list which poison ctx object. store in file or ignore
+        self.working_units = [] #list(rMixTable.do_slot('working.units'))
 
         self.filename = csv_filename
         self.filepath = exp.get_data_file_path(csv_filename)

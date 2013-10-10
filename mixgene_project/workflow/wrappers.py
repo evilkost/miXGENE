@@ -80,7 +80,7 @@ def pca_test(ctx):
     exp = Experiment.objects.get(e_id=ctx['exp_id'])
 
     pca = R.r['mixPca'](
-        dataset=ctx[ctx["symbols_var"]].to_r_obj(),
+        dataset=ctx[ctx["expression_var"]].to_r_obj(),
         dataset_factor=ctx[ctx["phenotype_var"]].to_r_obj(),
     )
 
@@ -95,7 +95,7 @@ def svm_test(ctx):
     exp = Experiment.objects.get(e_id=ctx['exp_id'])
 
     svm = R.r['mixSvmLin'](
-        dataset=ctx[ctx["symbols_var"]].to_r_obj(),
+        dataset=ctx[ctx["expression_var"]].to_r_obj(),
         dataset_factor=ctx[ctx["phenotype_var"]].to_r_obj(),
     )
 
@@ -110,7 +110,7 @@ def tt_test(ctx):
     exp = Experiment.objects.get(e_id = ctx['exp_id'])
 
     tt = R.r['mixTtest'](
-        dataset=ctx[ctx["symbols_var"]].to_r_obj(),
+        dataset=ctx[ctx["expression_var"]].to_r_obj(),
         dataset_factor=ctx[ctx["phenotype_var"]].to_r_obj(),
     )
     result = mixTable(exp, tt, ctx['filename'])
@@ -126,7 +126,7 @@ def mix_global_test(ctx):
     rdata('msigdb.symbols')
 
     global_test = R.r['mixGlobaltest'](
-        dataset=ctx[ctx["symbols_var"]].to_r_obj(),
+        dataset=ctx[ctx["expression_var"]].to_r_obj(),
         dataset_factor=ctx[ctx["phenotype_var"]].to_r_obj(),
         gene_sets=R.r['msigdb.symbols']
     )

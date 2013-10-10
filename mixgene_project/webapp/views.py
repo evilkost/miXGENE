@@ -191,15 +191,6 @@ def alter_exp(request, exp_id, action):
 
     if action == 'update':
         exp.validate(request)
-        """
-        new_ctx, errors = wf.validate_exp(exp, request)
-        if errors is None:
-            exp.status = "configured"
-        else:
-            exp.status = "initiated"
-        exp.update_ctx(new_ctx)
-        exp.save()
-        """
 
     return redirect(request.POST.get("next") or "/experiment/%s" % exp.e_id) # TODO use reverse
 

@@ -1,3 +1,4 @@
+from collections import defaultdict
 from redis import Redis
 from settings import REDIS_HOST, REDIS_PORT
 from subprocess import Popen, PIPE
@@ -97,3 +98,11 @@ def prepare_GEO_ftp_url(geo_uid, file_format):
         raise Exception("db_type %s isn't supported yet" % db_type)
 
     return url, compressed_filename, filename
+
+
+def transpose_dict_list(gmt):
+    set_by_gene = defaultdict(list)
+    for set_id, genes in gmt.gene_sets.iteritems():
+        for gen in genes:
+            set_by_gene[gen].append(set_id)
+    return set_by_gene
