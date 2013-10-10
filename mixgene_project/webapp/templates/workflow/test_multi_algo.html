@@ -14,29 +14,32 @@
     </p>
 
     {% if configurable %}
+
+    {% for var_name, input_var in ctx.input_vars.iteritems %}
+        {% if input_var.input_type == "file" %}
+            {% include "workflow/input/file_input.html" %}
+        {% endif %}
+    {% endfor %}
+
+
     <form class="form-horizontal" role="form" method=post action="{% url 'webapp.views.alter_exp' exp.e_id 'update' %}"/>
         {% csrf_token %}
         <input type="hidden" name="exp_id" value="{{ exp.e_id }}" />
 
         {% for var_name, input_var in ctx.input_vars.iteritems %}
-            <p> {{ var_name }} {{ input_var.input_type }} </p>
             {% if input_var.input_type == "checkbox" %}
                 {% include "workflow/input/checkbox.html" %}
             {% endif %}
-            {% if input_var.input_type == "file" %}
-                {% include "workflow/input/file_input.html" %}
+            {% if input_var.input_type == "group" %}
+                {% include "workflow/input/group.html" with group=input_var %}
             {% endif %}
         {% endfor %}
-        <!--
-        <input type="text" placeholder="1..150" name="samples_num" value="{{ ctx.samples_num }}" /> <br />
-        -->
 
         <div class="form-actions col-lg-offset-1 col-lg-10">
             <button type="submit" name="update_configuration"
                     class="btn btn-default btn-lg btn-block">Save configuration</button>
 
         </div>
-
     </form>
     {% endif %}
 </div>

@@ -1,6 +1,5 @@
 from uuid import uuid1
 
-# TODO: Add Input group
 
 class AbsInputVar(object):
     def __init__(self, name, title, description, *args, **kwargs):
@@ -8,6 +7,13 @@ class AbsInputVar(object):
         self.title = title
         self.description = description
         self.uuid = str(uuid1())
+
+
+class InputGroup(AbsInputVar):
+    def __init__(self, *args, **kwargs):
+        super(InputGroup, self).__init__(*args, **kwargs)
+        self.input_type = "group"
+        self.inputs = kwargs.get("inputs", {})
 
 
 class CheckBoxInputVar(AbsInputVar):

@@ -6,7 +6,7 @@ from celery import task
 from workflow.actions import AtomicAction, SeqActions, ParActions, exc_action, set_exp_status, collect_results
 from webapp.models import UploadedData, Experiment
 from workflow.common_tasks import preprocess_soft, converse_probes_to_genes
-from workflow.input import CheckBoxInputVar, FileInputVar
+from workflow.input import CheckBoxInputVar, FileInputVar, InputGroup
 from workflow.result import mixTable
 from wrappers import r_test_algo, pca_test, svm_test, tt_test, mix_global_test, leukemia_data_provider
 
@@ -152,6 +152,7 @@ class TestMultiAlgoForm(forms.Form):
     do_linsvm = forms.BooleanField(required=False)
     do_pca = forms.BooleanField(required=False)
     do_t_test = forms.BooleanField(required=False)
+    convert_probes_to_genes = forms.BooleanField(required=False)
 
 
 class TestMultiAlgo(AbstractWorkflowLayout):
@@ -238,10 +239,16 @@ class TestMultiAlgo2(AbstractWorkflowLayout):
         self.template_result = "workflow/test_multi_algo_result.html"
 
         self.input_vars.update({
-            "do_pca": CheckBoxInputVar("do_pca", "", "Enable PCA", is_checked=False),
-            "do_global_test":  CheckBoxInputVar("do_global_test", "", "Enable Global test", is_checked=False),
-            "do_linsvm": CheckBoxInputVar("do_linsvm", "", "Enable linear SVM classifier", is_checked=False),
-            "do_t_test": CheckBoxInputVar("do_t_test", "", "Enable T-test", is_checked=True),
+            "common_settings": InputGroup("common", "Settings", "", inputs={
+                "convert_probes_to_genes": CheckBoxInputVar("convert_probes_to_genes", "",
+                    "Convert Probe ID to ENTREZ_GENE_ID and operate with genes as units"),
+            }),
+            "algo_switch": InputGroup("algo_switch", "Choose plugins", "", inputs={
+                "do_pca": CheckBoxInputVar("do_pca", "", "Enable PCA", is_checked=False),
+                "do_global_test":  CheckBoxInputVar("do_global_test", "", "Enable Global test", is_checked=False),
+                "do_linsvm": CheckBoxInputVar("do_linsvm", "", "Enable linear SVM classifier", is_checked=False),
+                "do_t_test": CheckBoxInputVar("do_t_test", "", "Enable T-test", is_checked=True),
+            }),
 
             "dataset": FileInputVar("dataset", "Dataset", "Test dataset, please provide file in SOFT format")
         })
@@ -272,20 +279,30 @@ class TestMultiAlgo2(AbstractWorkflowLayout):
                 if any(fm.cleaned_data[f] for f in ["do_global_test", "do_linsvm", "do_pca", "do_t_test"]):
                     errors = None
                     for var_name, inp_var in ctx["input_vars"].iteritems():
+                        if inp_var.input_type == "group":
+                            for var_name_inner, inp_var_inner in inp_var.inputs.iteritems():
+                                if var_name_inner in fm.cleaned_data:
+                                    inp_var_inner.value = fm.cleaned_data[var_name_inner]
                         if var_name in fm.cleaned_data:
                             inp_var.value = fm.cleaned_data[inp_var.name]
                 else:
                     errors = {"message": "At least one test should be enabled!"}
 
+        if ctx["input_vars"]["common_settings"].inputs["convert_probes_to_genes"]:
+            ctx["units"] = "genes"
+        else:
+            ctx["units"] = "probes"
 
-        ctx.update()
         return (ctx, errors)
 
     def get_main_action(self, ctx):
+        main_sequence = []
         prepare_dataset = AtomicAction("prepare_dataset", preprocess_soft, {}, {})
+        main_sequence.append(prepare_dataset)
 
-        convers_probes = AtomicAction("convers_probes", converse_probes_to_genes, {}, {})
-
+        if ctx["input_vars"]["common_settings"].inputs["convert_probes_to_genes"]:
+            convers_probes = AtomicAction("convers_probes", converse_probes_to_genes, {}, {})
+            main_sequence.append(convers_probes)
 
         pca_action = AtomicAction("pca_action", pca_test, {"pca_points_filename": "filename"}, {"result": "pca_result"})
         svm_action = AtomicAction("svm_action", svm_test, {"svm_factors_filename": "filename"}, {"result": "svm_result"})
@@ -295,24 +312,22 @@ class TestMultiAlgo2(AbstractWorkflowLayout):
 
         par_actions = []
 
-        if ctx["input_vars"]["do_global_test"].value:
+        if ctx["input_vars"]["algo_switch"].inputs["do_global_test"].value and ctx["units"] == "genes":
             par_actions.append(mix_global_test_action)
 
-        if ctx["input_vars"]["do_linsvm"].value:
+        if ctx["input_vars"]["algo_switch"].inputs["do_linsvm"].value:
             par_actions.append(svm_action)
 
-        if ctx["input_vars"]["do_pca"].value:
+        if ctx["input_vars"]["algo_switch"].inputs["do_pca"].value:
             par_actions.append(pca_action)
 
-        if ctx["input_vars"]["do_t_test"].value:
+        if ctx["input_vars"]["algo_switch"].inputs["do_t_test"].value:
             par_actions.append(tt_action)
 
         alg_actions = ParActions("alg_action", par_actions)
         collect_res_action = AtomicAction("collect_results", collect_results, {}, {})
 
-        return SeqActions("main_action", [
-            prepare_dataset,
-            convers_probes,
-            alg_actions,
-            collect_res_action
-        ])
+        main_sequence.append(alg_actions)
+        main_sequence.append(collect_res_action)
+
+        return SeqActions("main_action", main_sequence)

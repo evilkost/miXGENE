@@ -1,5 +1,6 @@
 from celery import task
 
+import rpy2.rinterface
 import rpy2.robjects as R
 from rpy2.robjects.packages import importr
 
@@ -120,16 +121,21 @@ def tt_test(ctx):
 
 @task(name='workflow.wrappers.mix_global_test')
 def mix_global_test(ctx):
-    exp = Experiment.objects.get(e_id = ctx['exp_id'])
+    exp = Experiment.objects.get(e_id=ctx['exp_id'])
 
-    rdata = R.r['data']
-    rdata('msigdb.symbols')
+    #rdata = R.r['data']
+    #rdata('msigdb.symbols')
 
+    gene_sets = ctx[ctx["gene_sets_var"]]
+
+    R.r["sink"]("aux")
     global_test = R.r['mixGlobaltest'](
         dataset=ctx[ctx["expression_var"]].to_r_obj(),
         dataset_factor=ctx[ctx["phenotype_var"]].to_r_obj(),
-        gene_sets=R.r['msigdb.symbols']
+        #gene_sets=R.r['msigdb.symbols']
+        gene_sets=gene_sets.to_r_obj(),
     )
+    R.r["sink"](rpy2.rinterface.NULL)
     result = mixTable(exp, global_test, ctx['filename'])
     result.title = "Global test"
     ctx.update({"result": result})
