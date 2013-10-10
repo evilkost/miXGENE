@@ -18,3 +18,7 @@ class ExpKeys(object):
     @staticmethod
     def get_all_exp_keys_key(exp_id):
         return "AERK-%s" % exp_id
+
+    @classmethod
+    def get_context_version_key(cls, exp_id):
+        return "CVP-%s" % exp_id

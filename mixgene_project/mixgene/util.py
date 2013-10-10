@@ -1,5 +1,5 @@
 from collections import defaultdict
-from redis import Redis
+from redis import StrictRedis
 from settings import REDIS_HOST, REDIS_PORT
 from subprocess import Popen, PIPE
 import os
@@ -7,7 +7,7 @@ from urlparse import urlparse
 import re
 
 def get_redis_instance():
-    return Redis(host=REDIS_HOST, port=REDIS_PORT)
+    return StrictRedis(host=REDIS_HOST, port=REDIS_PORT)
 
 def dyn_import(class_name):
     # with parent module

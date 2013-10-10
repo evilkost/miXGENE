@@ -25,22 +25,6 @@ class WorkflowLayout(models.Model):
         wfl_class = dyn_import(self.wfl_class)
         return wfl_class()
 
-#TODO: Introduce this class, use redis hashes underneath
-"""
-class ExpContext(object):
-    #
-    #    Replace for ctx dict.
-    #    It's used to store current variable of experiment in redis between workflow steps,
-    #        to acquire input parameters and store results.
-    #
-
-    def __init__(self, e_id):
-        self.e_id = e_id
-
-    def get_exp(self):
-        return Experiment.objects.get(e_id=self.e_id)
-"""
-
 
 class Experiment(models.Model):
     e_id = models.AutoField(primary_key=True)
@@ -68,6 +52,23 @@ class Experiment(models.Model):
     def __unicode__(self):
         return u"%s" % self.e_id
 
+    def init_ctx(self, ctx, redis_instance=None):
+        if redis_instance is None:
+            r = get_redis_instance()
+        else:
+            r = redis_instance
+
+        key_context = ExpKeys.get_context_store_key(self.e_id)
+        key_context_version = ExpKeys.get_context_version_key(self.e_id)
+
+        pipe = r.pipeline()
+
+        # FIXME: replace with MSET
+        pipe.set(key_context, pickle.dumps(ctx))
+        pipe.set(key_context_version, 0)
+
+        pipe.execute()
+
     def get_ctx(self, redis_instance=None):
         if redis_instance is None:
             r = get_redis_instance()
@@ -79,7 +80,7 @@ class Experiment(models.Model):
         if pickled_ctx is not None:
             ctx = pickle.loads(pickled_ctx)
         else:
-            ctx = dict() #{"error": "context wasn't stored"}
+            raise KeyError("Context wasn't found for exp_id: %s" % self.e_id)
         return ctx
 
     def update_ctx(self, new_ctx, redis_instance=None):
@@ -88,11 +89,47 @@ class Experiment(models.Model):
         else:
             r = redis_instance
 
-        ctx = self.get_ctx(redis_instance=r)
-        ctx.update(new_ctx)
-
         key_context = ExpKeys.get_context_store_key(self.e_id)
-        r.set(key_context, pickle.dumps(ctx))
+        key_context_version = ExpKeys.get_context_version_key(self.e_id)
+
+        result = None
+        lua = """
+        local ctx_version = tonumber(ARGV[1])
+        local actual_version = redis.call('GET', KEYS[1])
+        actual_version = tonumber(actual_version)
+        local result = "none"
+        if ctx_version == actual_version then
+            redis.call('SET', KEYS[1], actual_version + 1)
+            redis.call('SET', KEYS[2], ARGV[2])
+            result = "ok"
+        else
+            result = "fail"
+        end
+        return result
+        """
+        safe_update = r.register_script(lua)
+        # TODO: checkpoint for repeat if lua check version fails
+        retried = 0
+        while result != "ok" and retried < 4:
+            retried = 1
+            ctx_version, pickled_ctx = r.mget(key_context_version, key_context)
+            if pickled_ctx is not None:
+                ctx = pickle.loads(pickled_ctx)
+            else:
+                raise KeyError("Context wasn't found for exp_id: %s" % self.e_id)
+
+            ctx.update(new_ctx)
+            # TODO: move lua to dedicated module or singletone load in redis helper
+            #  keys: ctx_version_key, ctx_key
+            #  args: ctx_version,     ctx
+
+            result = safe_update(
+                keys=[key_context_version, key_context],
+                args=[ctx_version, pickle.dumps(ctx)])
+
+        if result != "ok":
+            raise Exception("Failed to update context")
+
 
     def get_data_folder(self):
         return '/'.join(map(str, [MEDIA_ROOT, 'data', self.author.id, self.e_id]))
@@ -155,11 +192,6 @@ class UploadedData(models.Model):
     var_name = models.CharField(max_length=255)
     filename = models.CharField(max_length=255, default="default")
     data = models.FileField(null=True, upload_to=content_file_name)
-
-    """ hmmm
-    src_type = models.CharField(max_length=31, default="user") # choices ["user", "ncbi_geo"]
-    geo_id = models.CharField(max_length=65, default="") # used only if src_type == ncbi_geo
-    """
 
     def __unicode__(self):
         return u"%s:%s" % (self.exp.e_id, self.var_name)

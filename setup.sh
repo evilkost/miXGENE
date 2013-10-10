@@ -25,7 +25,7 @@ quit
 
 
 # installing Django from PIP
-sudo pip install -U Django South Celery django-celery redis pandas
+sudo pip install -U Django South Celery django-celery redis hiredis pandas
 
 
 # init base db tables and prepare for migrations
