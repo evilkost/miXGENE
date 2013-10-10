@@ -224,7 +224,7 @@ def create_experiment(request, layout_id):
         "input_vars": wf.input_vars,
         "result_vars": wf.result_vars,
     })
-    exp.update_ctx(ctx)
+    exp.init_ctx(ctx)
 
     mkdir(exp.get_data_folder())
 

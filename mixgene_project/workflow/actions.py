@@ -115,8 +115,8 @@ def par_collect(ctx, pre_ctx, subtask_name, parent_task):
     key_done = ExpKeys.get_par_done_key(ctx['exp_id'])
     key_context = ExpKeys.get_par_context_result_key(ctx['exp_id'], subtask_name)
     member = subtask_name
-    r.zadd(key_done, member, 1)
-    r.set(key_context, pickle.dumps(ctx) )
+    r.zadd(key_done, 1, member)
+    r.set(key_context, pickle.dumps(ctx))
     r.sadd(ExpKeys.get_all_exp_keys_key(ctx['exp_id']), key_done)
     r.sadd(ExpKeys.get_all_exp_keys_key(ctx['exp_id']), key_context)
 
