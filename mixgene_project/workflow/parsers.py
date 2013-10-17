@@ -18,7 +18,7 @@ class GMT(object):
         mgs = R.r['new']('mixGeneSets')
         mgs.do_slot_assign("gene.sets", gene_sets)
         mgs.do_slot_assign("org", R.StrVector([self.org]))
-        mgs.do_slot_assign("org", R.StrVector([self.units]))
+        mgs.do_slot_assign("units", R.StrVector([self.units]))
 
         return mgs
 

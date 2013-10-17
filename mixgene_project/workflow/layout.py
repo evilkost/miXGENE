@@ -35,12 +35,39 @@ class AbstractWorkflowLayout(object):
         self.result_vars = []
         self.init_ctx = {}
 
-    def validate_ctx(self, exp, request):
+        self.input_form = None # ! define in descendants
+
+    def validate_exp(self, exp, request):
         """
             If all required fields are correctly configured set exp status to 'configured' and return None
             Otherwise return dict: {'field_name' -> 'error message'}
         """
-        pass
+        ctx = exp.get_ctx()
+        has_errors = False
+
+        if request is not None:
+            fm = self.input_form(data=request.POST)
+            if fm.is_valid():
+                for var_name, inp_var in ctx["input_vars"].iteritems():
+                    if inp_var.input_type == "group":
+                        for var_name_inner, inp_var_inner in inp_var.inputs.iteritems():
+                            if var_name_inner in fm.cleaned_data:
+                                inp_var_inner.value = fm.cleaned_data[var_name_inner]
+                            elif inp_var_inner.required:
+                                has_errors = True
+                                inp_var_inner.error = "This option is required"
+
+                    if var_name in fm.cleaned_data:
+                        inp_var.value = fm.cleaned_data[inp_var.name]
+                    elif inp_var.required: #FIXME: what if we get empty string :)
+                        has_errors = True
+                        inp_var.error = "This option is required"
+            else:
+                has_errors = True
+
+        return ctx, has_errors
+
+
 
     def run_experiment(self, exp):
         """
@@ -238,6 +265,7 @@ class TestMultiAlgo2(AbstractWorkflowLayout):
         self.template = "workflow/test_multi_algo.html"
         self.template_result = "workflow/test_multi_algo_result.html"
 
+        self.input_form = TestMultiAlgoForm
         self.input_vars.update({
             "common_settings": InputGroup("common", "Settings", "", inputs={
                 "convert_probes_to_genes": CheckBoxInputVar("convert_probes_to_genes", "",
@@ -271,29 +299,37 @@ class TestMultiAlgo2(AbstractWorkflowLayout):
         }
 
     def validate_exp(self, exp, request):
-        ctx = exp.get_ctx()
-        errors = {"message": "some_errors"}
+        ctx, has_errors = super(TestMultiAlgo2, self).validate_exp(exp, request)
+
+        # idea
+        #errors = [] # keys of errors
+        #errors_messages = {} # errors messages
+
         if request is not None:
             fm = TestMultiAlgoForm(data=request.POST)
             if fm.is_valid():
-                if any(fm.cleaned_data[f] for f in ["do_global_test", "do_linsvm", "do_pca", "do_t_test"]):
-                    errors = None
-                    for var_name, inp_var in ctx["input_vars"].iteritems():
-                        if inp_var.input_type == "group":
-                            for var_name_inner, inp_var_inner in inp_var.inputs.iteritems():
-                                if var_name_inner in fm.cleaned_data:
-                                    inp_var_inner.value = fm.cleaned_data[var_name_inner]
-                        if var_name in fm.cleaned_data:
-                            inp_var.value = fm.cleaned_data[inp_var.name]
-                else:
-                    errors = {"message": "At least one test should be enabled!"}
+                if not any(fm.cleaned_data[f] for f in ["do_global_test", "do_linsvm", "do_pca", "do_t_test"]):
+                    has_errors = True
+                    self.input_vars["algo_switch"].error = "At least one test should be enabled!"
+
+            #TODO: other specific checks
+
+        if ctx["dataset_var"] in ctx["input_vars"]:
+            print "is_done: ", ctx["input_vars"][ctx["dataset_var"]].is_done
+            if not ctx["input_vars"][ctx["dataset_var"]].is_done:
+                has_errors = True
+
+        if has_errors:
+            errors = {"foo": "bar"}
+        else:
+            errors = None
 
         if ctx["input_vars"]["common_settings"].inputs["convert_probes_to_genes"]:
             ctx["units"] = "genes"
         else:
             ctx["units"] = "probes"
 
-        return (ctx, errors)
+        return ctx, errors
 
     def get_main_action(self, ctx):
         main_sequence = []

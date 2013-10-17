@@ -1,5 +1,7 @@
 from uuid import uuid1
 
+#TODO: Maybe somehow merge with django form fields
+
 
 class AbsInputVar(object):
     def __init__(self, name, title, description, *args, **kwargs):
@@ -7,6 +9,10 @@ class AbsInputVar(object):
         self.title = title
         self.description = description
         self.uuid = str(uuid1())
+
+        self.required = kwargs.get("required", False)
+
+        self.error = None
 
 
 class InputGroup(AbsInputVar):
@@ -34,7 +40,9 @@ class FileInputVar(AbsInputVar):
         self.filename = None
         self.filepath = None
         self.file_format = None
+
         self.geo_uid = None
+        self.geo_type = None
 
     def set_file_type(self, file_type):
         if file_type in ['user', 'ncbi_geo', 'gmt']:

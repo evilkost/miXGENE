@@ -37,6 +37,8 @@ def fetch_geo_gse(exp, var_name, geo_uid, file_format):
     fi.filename = target_filename
     fi.filepath = exp.get_data_file_path(target_filename)
     fi.geo_uid = geo_uid
+    fi.geo_type = geo_uid[:3]
+
     fi.file_format = file_format
     fi.set_file_type("ncbi_geo")
 
