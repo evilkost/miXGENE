@@ -1,5 +1,6 @@
 import os, shutil
 import cPickle as pickle
+import hashlib
 
 from django.db import models
 from django.contrib.auth.models import User
@@ -11,6 +12,44 @@ from mixgene.util import dyn_import
 
 
 # Create your models here.
+
+class CachedFile(models.Model):
+    uri = models.TextField(default="")
+    uri_sha = models.CharField(max_length=127, default="")
+    dt_updated = models.DateTimeField(auto_now=True)
+
+    def __unicode__(self):
+        return u"cached file of %s, updated at %s" % (self.uri, self.dt_updated)
+
+    def get_file_path(self):
+        return '/'.join(map(str, [MEDIA_ROOT, 'data', 'cache', self.uri_sha]))
+
+    def save(self, *args, **kwargs):
+        self.uri_sha = hashlib.sha256(self.uri).hexdigest()
+        super(CachedFile, self).save(*args, **kwargs)
+
+    @staticmethod
+    def update_cache(uri, path_to_real_file):
+        res = CachedFile.objects.filter(uri=uri)
+        if len(res) == 0:
+            cf = CachedFile()
+            cf.uri = uri;
+            cf.save()
+        else:
+            cf = res[0]
+
+        shutil.copy(path_to_real_file, cf.get_file_path())
+
+    @staticmethod
+    def look_up(uri):
+        res = CachedFile.objects.filter(uri=uri)
+        if len(res) == 0:
+            return None
+        else:
+            return res[0]
+
+
+
 class WorkflowLayout(models.Model):
     w_id = models.AutoField(primary_key=True)
     wfl_class = models.TextField(null=True)  ## i.e.: 'workflow.layout.SampleWfL'

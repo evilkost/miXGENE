@@ -1,11 +1,13 @@
 from collections import defaultdict
+import shutil
+import random
 from celery import task
 from pandas import Series, DataFrame
 
 from Bio.Geo import parse as parse_geo
 
 from mixgene.util import prepare_GEO_ftp_url, fetch_file_from_url, clean_GEO_file, transpose_dict_list
-from webapp.models import Experiment
+from webapp.models import Experiment, CachedFile
 from workflow.parsers import GMT
 from workflow.vars import MixData, MixPheno, GeneSets
 
@@ -19,23 +21,29 @@ def fetch_geo_gse(exp, var_name, geo_uid, file_format):
     dir_path = exp.get_data_folder()
 
     url, compressed_filename, filename = prepare_GEO_ftp_url(geo_uid, file_format)
-    fetch_file_from_url(url, "%s/%s" % (dir_path, compressed_filename))
 
+    mb_cached = CachedFile.look_up(url)
+    if mb_cached is None:
+        fetch_file_from_url(url, "%s/%s" % (dir_path, compressed_filename))
 
-    if file_format == "txt":
-        target_filename = "%s.clean.csv" % filename
-        clean_GEO_file(exp.get_data_file_path(filename),
-                       exp.get_data_file_path(target_filename))
+        if file_format == "txt":
+            target_filename = "%s.clean.csv" % filename
+            clean_GEO_file(exp.get_data_file_path(filename),
+                           exp.get_data_file_path(target_filename))
+            filename = target_filename
+
+        CachedFile.update_cache(url, exp.get_data_file_path(filename))
     else:
-        target_filename = filename
+        shutil.copy(mb_cached.get_file_path(), exp.get_data_file_path(filename))
+        print "copied file from cache"
 
     ctx = exp.get_ctx()
 
     fi = ctx["input_vars"][var_name]
     fi.is_done = True
     fi.is_being_fetched = False
-    fi.filename = target_filename
-    fi.filepath = exp.get_data_file_path(target_filename)
+    fi.filename = filename
+    fi.filepath = exp.get_data_file_path(filename)
     fi.geo_uid = geo_uid
     fi.geo_type = geo_uid[:3]
 
