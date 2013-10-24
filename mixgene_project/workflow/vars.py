@@ -94,4 +94,5 @@ class GeneSets(object):
 
     def to_r_obj(self):
         gmt = parse_gmt(self.filepath)
+        gmt.units = self.gene_units
         return gmt.to_r_obj()

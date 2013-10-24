@@ -136,6 +136,7 @@ def create_user(request):
 
 
 @login_required(login_url='/auth/login/')
+@never_cache
 def experiments(request):
     template = loader.get_template('experiments.html')
     context = RequestContext(request, {
@@ -159,7 +160,12 @@ def exp_details(request, exp_id):
         template = loader.get_template(wf.template)
 
     ctx = exp.get_ctx()
-    #import ipdb; ipdb.set_trace()
+    if 'results' not in ctx.keys():
+        ctx['results'] = {}
+    for res_var in ctx['result_vars']:
+        if res_var in ctx:
+            ctx['results'][res_var] = ctx[res_var]
+
     context = RequestContext(request, {
         "exp_page_active": True,
 
@@ -198,7 +204,6 @@ def alter_exp(request, exp_id, action):
         factors = json.loads(request.POST['factors'])
         exp.update_ctx({"gse_factors": factors})
         print factors
-    #    import ipdb; ipdb.set_trace();
 
     return redirect(request.POST.get("next") or "/experiment/%s" % exp.e_id) # TODO use reverse
 

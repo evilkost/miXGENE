@@ -100,9 +100,9 @@ def prepare_GEO_ftp_url(geo_uid, file_format):
     return url, compressed_filename, filename
 
 
-def transpose_dict_list(gmt):
+def transpose_dict_list(gene_sets):
     set_by_gene = defaultdict(list)
-    for set_id, genes in gmt.gene_sets.iteritems():
+    for set_id, genes in gene_sets.iteritems():
         for gen in genes:
             set_by_gene[gen].append(set_id)
     return set_by_gene

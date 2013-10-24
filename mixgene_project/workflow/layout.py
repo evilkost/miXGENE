@@ -5,7 +5,7 @@ from celery import task
 
 from workflow.actions import AtomicAction, SeqActions, ParActions, exc_action, set_exp_status, collect_results
 from webapp.models import UploadedData, Experiment
-from workflow.common_tasks import preprocess_soft, converse_probes_to_genes
+from workflow.common_tasks import preprocess_soft, converse_probes_to_genes, fetch_msigdb, map_gene_sets_to_probes
 from workflow.input import CheckBoxInputVar, FileInputVar, InputGroup
 from workflow.result import mixTable
 from wrappers import r_test_algo, pca_test, svm_test, tt_test, mix_global_test, leukemia_data_provider
@@ -258,6 +258,100 @@ class TestMultiAlgo(AbstractWorkflowLayout):
             alg_actions,
             collect_res_action
         ])
+
+class GeneSetsAggregationAlgo(AbstractWorkflowLayout):
+    def __init__(self):
+        super(GeneSetsAggregationAlgo, self).__init__()
+
+        self.template = "workflow/test_multi_algo.html"
+        self.template_result = "workflow/test_multi_algo_result.html"
+
+        self.input_form = TestMultiAlgoForm
+        self.input_vars.update({
+
+            #"algo_switch": InputGroup("algo_switch", "Choose plugins", "", inputs={
+            #    "do_pca": CheckBoxInputVar("do_pca", "", "Enable PCA", is_checked=False),
+            #    "do_global_test":  CheckBoxInputVar("do_global_test", "", "Enable Global test", is_checked=False),
+            #    "do_linsvm": CheckBoxInputVar("do_linsvm", "", "Enable linear SVM classifier", is_checked=False),
+            #    "do_t_test": CheckBoxInputVar("do_t_test", "", "Enable T-test", is_checked=True),
+            #}),
+
+            "dataset": FileInputVar("dataset", "Dataset", "Test dataset, please provide file in SOFT format")
+        })
+        self.result_vars = ["mgt_result", ]
+
+        self.init_ctx = {
+            "pca_points_filename": "pca_points.csv",
+            "svm_factors_filename": "linsvm_factor_vec.csv",
+            "tt_test_filename": "tt_table.csv",
+            "mix_global_test_filename": "mix_global_test.csv",
+
+            "linsvm_header": ["sample #", "class" ],
+
+            "expression_var": "expression",
+            "expression_trans_var": "expression",
+            "phenotype_var": "phenotype",
+
+            "gene_sets_var": "gene_sets",
+            "dataset_var": "dataset",
+            "msigdb_var": "msigdb",
+            "gs_probes_var_name": "gs_probes_merged",
+
+            "test_split_ratio": 0.3,
+        }
+
+    def get_main_action(self, ctx):
+        main_sequence = []
+
+        prepare_dataset = AtomicAction("prepare_dataset", preprocess_soft, {}, {})
+        fetch_msigdb_action = AtomicAction("fetch_msigdb", fetch_msigdb, {}, {})
+
+        par_action_1 = ParActions("par1", [
+            prepare_dataset, fetch_msigdb_action,])
+
+        main_sequence.append(par_action_1)
+
+        merge_msigdb_with_series_annotation = AtomicAction(
+            "map_gene_sets_to_probes", map_gene_sets_to_probes, {}, {})
+
+        main_sequence.append(merge_msigdb_with_series_annotation)
+
+        mix_global_test_action = AtomicAction("mix_global_test", mix_global_test,
+            {"mix_global_test_filename": "filename",
+             "gs_probes_var_name": "gene_sets_var"},
+            {"result": "mgt_result"}
+        )
+        main_sequence.append(mix_global_test_action)
+
+        return SeqActions("main_action", main_sequence)
+
+    def validate_exp(self, exp, request):
+        ctx, has_errors = super(GeneSetsAggregationAlgo, self).validate_exp(exp, request)
+
+        # idea
+        #errors = [] # keys of errors
+        #errors_messages = {} # errors messages
+
+        if request is not None:
+            fm = TestMultiAlgoForm(data=request.POST)
+            if fm.is_valid():
+                if not any(fm.cleaned_data[f] for f in ["do_global_test", "do_linsvm", "do_pca", "do_t_test"]):
+                    has_errors = True
+                    self.input_vars["algo_switch"].error = "At least one test should be enabled!"
+
+            #TODO: other specific checks
+
+        if ctx["dataset_var"] in ctx["input_vars"]:
+            print "is_done: ", ctx["input_vars"][ctx["dataset_var"]].is_done
+            if not ctx["input_vars"][ctx["dataset_var"]].is_done:
+                has_errors = True
+
+        if has_errors:
+            errors = {"foo": "bar"}
+        else:
+            errors = None
+        return ctx, errors
+
 
 class TestMultiAlgo2(AbstractWorkflowLayout):
     def __init__(self):

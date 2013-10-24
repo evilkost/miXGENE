@@ -100,8 +100,12 @@ def preprocess_soft(ctx):
 
     ctx[expression_var_name] = expression_var
 
-    factors = [soft[i].entity_attributes['Sample_title'].split(',')[0].split('_')[0] ## just for test
-               for i in range(3, len(soft))]
+    if "gse_factors" in ctx:
+        factors = ctx["gse_factors"]
+        factors = dict(filter(lambda (k, v):  v != '', factors.iteritems()))
+    else:
+        factors = [soft[i].entity_attributes['Sample_title'].split(',')[0].split('_')[0] ## just for test
+                   for i in range(3, len(soft))]
 
     df2 = DataFrame({"x": Series(factors)})
 
@@ -139,7 +143,7 @@ def converse_probes_to_genes(ctx):
     genesets_var_name = ctx["gene_sets_var"]
 
     gmt = ctx[genesets_var_name].get_gmt()
-    set_by_gene = transpose_dict_list(gmt)
+    set_by_gene = transpose_dict_list(gmt.gene_sets)
 
     expression_var = ctx[expression_var_name]
     src = DataFrame.from_csv(expression_var.filepath, sep=" ")
@@ -159,3 +163,68 @@ def converse_probes_to_genes(ctx):
     ctx[expression_trans_var_name] = expression_var_trans
 
     return ctx
+
+@task(name="workflow.common")
+def fetch_msigdb(ctx):
+    exp = Experiment.objects.get(e_id=ctx["exp_id"])
+
+    msigdb_gs = GeneSets()
+    msigdb_gs.gene_units = "ENTREZ_GENE_ID"
+    msigdb_gs.set_units = "gene_sets"
+
+    msigdb_gs.filename = "msigdb.v4.0.entrez.gmt"
+    msigdb_gs.filepath = exp.get_data_file_path(msigdb_gs.filename)
+
+    # TODO: be able to choose different db
+    url = "http://www.broadinstitute.org/gsea/msigdb/download_file.jsp?filePath=/resources/msigdb/4.0/msigdb.v4.0.entrez.gmt"
+
+    mb_cached = CachedFile.look_up(url)
+    if mb_cached is None:
+        fetch_file_from_url(url, msigdb_gs.filepath, do_unpuck=False)
+        CachedFile.update_cache(url, msigdb_gs.filepath)
+    else:
+        shutil.copy(mb_cached.get_file_path(), msigdb_gs.filepath)
+        print "copied file from cache"
+
+    ctx[ctx["msigdb_var"]] = msigdb_gs
+    return ctx
+
+
+@task(name="workflow.commont_tasks.map_gene_sets_to_probes")
+def map_gene_sets_to_probes(ctx):
+    exp = Experiment.objects.get(e_id=ctx["exp_id"])
+    msigdb_gs = ctx[ctx["msigdb_var"]]
+    assert msigdb_gs.gene_units == "ENTREZ_GENE_ID"
+
+    soft_var_name = ctx["dataset_var"]
+    soft_file_input = ctx["input_vars"][soft_var_name]
+    soft = list(parse_geo(open(soft_file_input.filepath)))
+    pl = soft[2].table_rows
+    id_idx = pl[0].index('ID')
+    entrez_idx = pl[0].index('ENTREZ_GENE_ID')
+    probe_to_genes_mapping = dict([(row[id_idx], row[entrez_idx].split(" /// ")) for row in pl[1:]])
+
+    genes_to_probes = transpose_dict_list(probe_to_genes_mapping)
+    genes_to_probes.pop("")
+    gs_to_probes = defaultdict(list)
+
+    msigdb_gmt = msigdb_gs.get_gmt()
+    for gs, gene_ids in msigdb_gmt.gene_sets.iteritems():
+        for gene_id in gene_ids:
+            gs_to_probes[gs].extend(genes_to_probes.get(gene_id, []))
+
+    new_gmt = GMT()
+    new_gmt.gene_sets = gs_to_probes
+    new_gmt.description = msigdb_gmt.description
+    new_gmt.units = ["PROBE_ID",]
+
+    new_gs = GeneSets()
+    new_gs.filename = "%s_gs.gmt" % ctx["gs_probes_var_name"]
+    new_gs.filepath = exp.get_data_file_path(new_gs.filename)
+    new_gs.gene_units = "PROBE_ID"
+    new_gs.set_units = "gene_sets"
+    new_gmt.write_file(new_gs.filepath)
+
+    ctx[ctx["gs_probes_var_name"]] = new_gs
+    return ctx
+
