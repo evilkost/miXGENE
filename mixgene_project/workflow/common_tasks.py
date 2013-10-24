@@ -53,6 +53,31 @@ def fetch_geo_gse(exp, var_name, geo_uid, file_format):
     exp.update_ctx(ctx)
     exp.validate(None)
 
+@task(name="workflow.common_tasks.split_train_test")
+def split_train_test(ctx):
+    phenotype = ctx[ctx["phenotype_var"]]
+    test_split_ratio = ctx["test_split_ratio"]
+
+    pheno_df = phenotype.get_df()
+    train_set_names = set(pheno_df.index)
+    test_set_names = set()
+    for sample_class, rows in pheno_df.groupby('x'):
+        num = len(rows)
+        idxs = range(num)
+        random.shuffle(idxs)
+        selected_idxs = idxs[:min(1, int(num*test_split_ratio))]
+
+        for i in selected_idxs:
+            test_set_names.add(rows.iloc[i].name)
+
+    train_set_names.difference_update(test_set_names)
+
+    ctx["test_split_names"] = {
+        "test_set": test_set_names,
+        "train_set": train_set_names,
+    }
+    return ctx
+
 @task(name="workflow.common_tasks.preprocess_soft")
 def preprocess_soft(ctx):
     """

@@ -1,6 +1,7 @@
 import rpy2.robjects as R
 from rpy2.robjects.packages import importr
 from workflow.parsers import parse_gmt
+from pandas import DataFrame
 
 from mixgene.settings import R_LIB_CUSTOM_PATH
 importr("miXGENE", lib_loc=R_LIB_CUSTOM_PATH)
@@ -73,6 +74,9 @@ class MixPheno(object):
         r_obj.do_slot_assign("phenotype", fact_vec)
 
         return r_obj
+
+    def get_df(self):
+        return DataFrame.from_csv(self.filepath, sep=' ')
 
 
 

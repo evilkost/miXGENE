@@ -6,6 +6,7 @@ from celery import task
 from workflow.actions import AtomicAction, SeqActions, ParActions, exc_action, set_exp_status, collect_results
 from webapp.models import UploadedData, Experiment
 from workflow.common_tasks import preprocess_soft, converse_probes_to_genes, fetch_msigdb, map_gene_sets_to_probes
+from workflow.common_tasks import split_train_test
 from workflow.input import CheckBoxInputVar, FileInputVar, InputGroup
 from workflow.result import mixTable
 from wrappers import r_test_algo, pca_test, svm_test, tt_test, mix_global_test, leukemia_data_provider
@@ -305,11 +306,14 @@ class GeneSetsAggregationAlgo(AbstractWorkflowLayout):
 
         prepare_dataset = AtomicAction("prepare_dataset", preprocess_soft, {}, {})
         fetch_msigdb_action = AtomicAction("fetch_msigdb", fetch_msigdb, {}, {})
+        prepare_split_train_test = AtomicAction("prepare_split_train_test",
+                                                split_train_test, {}, {})
 
         par_action_1 = ParActions("par1", [
             prepare_dataset, fetch_msigdb_action,])
 
         main_sequence.append(par_action_1)
+        main_sequence.append(prepare_split_train_test)
 
         merge_msigdb_with_series_annotation = AtomicAction(
             "map_gene_sets_to_probes", map_gene_sets_to_probes, {}, {})
