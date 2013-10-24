@@ -15,7 +15,23 @@
         <meta name="author" content="imvalgo@gmail.com">
 
         <script src="http://yandex.st/jquery/2.0.2/jquery.js"></script>
-        <script language="javascript" type="text/javascript" src="{% static 'flot/jquery.flot.js' %}"></script>
+
+
+
+        <!-- flot -->
+        <script type="text/javascript" src="//cdn.jsdelivr.net/jquery.flot/0.7/jquery.flot.crosshair.js"></script>
+        <script type="text/javascript" src="//cdn.jsdelivr.net/jquery.flot/0.7/jquery.flot.fillbetween.js"></script>
+        <script type="text/javascript" src="//cdn.jsdelivr.net/jquery.flot/0.7/jquery.flot.image.js"></script>
+        <script type="text/javascript" src="//cdn.jsdelivr.net/jquery.flot/0.7/jquery.flot.js"></script>
+        <script type="text/javascript" src="//cdn.jsdelivr.net/jquery.flot/0.7/jquery.flot.min.js"></script>
+        <script type="text/javascript" src="//cdn.jsdelivr.net/jquery.flot/0.7/jquery.flot.navigate.js"></script>
+        <script type="text/javascript" src="//cdn.jsdelivr.net/jquery.flot/0.7/jquery.flot.pie.js"></script>
+        <script type="text/javascript" src="//cdn.jsdelivr.net/jquery.flot/0.7/jquery.flot.resize.js"></script>
+        <script type="text/javascript" src="//cdn.jsdelivr.net/jquery.flot/0.7/jquery.flot.selection.js"></script>
+        <script type="text/javascript" src="//cdn.jsdelivr.net/jquery.flot/0.7/jquery.flot.stack.js"></script>
+        <script type="text/javascript" src="//cdn.jsdelivr.net/jquery.flot/0.7/jquery.flot.symbol.js"></script>
+        <script type="text/javascript" src="//cdn.jsdelivr.net/jquery.flot/0.7/jquery.flot.threshold.js"></script>
+        <!-- flot end -->
 
         <!-- bootstrap -->
         <!-- Latest compiled and minified CSS -->
@@ -28,13 +44,52 @@
         <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
         <!-- bootstrap end -->
 
+        <!-- tablesorter -->
+        <link type="text/css" rel="stylesheet" href="//cdn.jsdelivr.net/tablesorter/2.11.1/addons/pager/jquery.tablesorter.pager.css" />
+
+        <link type="text/css" rel="stylesheet" href="//cdn.jsdelivr.net/tablesorter/2.11.1/css/filter.formatter.css" />
+        <link type="text/css" rel="stylesheet" href="//cdn.jsdelivr.net/tablesorter/2.11.1/css/theme.black-ice.css" />
+        <link type="text/css" rel="stylesheet" href="//cdn.jsdelivr.net/tablesorter/2.11.1/css/theme.blue.css" />
+        <link type="text/css" rel="stylesheet" href="//cdn.jsdelivr.net/tablesorter/2.11.1/css/theme.bootstrap.css" />
+        <link type="text/css" rel="stylesheet" href="//cdn.jsdelivr.net/tablesorter/2.11.1/css/theme.dark.css" />
+        <link type="text/css" rel="stylesheet" href="//cdn.jsdelivr.net/tablesorter/2.11.1/css/theme.default.css" />
+        <link type="text/css" rel="stylesheet" href="//cdn.jsdelivr.net/tablesorter/2.11.1/css/theme.dropbox.css" />
+        <link type="text/css" rel="stylesheet" href="//cdn.jsdelivr.net/tablesorter/2.11.1/css/theme.green.css" />
+        <link type="text/css" rel="stylesheet" href="//cdn.jsdelivr.net/tablesorter/2.11.1/css/theme.grey.css" />
+        <link type="text/css" rel="stylesheet" href="//cdn.jsdelivr.net/tablesorter/2.11.1/css/theme.ice.css" />
+        <link type="text/css" rel="stylesheet" href="//cdn.jsdelivr.net/tablesorter/2.11.1/css/theme.jui.css" />
+
+        <script type="text/javascript" src="//cdn.jsdelivr.net/tablesorter/2.11.1/js/jquery.tablesorter.min.js"></script>
+        <script type="text/javascript" src="//cdn.jsdelivr.net/tablesorter/2.11.1/js/jquery.metadata.js"></script>
+        <script type="text/javascript" src="//cdn.jsdelivr.net/tablesorter/2.11.1/js/jquery.tablesorter.widgets-filter-formatter.min.js"></script>
+        <script type="text/javascript" src="//cdn.jsdelivr.net/tablesorter/2.11.1/js/jquery.tablesorter.widgets.min.js"></script>
+
+        <script type="text/javascript" src="//cdn.jsdelivr.net/tablesorter/2.11.1/addons/pager/jquery.tablesorter.pager.min.js"></script>
+
+        <script type="text/javascript" src="//cdn.jsdelivr.net/tablesorter/2.11.1/js/parsers/parser-date-iso8601.js"></script>
+        <script type="text/javascript" src="//cdn.jsdelivr.net/tablesorter/2.11.1/js/parsers/parser-date-month.js"></script>
+        <script type="text/javascript" src="//cdn.jsdelivr.net/tablesorter/2.11.1/js/parsers/parser-date-two-digit-year.js"></script>
+        <script type="text/javascript" src="//cdn.jsdelivr.net/tablesorter/2.11.1/js/parsers/parser-date-weekday.js"></script>
+        <script type="text/javascript" src="//cdn.jsdelivr.net/tablesorter/2.11.1/js/parsers/parser-date.js"></script>
+        <script type="text/javascript" src="//cdn.jsdelivr.net/tablesorter/2.11.1/js/parsers/parser-feet-inch-fraction.js"></script>
+        <script type="text/javascript" src="//cdn.jsdelivr.net/tablesorter/2.11.1/js/parsers/parser-ignore-articles.js"></script>
+        <script type="text/javascript" src="//cdn.jsdelivr.net/tablesorter/2.11.1/js/parsers/parser-input-select.js"></script>
+        <script type="text/javascript" src="//cdn.jsdelivr.net/tablesorter/2.11.1/js/parsers/parser-metric.js"></script>
+
+        <script type="text/javascript" src="//cdn.jsdelivr.net/tablesorter/2.11.1/js/widgets/widget-build-table.js"></script>
+        <script type="text/javascript" src="//cdn.jsdelivr.net/tablesorter/2.11.1/js/widgets/widget-editable.js"></script>
+        <script type="text/javascript" src="//cdn.jsdelivr.net/tablesorter/2.11.1/js/widgets/widget-grouping.js"></script>
+        <script type="text/javascript" src="//cdn.jsdelivr.net/tablesorter/2.11.1/js/widgets/widget-repeatheaders.js"></script>
+        <script type="text/javascript" src="//cdn.jsdelivr.net/tablesorter/2.11.1/js/widgets/widget-scroller.js"></script>
+        <!-- tablesorter end -->
+
 
         <link href="{% static 'css/flot_specific.css' %}" rel="stylesheet">
 
         <style>
             body {
-                padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
-                padding-bottom: 60px;
+                padding-top: 80px; /* 60px to make the container go all the way to the bottom of the topbar */
+                padding-bottom: 80px;
             }
         </style>
 

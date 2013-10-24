@@ -30,6 +30,8 @@ urlpatterns = patterns('',
     url(r'^get_flot_2d_scatter/(?P<exp_id>\d+)/(?P<filename>.*)$', 'webapp.views.get_flot_2d_scatter', name='get_flot_2d_scatter'),
     url(r'^get_csv_as_table/(?P<exp_id>\d+)/(?P<filename>.*)$', 'webapp.views.get_csv_as_table', name='get_csv_as_table'),
 
+    url(r'^get_gse_samples_info/(?P<exp_id>\d+)/(?P<var_name>.*)$', 'webapp.views.get_gse_samples_info',
+        name='get_gse_samples_info'),
     # Examples:
     # url(r'^$', 'mixgene.views.home', name='home'),
     # url(r'^mixgene/', include('mixgene.foo.urls')),

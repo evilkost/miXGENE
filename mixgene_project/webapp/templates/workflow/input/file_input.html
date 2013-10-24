@@ -1,23 +1,27 @@
 <div class="panel panel-default">
     <div class="panel-heading">
-        <h3>Source for <b>{{ input_var.title }}</b></h3>
-        <!-- p> {{ input_var.description }} </p -->
+        <h3>Source for <b>{{ input_var.title }}</b>
+
+        {% if input_var.is_done %}
+            <span class="pull-right">
+                <button class="btn btn-danger"> Delete </button>
+            </span>
+        {% endif %}
+        </h3>
     </div>
     <div class="panel-body">
 
     {% if input_var.is_done %}
         <div>
-            <p>
                 {% if input_var.file_type == "user" %}
                     File was uploaded by user under name {{ input_var.filename }}
                 {% endif %}
                 {% if input_var.file_type == "ncbi_geo" %}
                     File was fetched from NCBI GEO under uid {{ input_var.geo_uid }} in  {{ input_var.file_format}} format.
+                    {% if input_var.geo_type == "GSE"  %}
+                        {% include  "workflow/input/sample_classify.html" %}
+                    {% endif %}
                 {% endif %}
-                <p>Source: {{ input_var.file_type }} </p>
-                <button class="btn btn-default"> Preview </button>
-                <button class="btn btn-danger"> Delete </button>
-            </p>
         </div>
     {% endif %}
 

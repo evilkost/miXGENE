@@ -24,7 +24,7 @@ from workflow.common_tasks import fetch_geo_gse
 
 from mixgene.util import dyn_import, get_redis_instance, mkdir
 from mixgene.redis_helper import ExpKeys
-
+from django.views.decorators.cache import cache_page
 
 def index(request):
     template = loader.get_template('index.html')
@@ -147,7 +147,7 @@ def experiments(request):
 
 #@login_required(login_url='/auth/login/')
 
-
+@never_cache
 def exp_details(request, exp_id):
     exp = Experiment.objects.get(e_id = exp_id)
     layout = exp.workflow
@@ -176,6 +176,8 @@ def exp_details(request, exp_id):
 
 
 @login_required(login_url='/auth/login/')
+@csrf_protect
+@never_cache
 def alter_exp(request, exp_id, action):
     exp = Experiment.objects.get(e_id = exp_id)
     if exp.author != request.user:
@@ -191,6 +193,12 @@ def alter_exp(request, exp_id, action):
 
     if action == 'update':
         exp.validate(request)
+
+    if action == 'save_gse_classes':
+        factors = json.loads(request.POST['factors'])
+        exp.update_ctx({"gse_factors": factors})
+        print factors
+    #    import ipdb; ipdb.set_trace();
 
     return redirect(request.POST.get("next") or "/experiment/%s" % exp.e_id) # TODO use reverse
 
@@ -265,6 +273,41 @@ def get_flot_2d_scatter(request, exp_id, filename):
 
     resp = HttpResponse(content_type="application/json")
     json.dump(result, resp)
+    return resp
+
+#@cache_page(60 * 15)
+def get_gse_samples_info(request, exp_id, var_name):
+    exp = Experiment.objects.get(e_id = exp_id)
+    ctx = exp.get_ctx()
+    fin = ctx['input_vars'][var_name]
+
+    from Bio.Geo import parse as parse_geo
+
+    assert fin.geo_type == "GSE"
+    # TODO: check var type
+    samples = {}
+    for record in parse_geo(open(fin.filepath)):
+        if record.entity_type == "SAMPLE":
+            sample_id = record.entity_attributes['Sample_geo_accession']
+            samples[sample_id] = record.entity_attributes
+            # cleanup
+            samples[sample_id].pop('sample_table_begin')
+            samples[sample_id].pop('sample_table_end')
+
+    #TODO: cache samples object
+    gse_factors = ctx.get("gse_factors", {})
+    result = {
+        "samples": samples,
+        "gse_factors": gse_factors,
+        "classes": [c for c in
+                    set(map(str, gse_factors.values()))
+                    if c != ""],
+    }
+
+    resp = HttpResponse(content_type="application/json")
+    json.dump(result, resp)
+
+    #TODO: cache this
     return resp
 
 
