@@ -3,12 +3,9 @@
 sudo apt-get update
 sudo apt-get upgrade
 
-sudo apt-get install python python-pip mysql-server mysql-common mysql-client python-mysqldb nginx redis-server gunicorn
+sudo apt-get install python python-pip mysql-server mysql-common mysql-client python-mysqldb nginx redis-server gunicorn  r-base-core libxml2-dev r-cran-xml
 # during installation you will be asked for a password for the root
 # underworldHj53
-
-sudo apt-get install r-base-core libxml2-dev r-cran-xml
-
 
 mysql -u root -p
 # enter root's password
@@ -25,7 +22,7 @@ quit
 
 
 # installing Django from PIP
-sudo pip install -U Django South Celery django-celery redis hiredis pandas
+sudo pip install -U Django South Celery django-celery redis hiredis pandas biopython rpy2
 
 
 # init base db tables and prepare for migrations
@@ -34,3 +31,5 @@ python manage.py syncdb
 
 #do db migrations
 python manage.py migrate
+
+mkdir -p /home/kost/res/mixgene_workdir/media/data/cache/
