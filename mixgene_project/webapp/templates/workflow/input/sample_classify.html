@@ -39,13 +39,9 @@
                 <button class="btn btn-primary btn-block hidden show_if_at_least_one_class" type="button" id="assign_to_class">
                     Assign samples
                 </button><br />
+                <!-- <button class="btn btn-default" id="drop_selection">Drop selection </button> -->
 
-                <!--
-                <button class="btn btn-success btn-block hidden show_if_at_least_one_class" type="button">
-                    Save class assignaments to exp
-                </button><br />
 
-                -->
             </div>
         </div>
 
@@ -54,6 +50,11 @@
 
 
     <script type="text/javascript">
+        window.onload = function() {
+          document.onselectstart = function() {
+            return false;
+          }
+        }
         $(function() {
             var dataurl = '{% url 'get_gse_samples_info' exp.e_id input_var.name %}';
             var headers = {
@@ -141,6 +142,7 @@
             });
 
 
+
             $(document).ready(function (){
                 for(field in fields_order){
                     var $td = $('<td />');
@@ -214,9 +216,38 @@
                     }
                 })
 
+                var lastSelectedRow=2;
+                $table_body.on('click', 'tr', function(event) {
+                    window.lastSelectedRow = event;
+                    row = event.currentTarget;
+                    current_idx = row.rowIndex;
 
-                $table_body.on('click', 'tr', function() {
-                    $( this ).toggleClass('success')
+                    console.log("Current row index: " + current_idx + " last idx: " + lastSelectedRow);
+                    if(event.shiftKey && current_idx != lastSelectedRow){
+                        document.getSelection().removeAllRanges();
+
+                        var a; var b;
+                        if ( current_idx > lastSelectedRow){
+                            a = lastSelectedRow  - 2;
+                            b = current_idx -2;
+                        } else {
+                            a = current_idx -2 ;
+                            b = lastSelectedRow - 2;
+                        }
+                        console.log("a="+a+"  b="+b);
+                        for(var i=a; i<b+1; i++){
+                            //$($table_body[0].getElementsByTagName('tr')).toggleClass('success');
+                            $($table_body.children('tr')[i]).addClass('success');
+                        }
+                    } else {
+                        $.each($table_body.children('tr'), function(idx, obj){
+                            $(obj).removeClass('success');
+                        });
+                        $(row).toggleClass('success')
+                    }
+                    lastSelectedRow = current_idx;
+
+
                 });
 
             });
