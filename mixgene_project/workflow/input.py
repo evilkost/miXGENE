@@ -29,6 +29,14 @@ class CheckBoxInputVar(AbsInputVar):
         self.value = kwargs.get('is_checked', True)
 
 
+class NumericInputVar(AbsInputVar):
+    def __init__(self, *args, **kwargs):
+        super(NumericInputVar, self).__init__(*args, **kwargs)
+        self.input_type = "numeric_field"
+        self.value = kwargs.get("default", 0.3)
+        self.is_integer = False
+
+
 class FileInputVar(AbsInputVar):
     def __init__(self, *args, **kwargs):
         super(FileInputVar, self).__init__(*args, **kwargs)
@@ -39,6 +47,8 @@ class FileInputVar(AbsInputVar):
         self.file_type = None
         self.filename = None
         self.filepath = None
+        self.file_extension = "csv"
+
         self.file_format = None
 
         self.geo_uid = None

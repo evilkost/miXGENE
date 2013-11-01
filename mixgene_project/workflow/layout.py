@@ -5,11 +5,11 @@ from celery import task
 
 from workflow.actions import AtomicAction, SeqActions, ParActions, exc_action, set_exp_status, collect_results
 from webapp.models import UploadedData, Experiment
-from workflow.common_tasks import preprocess_soft, converse_probes_to_genes, fetch_msigdb, map_gene_sets_to_probes
+from workflow.common_tasks import preprocess_soft, converse_probes_to_genes, fetch_msigdb, map_gene_sets_to_probes, gt_pval_cut
 from workflow.common_tasks import split_train_test
-from workflow.input import CheckBoxInputVar, FileInputVar, InputGroup
+from workflow.input import CheckBoxInputVar, FileInputVar, InputGroup, NumericInputVar
 from workflow.result import mixTable
-from wrappers import r_test_algo, pca_test, svm_test, tt_test, mix_global_test, leukemia_data_provider
+from wrappers import r_test_algo, pca_test, svm_test, tt_test, mix_global_test, leukemia_data_provider, pca_agg
 
 
 @task(name='workflow.layout.wait_task')
@@ -158,8 +158,6 @@ class TestGeoFetcher(AbstractWorkflowLayout):
             "matrix": FileInputVar("matrix", "Matrix", "Test matrix in csv format"),
         })
 
-
-
     def get_main_action(self, ctx):
         return AtomicAction("geo_fetch_dummy", geo_fetch_dummy, {}, {})
 
@@ -171,7 +169,7 @@ class TestGeoFetcher(AbstractWorkflowLayout):
             errors = None
         else:
             errors = {"message": "Data was not uploaded"}
-        return (exp.get_ctx(), errors)
+        return exp.get_ctx(), errors
 
 
 class TestMultiAlgoForm(forms.Form):
@@ -181,84 +179,12 @@ class TestMultiAlgoForm(forms.Form):
     do_pca = forms.BooleanField(required=False)
     do_t_test = forms.BooleanField(required=False)
     convert_probes_to_genes = forms.BooleanField(required=False)
+    test_split_ratio = forms.FloatField(required=True)
+    pval_cut = forms.FloatField(required=True)
 
-
-class TestMultiAlgo(AbstractWorkflowLayout):
-    def __init__(self):
-        super(TestMultiAlgo, self).__init__()
-        self.template = "workflow/test_multi_algo.html"
-        self.template_result = "workflow/test_multi_algo_result.html"
-
-        self.input_vars.update({
-            "do_pca": CheckBoxInputVar("do_pca", "", "Enable PCA", is_checked=False),
-            "do_global_test":  CheckBoxInputVar("do_global_test", "", "Enable Global test", is_checked=False),
-            "do_linsvm": CheckBoxInputVar("do_linsvm", "", "Enable linear SVM classifier", is_checked=False),
-            "do_t_test": CheckBoxInputVar("do_t_test", "", "Enable T-test", is_checked=True),
-
-        })
-        self.result_vars = ["pca_result", "mgt_result", "svm_result", "tt_result", ]
-
-        self.init_ctx = {
-            "pca_points_filename": "pca_points.csv",
-            "svm_factors_filename": "linsvm_factor_vec.csv",
-            "tt_test_filename": "tt_table.csv",
-            "mix_global_test_filename": "mix_global_test.csv",
-
-            "linsvm_header": ["sample #", "class" ],
-
-            "expression_var": "leukemia_symbols",
-            "phenotype_var": "leukemia_phenotype",
-        }
-
-    def validate_exp(self, exp, request):
-        ctx = exp.get_ctx()
-        errors = {"message": "some_errors"}
-        if request is not None:
-            fm = TestMultiAlgoForm(data=request.POST)
-            if fm.is_valid():
-                if any(fm.cleaned_data[f] for f in ["do_global_test", "do_linsvm", "do_pca", "do_t_test"]):
-                    errors = None
-                    for var_name, inp_var in ctx["input_vars"].iteritems():
-                        if var_name in fm.cleaned_data:
-                            inp_var.value = fm.cleaned_data[inp_var.name]
-                else:
-                    errors = {"message": "At least one test should be enabled!"}
-
-
-        ctx.update()
-        return (ctx, errors)
-
-    def get_main_action(self, ctx):
-        get_leukemia_data_action = AtomicAction("get_dataset", leukemia_data_provider, {}, {})
-
-        pca_action = AtomicAction("pca_action", pca_test, {"pca_points_filename": "filename"}, {"result": "pca_result"})
-        svm_action = AtomicAction("svm_action", svm_test, {"svm_factors_filename": "filename"}, {"result": "svm_result"})
-        tt_action = AtomicAction("tt_action", tt_test, {"tt_test_filename": "filename"}, {"result": "tt_result"})
-        mix_global_test_action = AtomicAction("mix_global_test", mix_global_test,
-                                              {"mix_global_test_filename": "filename"}, {"result": "mgt_result"})
-
-        par_actions = []
-
-        if ctx["input_vars"]["do_global_test"].value:
-            par_actions.append(mix_global_test_action)
-
-        if ctx["input_vars"]["do_linsvm"].value:
-            par_actions.append(svm_action)
-
-        if ctx["input_vars"]["do_pca"].value:
-            par_actions.append(pca_action)
-
-        if ctx["input_vars"]["do_t_test"].value:
-            par_actions.append(tt_action)
-
-        alg_actions = ParActions("alg_action", par_actions)
-        collect_res_action = AtomicAction("collect_results", collect_results, {}, {})
-
-        return SeqActions("main_action", [
-            get_leukemia_data_action,
-            alg_actions,
-            collect_res_action
-        ])
+class GeneSetsAggregationForm(forms.Form):
+    test_split_ratio = forms.FloatField(required=True)
+    pval_cut = forms.FloatField(required=True)
 
 class GeneSetsAggregationAlgo(AbstractWorkflowLayout):
     def __init__(self):
@@ -267,9 +193,14 @@ class GeneSetsAggregationAlgo(AbstractWorkflowLayout):
         self.template = "workflow/test_multi_algo.html"
         self.template_result = "workflow/test_multi_algo_result.html"
 
-        self.input_form = TestMultiAlgoForm
+        self.input_form = GeneSetsAggregationForm
         self.input_vars.update({
-
+            "common_settings": InputGroup("common", "Settings", "", inputs={
+                "test_split_ratio": NumericInputVar("test_split_ratio", "",
+                                                    "Ratio of dataset to be used as test", default=0.3),
+                "pval_cut": NumericInputVar("pval_cut", "",
+                                            "Threshold to cut probes after global test", default=0.001),
+            }),
             #"algo_switch": InputGroup("algo_switch", "Choose plugins", "", inputs={
             #    "do_pca": CheckBoxInputVar("do_pca", "", "Enable PCA", is_checked=False),
             #    "do_global_test":  CheckBoxInputVar("do_global_test", "", "Enable Global test", is_checked=False),
@@ -282,30 +213,24 @@ class GeneSetsAggregationAlgo(AbstractWorkflowLayout):
         self.result_vars = ["mgt_result", ]
 
         self.init_ctx = {
-            "pca_points_filename": "pca_points.csv",
-            "svm_factors_filename": "linsvm_factor_vec.csv",
-            "tt_test_filename": "tt_table.csv",
-            "mix_global_test_filename": "mix_global_test.csv",
+            "pca_points_filename": "pca_points",
+            "svm_factors_filename": "linsvm_factor_vec",
+            "tt_test_filename": "tt_table",
+            "mix_global_test_filename": "mix_global_test",
 
             "linsvm_header": ["sample #", "class" ],
 
-            "expression_var": "expression",
-            "expression_trans_var": "expression",
-            "phenotype_var": "phenotype",
 
-            "gene_sets_var": "gene_sets",
             "dataset_var": "dataset",
-            "msigdb_var": "msigdb",
-            "gs_probes_var_name": "gs_probes_merged",
-
-            "test_split_ratio": 0.3,
         }
 
     def get_main_action(self, ctx):
         main_sequence = []
 
-        prepare_dataset = AtomicAction("prepare_dataset", preprocess_soft, {}, {})
-        fetch_msigdb_action = AtomicAction("fetch_msigdb", fetch_msigdb, {}, {})
+        prepare_dataset = AtomicAction("prepare_dataset", preprocess_soft,
+            {}, {})
+        fetch_msigdb_action = AtomicAction("fetch_msigdb", fetch_msigdb,
+            {},  {"gene_sets": "msigdb"})
         prepare_split_train_test = AtomicAction("prepare_split_train_test",
                                                 split_train_test, {}, {})
 
@@ -322,7 +247,7 @@ class GeneSetsAggregationAlgo(AbstractWorkflowLayout):
 
         mix_global_test_action = AtomicAction("mix_global_test", mix_global_test,
             {"mix_global_test_filename": "filename",
-             "gs_probes_var_name": "gene_sets_var"},
+             "gs_probes_merged": "gene_sets"},
             {"result": "mgt_result"}
         )
         main_sequence.append(mix_global_test_action)
@@ -335,15 +260,6 @@ class GeneSetsAggregationAlgo(AbstractWorkflowLayout):
         # idea
         #errors = [] # keys of errors
         #errors_messages = {} # errors messages
-
-        if request is not None:
-            fm = TestMultiAlgoForm(data=request.POST)
-            if fm.is_valid():
-                if not any(fm.cleaned_data[f] for f in ["do_global_test", "do_linsvm", "do_pca", "do_t_test"]):
-                    has_errors = True
-                    self.input_vars["algo_switch"].error = "At least one test should be enabled!"
-
-            #TODO: other specific checks
 
         if ctx["dataset_var"] in ctx["input_vars"]:
             print "is_done: ", ctx["input_vars"][ctx["dataset_var"]].is_done
@@ -367,11 +283,16 @@ class TestMultiAlgo2(AbstractWorkflowLayout):
         self.input_vars.update({
             "common_settings": InputGroup("common", "Settings", "", inputs={
                 "convert_probes_to_genes": CheckBoxInputVar("convert_probes_to_genes", "",
-                    "Convert Probe ID to ENTREZ_GENE_ID and operate with genes as units"),
+                    "Do probes aggregation with PCA agg and cut after global test least important gene sets"
+                ),
+                "test_split_ratio": NumericInputVar("test_split_ratio", "",
+                                                    "Ratio of dataset to be used as test", default=0.3),
+                "pval_cut": NumericInputVar("pval_cut", "",
+                                            "Threshold to cut probes after global test", default=0.001),
             }),
             "algo_switch": InputGroup("algo_switch", "Choose plugins", "", inputs={
                 "do_pca": CheckBoxInputVar("do_pca", "", "Enable PCA", is_checked=False),
-                "do_global_test":  CheckBoxInputVar("do_global_test", "", "Enable Global test", is_checked=False),
+                #"do_global_test":  CheckBoxInputVar("do_global_test", "", "Enable Global test", is_checked=False),
                 "do_linsvm": CheckBoxInputVar("do_linsvm", "", "Enable linear SVM classifier", is_checked=False),
                 "do_t_test": CheckBoxInputVar("do_t_test", "", "Enable T-test", is_checked=True),
             }),
@@ -381,18 +302,12 @@ class TestMultiAlgo2(AbstractWorkflowLayout):
         self.result_vars = ["pca_result", "mgt_result", "svm_result", "tt_result", ]
 
         self.init_ctx = {
-            "pca_points_filename": "pca_points.csv",
-            "svm_factors_filename": "linsvm_factor_vec.csv",
-            "tt_test_filename": "tt_table.csv",
-            "mix_global_test_filename": "mix_global_test.csv",
+            "pca_points_filename": "pca_points",
+            "svm_factors_filename": "linsvm_factor_vec",
+            "tt_test_filename": "tt_table",
+            "mix_global_test_filename": "mix_global_test",
 
             "linsvm_header": ["sample #", "class" ],
-
-            "expression_var": "expression",
-            "expression_trans_var": "expression",
-            "phenotype_var": "phenotype",
-            "gene_sets_var": "gene_sets",
-
             "dataset_var": "dataset",
         }
 
@@ -404,7 +319,7 @@ class TestMultiAlgo2(AbstractWorkflowLayout):
         #errors_messages = {} # errors messages
 
         if request is not None:
-            fm = TestMultiAlgoForm(data=request.POST)
+            fm = self.input_form(data=request.POST)
             if fm.is_valid():
                 if not any(fm.cleaned_data[f] for f in ["do_global_test", "do_linsvm", "do_pca", "do_t_test"]):
                     has_errors = True
@@ -434,20 +349,67 @@ class TestMultiAlgo2(AbstractWorkflowLayout):
         prepare_dataset = AtomicAction("prepare_dataset", preprocess_soft, {}, {})
         main_sequence.append(prepare_dataset)
 
-        if ctx["input_vars"]["common_settings"].inputs["convert_probes_to_genes"]:
-            convers_probes = AtomicAction("convers_probes", converse_probes_to_genes, {}, {})
-            main_sequence.append(convers_probes)
 
-        pca_action = AtomicAction("pca_action", pca_test, {"pca_points_filename": "filename"}, {"result": "pca_result"})
-        svm_action = AtomicAction("svm_action", svm_test, {"svm_factors_filename": "filename"}, {"result": "svm_result"})
-        tt_action = AtomicAction("tt_action", tt_test, {"tt_test_filename": "filename"}, {"result": "tt_result"})
+
+        fetch_msigdb_action = AtomicAction("fetch_msigdb", fetch_msigdb,
+            {}, {"gene_sets": "msigdb"})
+
+        prepare_split_train_test = AtomicAction("prepare_split_train_test",
+                                        split_train_test, {}, {})
+
+        main_sequence.append(prepare_split_train_test)
+        main_sequence.append(fetch_msigdb_action)
+
+        if ctx["input_vars"]["common_settings"].inputs["convert_probes_to_genes"]:
+            #convers_probes = AtomicAction("convers_probes", converse_probes_to_genes,
+            #    {}, {"expression_transformed": "expression", "expression": "expression_orig"})
+
+            #main_sequence.append(convers_probes)
+            merge_msigdb_with_series_annotation = AtomicAction(
+                "map_gene_sets_to_probes", map_gene_sets_to_probes, {}, {})
+            main_sequence.append(merge_msigdb_with_series_annotation)
+            pca_agg_action = AtomicAction("pca_agg", pca_agg,
+                {"gs_probes_merged": "gene_sets"}, {})
+
+            gt_action = AtomicAction("mix_global_test", mix_global_test,
+                {
+                    "mix_global_test_filename": "filename",
+                    "gs_probes_merged": "gene_sets",
+                    #"expression_train": "expression",  # ??
+
+                },
+                {"result": "mgt_result"}
+            )
+            #convers_action = ParActions("convers_probes", [pca_agg_action, gt_action])
+            #main_sequence.append(convers_action)  # see Issue: #24
+
+            main_sequence.append(pca_agg_action)
+            main_sequence.append(gt_action)
+
+            pval_cut_action = AtomicAction("pval_cut", gt_pval_cut, {}, {})
+            main_sequence.append(pval_cut_action)
+
+        pca_action = AtomicAction("pca_action", pca_test,
+            {"pca_points_filename": "filename", "expression_train": "expression", "phenotype_train": "phenotype"},
+            {"result": "pca_result"})
+
+        svm_action = AtomicAction("svm_action", svm_test,
+            {"svm_factors_filename": "filename",},
+            {"result": "svm_result"})
+
+        tt_action = AtomicAction("tt_action", tt_test,
+            {"tt_test_filename": "filename", "expression_train": "expression", "phenotype_train": "phenotype"},
+            {"result": "tt_result"})
+
         mix_global_test_action = AtomicAction("mix_global_test", mix_global_test,
-                                              {"mix_global_test_filename": "filename"}, {"result": "mgt_result"})
+            {"mix_global_test_filename": "filename", "msigdb": "gene_sets"},
+            {"result": "mgt_result"}
+        )
 
         par_actions = []
 
-        if ctx["input_vars"]["algo_switch"].inputs["do_global_test"].value and ctx["units"] == "genes":
-            par_actions.append(mix_global_test_action)
+        #if ctx["input_vars"]["algo_switch"].inputs["do_global_test"].value and ctx["units"] == "genes":
+        #    par_actions.append(mix_global_test_action)
 
         if ctx["input_vars"]["algo_switch"].inputs["do_linsvm"].value:
             par_actions.append(svm_action)

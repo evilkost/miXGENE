@@ -1,6 +1,9 @@
 import rpy2.robjects as R
 from rpy2.robjects.packages import importr
+from mixgene.settings import R_LIB_CUSTOM_PATH
 
+
+#TODO: Maybe merge with gene sets class?
 class GMT(object):
     def __init__(self, description=None, gene_sets=None):
         self.description = description
@@ -10,6 +13,7 @@ class GMT(object):
         self.units = ""
 
     def to_r_obj(self):
+        importr("miXGENE", lib_loc=R_LIB_CUSTOM_PATH)
         gene_sets = R.ListVector(dict([
             (k, R.StrVector(v))
             for k, v in self.gene_sets.iteritems()

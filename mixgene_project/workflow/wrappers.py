@@ -9,7 +9,7 @@ from webapp.models import Experiment
 from workflow.result import mixPlot, mixML, mixTable
 from workflow.vars import MixData, MixPheno
 
-importr("miXGENE", lib_loc=R_LIB_CUSTOM_PATH)
+
 R.r['options'](warn=-1)
 
 @task(name='workflow.wrappers.r_test_algo')
@@ -50,7 +50,7 @@ def leukemia_data_provider(ctx):
     leukemia_symbols = MixData()
     leukemia_pheno = MixPheno()
 
-    leukemia_symbols.filename = "leukemia.symbols.csv"
+    leukemia_symbols.filename = "leukemia.symbols"
     leukemia_symbols.filepath = exp.get_data_file_path(leukemia_symbols.filename)
 
     leukemia_symbols.org = list(rls.do_slot("org"))
@@ -60,7 +60,7 @@ def leukemia_data_provider(ctx):
                        row_names=leukemia_symbols.has_row_names,
                        col_names=leukemia_symbols.has_col_names)
 
-    leukemia_pheno.filename = "leukemia.pheno.csv"
+    leukemia_pheno.filename = "leukemia.pheno"
     leukemia_pheno.filepath = exp.get_data_file_path(leukemia_pheno.filename)
 
 
@@ -78,11 +78,12 @@ def leukemia_data_provider(ctx):
 
 @task(name='worflow.wrappers.pca_test')
 def pca_test(ctx):
+    importr("miXGENE", lib_loc=R_LIB_CUSTOM_PATH)
     exp = Experiment.objects.get(e_id=ctx['exp_id'])
 
     pca = R.r['mixPca'](
-        dataset=ctx[ctx["expression_var"]].to_r_obj(),
-        dataset_factor=ctx[ctx["phenotype_var"]].to_r_obj(),
+        dataset=ctx["expression"].to_r_obj(),
+        dataset_factor=ctx["phenotype"].to_r_obj(),
     )
 
     result = mixPlot(exp, pca, ctx['filename'])
@@ -93,11 +94,14 @@ def pca_test(ctx):
 
 @task(name='worflow.wrappers.svm_test')
 def svm_test(ctx):
+    importr("miXGENE", lib_loc=R_LIB_CUSTOM_PATH)
     exp = Experiment.objects.get(e_id=ctx['exp_id'])
 
     svm = R.r['mixSvmLin'](
-        dataset=ctx[ctx["expression_var"]].to_r_obj(),
-        dataset_factor=ctx[ctx["phenotype_var"]].to_r_obj(),
+        dataset=ctx["expression_train"].to_r_obj(),
+        dataset_factor=ctx["phenotype_train"].to_r_obj(),
+        new_dataset=ctx["expression_test"].to_r_obj(),
+        new_dataset_factor=ctx["phenotype_test"].to_r_obj(),
     )
 
     result = mixML(exp, svm, ctx['filename'])
@@ -108,11 +112,12 @@ def svm_test(ctx):
 
 @task(name='worflow.wrappers.tt_test')
 def tt_test(ctx):
-    exp = Experiment.objects.get(e_id = ctx['exp_id'])
+    importr("miXGENE", lib_loc=R_LIB_CUSTOM_PATH)
+    exp = Experiment.objects.get(e_id=ctx['exp_id'])
 
     tt = R.r['mixTtest'](
-        dataset=ctx[ctx["expression_var"]].to_r_obj(),
-        dataset_factor=ctx[ctx["phenotype_var"]].to_r_obj(),
+        dataset=ctx["expression"].to_r_obj(),
+        dataset_factor=ctx["phenotype"].to_r_obj(),
     )
     result = mixTable(exp, tt, ctx['filename'])
     result.title = "T-test"
@@ -121,22 +126,44 @@ def tt_test(ctx):
 
 @task(name='workflow.wrappers.mix_global_test')
 def mix_global_test(ctx):
+    importr("miXGENE", lib_loc=R_LIB_CUSTOM_PATH)
     exp = Experiment.objects.get(e_id=ctx['exp_id'])
-
-    #rdata = R.r['data']
-    #rdata('msigdb.symbols')
-
-    gene_sets = ctx[ctx["gene_sets_var"]]
 
     R.r["sink"]("aux")
     global_test = R.r['mixGlobaltest'](
-        dataset=ctx[ctx["expression_var"]].to_r_obj(),
-        dataset_factor=ctx[ctx["phenotype_var"]].to_r_obj(),
-        #gene_sets=R.r['msigdb.symbols']
-        gene_sets=gene_sets.to_r_obj(),
+        dataset=ctx["expression"].to_r_obj(),
+        dataset_factor=ctx["phenotype"].to_r_obj(),
+        gene_sets=ctx["gene_sets"].to_r_obj(),
     )
     R.r["sink"](rpy2.rinterface.NULL)
     result = mixTable(exp, global_test, ctx['filename'])
     result.title = "Global test"
     ctx.update({"result": result})
     return ctx
+
+@task(name='workflow.wrappers.pca_agg')
+def pca_agg(ctx):
+    importr("miXGENE", lib_loc=R_LIB_CUSTOM_PATH)
+    #tmp <- pcaAgg(gene.sets,
+    #   train.dataset, test.dataset)
+
+    exp = Experiment.objects.get(e_id=ctx['exp_id'])
+
+    gene_sets = ctx["gene_sets"]
+
+    aggregated = R.r['pcaAgg'](
+        gene_sets=ctx["gene_sets"].to_r_obj(),
+        train_dataset=ctx["expression_train"].to_r_obj(),
+        test_dataset=ctx["expression_test"].to_r_obj(),
+    )
+
+    #TODO: create new variables
+
+    R.r['write.table'](aggregated.do_slot("training.dataset").do_slot("data"),
+        ctx["expression_train"].filepath, row_names=True, col_names=True)
+    R.r['write.table'](aggregated.do_slot("testing.dataset").do_slot("data"),
+        ctx["expression_test"].filepath, row_names=True, col_names=True)
+
+    return ctx
+
+

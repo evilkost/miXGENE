@@ -12,6 +12,9 @@
         {% if input_var.input_type == "file" %}
             {% include "workflow/input/file_input.html" %}
         {% endif %}
+        {% if input_var.input_type == "numeric_field" %}
+            {% include "workflow/input/numeric_field.html" %}
+        {% endif %}
     {% endfor %}
     </div>
 </div>

@@ -3,13 +3,22 @@
 {% block inner %}
 {% load static %}
 
-<div class="container">
-    <h1>Workflow: {{ layout.title }} </h1>
-    <h2> Status: {{ exp.status }} </h2>
+<div class="row">
+    <div class="col-md-10 col-md-offset-1">
+        <h1>Workflow: {{ layout.title }} </h1>
+        <h2> Status: {{ exp.status }} </h2>
 
-    {% for _, result in ctx.results.iteritems %}
-        {% include result.template %}
-    {% endfor %}
+        {% for var_name, input_var in ctx.input_vars.iteritems %}
+            {% if input_var.input_type == "file" %}
+                {% include "workflow/input/file_input.html" %}
+            {% endif %}
+        {% endfor %}
+
+        {% for _, result in ctx.results.iteritems %}
+            {% include result.template %}
+        {% endfor %}
+
+    </div>
 
 </div>
 {% endblock %}

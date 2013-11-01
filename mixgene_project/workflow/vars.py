@@ -4,7 +4,7 @@ from workflow.parsers import parse_gmt
 from pandas import DataFrame
 
 from mixgene.settings import R_LIB_CUSTOM_PATH
-importr("miXGENE", lib_loc=R_LIB_CUSTOM_PATH)
+
 R.r['options'](warn=-1)
 
 #TODO: maybe this approach is better ?
@@ -25,7 +25,29 @@ rnew = R.r["new"]
 rtable = R.r["read.table"]
 
 
-class MixData(object):
+class MetaMixin(object):
+    def copy_meta_from(self, other):
+        attrs_list = [
+            "org",
+            "units",
+            "filename",
+            #"filepath",
+            "delimiter",
+            "has_row_names",
+            "has_col_names",
+        ]
+
+        for attr in attrs_list:
+            if hasattr(self, attr) and hasattr(other, attr):
+                setattr(self, attr, getattr(other, attr))
+
+
+class SetNameMixin(object):
+    def set_filename(self, exp, filename):
+        self.filename = filename
+        self.filepath = exp.get_data_file_path(filename)
+
+class MixData(MetaMixin, SetNameMixin):
     def __init__(self):
         self.r_class = "mixData"
 
@@ -40,6 +62,7 @@ class MixData(object):
         self.has_col_names = True
 
     def to_r_obj(self):
+        importr("miXGENE", lib_loc=R_LIB_CUSTOM_PATH)
         r_obj = rnew(self.r_class)
 
         r_obj.do_slot_assign("org", R.StrVector(self.org))
@@ -49,8 +72,11 @@ class MixData(object):
         r_obj.do_slot_assign("data", R.r["data.matrix"](data_frame))
         return r_obj
 
+    def to_data_frame(self):
+        return DataFrame.from_csv(self.filepath, sep=self.delimiter)
 
-class MixPheno(object):
+
+class MixPheno(MetaMixin, SetNameMixin):
     def __init__(self):
         self.r_class = "mixPheno"
 
@@ -65,6 +91,7 @@ class MixPheno(object):
         self.has_col_names = True
 
     def to_r_obj(self):
+        importr("miXGENE", lib_loc=R_LIB_CUSTOM_PATH)
         r_obj = rnew(self.r_class)
 
         r_obj.do_slot_assign("org", R.StrVector(self.org))
@@ -75,12 +102,11 @@ class MixPheno(object):
 
         return r_obj
 
-    def get_df(self):
-        return DataFrame.from_csv(self.filepath, sep=' ')
+    def to_data_frame(self):
+        return DataFrame.from_csv(self.filepath, sep=self.delimiter)
 
 
-
-class GeneSets(object):
+class GeneSets(MetaMixin, SetNameMixin):
     def __init__(self):
         """
             Stores in .gmt file format

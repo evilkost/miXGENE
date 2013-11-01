@@ -173,8 +173,11 @@ class Experiment(models.Model):
     def get_data_folder(self):
         return '/'.join(map(str, [MEDIA_ROOT, 'data', self.author.id, self.e_id]))
 
-    def get_data_file_path(self, filename):
-        return self.get_data_folder() + "/" + filename
+    def get_data_file_path(self, filename, file_extension="csv"):
+        if file_extension is not None:
+            return self.get_data_folder() + "/" + filename + "." + file_extension
+        else:
+            return self.get_data_folder() + "/" + filename
 
     def validate(self, request):
         new_ctx, errors = self.workflow.get_class_instance().validate_exp(self, request)

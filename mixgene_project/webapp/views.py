@@ -212,7 +212,7 @@ def alter_exp(request, exp_id, action):
 def add_experiment(request):
     template = loader.get_template('add_experiment.html')
     context = RequestContext(request, {
-        "next":"/add_experiment",
+        "next": "/add_experiment",
         "exp_add_page_active": True,
         "all_layouts": WorkflowLayout.objects.all()
     })
@@ -282,7 +282,7 @@ def get_flot_2d_scatter(request, exp_id, filename):
 
 #@cache_page(60 * 15)
 def get_gse_samples_info(request, exp_id, var_name):
-    exp = Experiment.objects.get(e_id = exp_id)
+    exp = Experiment.objects.get(e_id=exp_id)
     ctx = exp.get_ctx()
     fin = ctx['input_vars'][var_name]
 

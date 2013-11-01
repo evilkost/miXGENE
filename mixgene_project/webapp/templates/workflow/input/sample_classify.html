@@ -50,19 +50,21 @@
 
 
     <script type="text/javascript">
-        window.onload = function() {
-          document.onselectstart = function() {
-            return false;
-          }
-        }
+        //window.onload = function() {
+        //  document.onselectstart = function() {
+        //    return false;
+        //  }
+        //}
         $(function() {
             var dataurl = '{% url 'get_gse_samples_info' exp.e_id input_var.name %}';
             var headers = {
                 'Sample_title': 'Title',
                 'Sample_geo_accession': '#',
-                'Sample_description': 'Description'
-            }
-            var fields_order = ['Sample_geo_accession', 'Sample_title', 'Sample_description']
+                'Sample_description': 'Description',
+                'Sample_characteristics_ch1': 'Characteristics'
+            };
+            var fields_order = ['Sample_geo_accession', 'Sample_title',
+                'Sample_description', 'Sample_characteristics_ch1'];
 
             var $table = $("#{{ input_var.uuid}}_main_table");
             var $header_row = $("#{{ input_var.uuid}}_main_table thead tr");
@@ -236,8 +238,10 @@
                         }
                         console.log("a="+a+"  b="+b);
                         for(var i=a; i<b+1; i++){
-                            //$($table_body[0].getElementsByTagName('tr')).toggleClass('success');
-                            $($table_body.children('tr')[i]).addClass('success');
+                            $tr = $($table_body.children('tr')[i]);
+                            if( $tr.css('display') != 'none' ){
+                                $tr.addClass('success');
+                            }
                         }
                     } else {
                         $.each($table_body.children('tr'), function(idx, obj){
