@@ -48,6 +48,7 @@ class FileInputVar(AbsInputVar):
         self.filename = None
         self.filepath = None
         self.file_extension = "csv"
+        self.is_gzipped = False
 
         self.file_format = None
 

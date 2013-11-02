@@ -1,6 +1,7 @@
 import cPickle as pickle
 import csv
 import json
+import gzip
 from collections import defaultdict
 
 from django.http import HttpResponse
@@ -291,7 +292,7 @@ def get_gse_samples_info(request, exp_id, var_name):
     assert fin.geo_type == "GSE"
     # TODO: check var type
     samples = {}
-    for record in parse_geo(open(fin.filepath)):
+    for record in parse_geo(gzip.open(fin.filepath)):
         if record.entity_type == "SAMPLE":
             sample_id = record.entity_attributes['Sample_geo_accession']
             samples[sample_id] = record.entity_attributes

@@ -1,6 +1,7 @@
 from collections import defaultdict
 import shutil
 import random
+import gzip
 from celery import task
 from pandas import Series, DataFrame
 
@@ -18,41 +19,47 @@ def fetch_geo_gse(exp, var_name, geo_uid, file_format):
         @exp: webapp.models.Experiment
         download, unpack and clean matrix file
     """
-    dir_path = exp.get_data_folder()
+    if file_format == "txt":
+        raise Exception("Unsupported format: %s" % file_format)
+
+
 
     url, compressed_filename, filename = prepare_GEO_ftp_url(geo_uid, file_format)
-
-    mb_cached = CachedFile.look_up(url)
-    if mb_cached is None:
-        fetch_file_from_url(url, "%s/%s" % (dir_path, compressed_filename))
-
-        if file_format == "txt":
-            target_filename = "%s.clean.csv" % filename
-            clean_GEO_file(exp.get_data_file_path(filename),
-                           exp.get_data_file_path(target_filename))
-            filename = target_filename
-
-        CachedFile.update_cache(url, exp.get_data_file_path(filename[:-5], file_extension="soft"))
-    else:
-        shutil.copy(mb_cached.get_file_path(), exp.get_data_file_path(filename[:-5], file_extension="soft"))
-        print "copied file from cache"
 
     ctx = exp.get_ctx()
 
     fi = ctx["input_vars"][var_name]
     fi.is_done = True
     fi.is_being_fetched = False
-    fi.file_extension = "soft"
-    fi.filename = filename[:-5]  # FIXME: when we will start using gzipped filed
-                                 # extenstion will be longer, so need to fix it
-                                 # I think, prepare geo should return clean filename
-                                 # and we should keep information about gz comprassion
+    fi.file_extension = "soft.gz"
+    fi.is_gzipped = True
+    fi.filename = filename
+
     fi.filepath = exp.get_data_file_path(fi.filename, fi.file_extension)
     fi.geo_uid = geo_uid
     fi.geo_type = geo_uid[:3]
 
     fi.file_format = file_format
     fi.set_file_type("ncbi_geo")
+
+    mb_cached = CachedFile.look_up(url)
+    if mb_cached is None:
+
+        #FIME: grrrrrr...
+        dir_path = exp.get_data_folder()
+        fetch_file_from_url(url, "%s/%s" % (dir_path, compressed_filename))
+
+        #if file_format == "txt":
+        #    raise Exception("Unsupported format: %s" % file_format)
+        #    target_filename = "%s.clean.csv" % filename
+        #    clean_GEO_file(exp.get_data_file_path(filename),
+        #                   exp.get_data_file_path(target_filename))
+        #    filename = target_filename
+
+        CachedFile.update_cache(url, fi.filepath)
+    else:
+        shutil.copy(mb_cached.get_file_path(), fi.filepath)
+        print "copied file from cache"
 
     exp.update_ctx(ctx)
     exp.validate(None)
@@ -140,7 +147,7 @@ def preprocess_soft(ctx):
 
     #TODO: now we assume that we get GSE file
 
-    soft = list(parse_geo(open(soft_file_input.filepath)))
+    soft = list(parse_geo(gzip.open(soft_file_input.filepath)))
     assert soft[2].entity_type == "PLATFORM"
 
     pl = soft[2].table_rows
@@ -250,6 +257,7 @@ def fetch_msigdb(ctx):
     msigdb_gs.filepath = exp.get_data_file_path(msigdb_gs.filename)
 
     # TODO: be able to choose different db
+    # FIXME: now this is a fake url sine broadinsitute require auth
     url = "http://www.broadinstitute.org/gsea/msigdb/download_file.jsp?filePath=/resources/msigdb/4.0/msigdb.v4.0.entrez.gmt"
 
     mb_cached = CachedFile.look_up(url)
@@ -272,7 +280,7 @@ def map_gene_sets_to_probes(ctx):
 
     soft_var_name = ctx["dataset_var"]
     soft_file_input = ctx["input_vars"][soft_var_name]
-    soft = list(parse_geo(open(soft_file_input.filepath)))
+    soft = list(parse_geo(gzip.open(soft_file_input.filepath)))
     pl = soft[2].table_rows
     id_idx = pl[0].index('ID')
     entrez_idx = pl[0].index('ENTREZ_GENE_ID')

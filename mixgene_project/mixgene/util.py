@@ -6,8 +6,10 @@ import os
 from urlparse import urlparse
 import re
 
+
 def get_redis_instance():
     return StrictRedis(host=REDIS_HOST, port=REDIS_PORT)
+
 
 def dyn_import(class_name):
     # with parent module
@@ -17,12 +19,14 @@ def dyn_import(class_name):
         mod = getattr(mod, comp)
     return mod
 
+
 def mkdir(path):
     args = ['mkdir', '-p', path]
     output = Popen(args, stdout=PIPE, stderr=PIPE)
     retcode = output.wait()
 
-def fetch_file_from_url(url, target_file, do_unpuck=True):
+
+def fetch_file_from_url(url, target_file):
     try:
         os.rm(target_file)
     except:
@@ -34,18 +38,7 @@ def fetch_file_from_url(url, target_file, do_unpuck=True):
     pipe=output.communicate()
     #print "retcode", retcode
     #print "pipe", pipe
-    if retcode != 0:
-        raise Exception("failed to fetch file %s" % url)
-    else:
-        if do_unpuck:
-            args = ['gunzip', '-vf', target_file]
-            #print "args", args
-            output = Popen(args, stdout=PIPE, stderr=PIPE)
-            retcode = output.wait()
-            pipe = output.communicate()
-            #print "gunzip pipe", pipe
-            if retcode != 0:
-                raise Exception("failed to unpack file %s " % target_file)
+
 
 def clean_GEO_file(src_path, target_path):
     with open(src_path, 'r') as src, open(target_path, 'w') as target:
@@ -85,12 +78,12 @@ def prepare_GEO_ftp_url(geo_uid, file_format):
     if db_type == "GSE":
         pre_url = "%s/%s/%s" % (NCBI_GEO_SERIES, geo_folder_name(db_type, uid), db_type + str(uid))
         if file_format == "txt":
-            filename = "%s_series_matrix.txt" % geo_uid
-            compressed_filename = filename + ".gz"
+            filename = "%s_series_matrix" % geo_uid
+            compressed_filename = filename + ".txtgz"
             url = "%s/matrix/%s" % (pre_url, compressed_filename)
         elif file_format == "soft":
-            filename = "%s_family.soft" % geo_uid
-            compressed_filename = filename + ".gz"
+            filename = "%s_family" % geo_uid
+            compressed_filename = filename + ".soft.gz"
             url = "%s/soft/%s" % (pre_url, compressed_filename)
         else:
             raise Exception("format %s isn't supported yet" % file_format)
