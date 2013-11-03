@@ -2,51 +2,52 @@
 
 {% block inner %}
 
-<div class="container">
-    <!--
-    <center>
-        <a href="{% url 'webapp.views.experiments' %}" class="btn btn-primary"> Reload </a>
-    </center>
-    -->
+<div class="row">
+    <div class="col-lg-12 col-lg-offset-0">
+        <!--
+        <center>
+            <a href="{% url 'webapp.views.experiments' %}" class="btn btn-primary"> Reload </a>
+        </center>
+        -->
+        <!-- <h3>Active</h3> -->
+        <table class="table table-stripped">
+            <thead>
+                <tr>
+                    <th>Experiment</th>
+                    <th>Workflow</th>
+                    <th>Created</th>
+                    <th>Updated</th>
+                    <th>Status</th>
+                    <!-- <th>Details</th> -->
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for exp in exps %}
+                <tr>
+                    <th>
+                        <a href="{% url 'webapp.views.exp_details' exp.e_id %}">
+                            {% url 'webapp.views.exp_details' exp.e_id %}
+                        </a>
+                    </th>
+                    <!-- <th> {{ exp.e_id }}</th> -->
+                    <th> {{ exp.workflow }}</th>
+                    <th> {{ exp.dt_created }}</th>
+                    <th> {{ exp.dt_updated }}</th>
+                    <th> {{ exp.status }}</th>
 
-    <!-- <h3>Active</h3> -->
-    <table class="table table-stripped">
-        <thead>
-            <tr>
-                <th>Experiment</th>
-                <th>Workflow</th>
-                <th>Created</th>
-                <th>Updated</th>
-                <th>Status</th>
-                <!-- <th>Details</th> -->
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for exp in exps %}
-            <tr>
-                <th>
-                    <a href="{% url 'webapp.views.exp_details' exp.e_id %}">
-                        {% url 'webapp.views.exp_details' exp.e_id %}
-                    </a>
-                </th>
-                <!-- <th> {{ exp.e_id }}</th> -->
-                <th> {{ exp.workflow }}</th>
-                <th> {{ exp.dt_created }}</th>
-                <th> {{ exp.dt_updated }}</th>
-                <th> {{ exp.status }}</th>
-
-                <th>
-                    <form class="navbar-form" action="{% url 'webapp.views.alter_exp'  exp.e_id 'delete' %}" method="post">
-                        {% csrf_token %}
-                        <button class="btn btn-danger" type="submit" >Delete </button>
-                        <input type="hidden" name="next" value="{{ next }}" />
-                    </form>
-                </th>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                    <th>
+                        <form class="navbar-form" action="{% url 'webapp.views.alter_exp'  exp.e_id 'delete' %}" method="post">
+                            {% csrf_token %}
+                            <button class="btn btn-danger" type="submit" >Delete </button>
+                            <input type="hidden" name="next" value="{{ next }}" />
+                        </form>
+                    </th>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 
 </div>
 {% endblock %}

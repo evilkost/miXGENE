@@ -1,5 +1,5 @@
 <div  style="overflow:auto; height:500px">
-<table class="table table-condensed table-bordered">
+<table class="table table-condensed table-bordered tablesorter">
     {% if skip_header %}
     {% else %}
     <thead>
@@ -16,5 +16,18 @@
             </tr>
         {% endfor %}
     </tbody>
+    <script>
+        $(".tablesorter")table.tablesorter({
+            theme : "bootstrap",
+            widthFixed: true,
+            headerTemplate : '{content} {icon}', // new in v2.7. Needed to add the bootstrap icon!
+            widgets : [ "uitheme", "filter"],
+            widgetOptions : {
+                zebra : ["even", "odd"],
+                filter_reset : ".reset"
+            }
+        })
+
+    </script>
 </table>
 </div>
