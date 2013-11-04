@@ -2,6 +2,7 @@ import cPickle as pickle
 import csv
 import json
 import gzip
+from pprint import pprint
 from collections import defaultdict
 
 from django.http import HttpResponse
@@ -22,6 +23,7 @@ from webapp.forms import UploadForm
 from workflow.actions import exc_action, set_exp_status
 from workflow.layout import write_result
 from workflow.common_tasks import fetch_geo_gse
+from workflow.plugins import get_plugin_by_name
 
 from mixgene.util import dyn_import, get_redis_instance, mkdir
 from mixgene.redis_helper import ExpKeys
@@ -49,6 +51,102 @@ def contact(request):
         "next": "/",
     })
     return HttpResponse(template.render(context))
+
+
+def constructor(request, exp_id):
+    exp = Experiment.objects.get(e_id=exp_id)
+    ctx = exp.get_ctx()
+    blocks_uids = ctx.get("exp_blocks_uid_list", [])
+    blocks = [(block_uid, ctx[block_uid]) for block_uid in blocks_uids]
+    template = loader.get_template('constructor.html')
+
+    context = {
+        "next": "/",
+        "exp": exp,
+        "ctx": ctx,
+        "blocks": blocks,
+    }
+    pprint(context)
+    context = RequestContext(request, context)
+
+    return HttpResponse(template.render(context))
+
+@csrf_protect
+def add_widget(request):
+    plugin_cls = get_plugin_by_name(request.POST['plugin'][1:])  # delete first # symbol
+    plugin = plugin_cls()
+    exp_id = int(request.POST['exp_id'])
+    exp = Experiment.objects.get(e_id=exp_id)
+    ctx = exp.get_ctx()
+
+    #FIXME: possible race condition
+    #   Right solution: use more redis keys for one experiment
+    uids_list = ctx.get("exp_blocks_uid_list", [])
+    uids_list.append(plugin.uuid)
+    exp.update_ctx({
+        plugin.uuid: plugin,
+        "exp_blocks_uid_list": uids_list,
+    })
+
+    template = loader.get_template(plugin.widget)
+    context = {
+        "plugin": plugin,
+        "ctx": exp.get_ctx(),
+    }
+    context = RequestContext(request, context)
+    #pprint(context)
+    return HttpResponse(template.render(context))
+
+
+def render_widget(request):
+    exp_id = int(request.POST['exp_id'])
+    exp = Experiment.objects.get(e_id=exp_id)
+    ctx = exp.get_ctx()
+
+    block_uid = request.POST["block_uuid"]
+
+    plugin = ctx[block_uid]
+    template = loader.get_template(plugin.widget)
+    context = {
+        "plugin": plugin,
+        "ctx": ctx,
+    }
+    context = RequestContext(request, context)
+    #pprint(context)
+    return HttpResponse(template.render(context))
+
+
+@csrf_protect
+def save_widget_form(request):
+    if request.method == "POST":
+        exp_id = int(request.POST['exp_id'])
+        exp = Experiment.objects.get(e_id=exp_id)
+        ctx = exp.get_ctx()
+
+        block_uid = request.POST['block_uuid']
+        plugin = ctx[block_uid]
+
+        plugin.form = plugin.form_cls(request.POST)
+        if plugin.form.is_valid():
+            # process success
+            pass
+
+        exp.update_ctx({
+            block_uid: plugin,
+        })
+
+        template = loader.get_template(plugin.widget)
+        context = {
+            "plugin": plugin,
+            "ctx": ctx,
+        }
+
+        context = RequestContext(request, context)
+        return HttpResponse(template.render(context))
+
+    return HttpResponse("")
+
+
 
 @csrf_protect
 @never_cache

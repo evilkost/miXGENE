@@ -10,6 +10,12 @@ urlpatterns = patterns('',
     url(r'^about$', 'webapp.views.about', name='about'),
     url(r'^contact$', 'webapp.views.contact', name='contact'),
 
+    url(r'^constructor/(?P<exp_id>\d+)', 'webapp.views.constructor', name='constructor'),
+    url(r'^add_widget', 'webapp.views.add_widget', name='add_widget'),
+    url(r'^render_widget', 'webapp.views.render_widget', name='render_widget'),
+    url(r'^save_widget_form', 'webapp.views.save_widget_form',
+        name='save_widget_form'),
+
 
     url(r'^experiments$', 'webapp.views.experiments', name='experiments'),
     url(r'^experiment/(?P<exp_id>\d+)/$', 'webapp.views.exp_details', name='exp_details'),

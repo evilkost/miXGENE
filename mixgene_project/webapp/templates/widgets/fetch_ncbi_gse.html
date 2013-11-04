@@ -1,0 +1,60 @@
+<div id="{{ plugin.uuid }}"class="row">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            Dataset from NCBI GEO
+            <div class="pull-right">
+                <a href="#" class="btn btn-warning btn-sm">
+                    Remove
+                </a>
+            </div>
+        </div>
+        <div class="panel-body row">
+            <div class="col-lg-10">
+                <h3>Parameters:</h3>
+                {% with form=plugin.form %}
+                <form class="form form-horizontal form-ajax-submit"
+                      action="{% url 'save_widget_form' %}" method="post">
+                    {% csrf_token %}
+
+                    <input type="hidden" name="block_uuid" value="{{ plugin.uuid }}" />
+                    <input type="hidden" name="exp_id" value="{{ ctx.exp_id }}" />
+
+
+                    {{ form.non_field_error }}
+                    {% for field in form %}
+                    <div class="form-group {% if field.errors %} has-error {% endif %}">
+
+                        <label for="{{ field.name }}" class="col-sm-2 control-label">
+                            {{ field.label}}
+                        </label>
+                        <div class="col-sm-6">
+                          <input type="text" class="form-control" name="{{ field.name }}"
+                                 value="{{ field.data|default:'' }}" />
+                        </div>
+                        {% if field.errors %}
+                            {% for error in field.errors %}
+                            <span>{{ error|escape }}</span>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+
+                    <div class="form-group">
+                        <div class="col-sm-offset-2 col-sm-10">
+                          <button type="submit" class="btn btn-default">
+                              Save
+                          </button>
+                        </div>
+                    </div>
+                </form>
+                {% endwith %}
+
+            </div>
+            <div class="col-lg-2">
+                <button>Do fetch</button><br />
+                <button class="btn btn-disabled">Assign sample classes</button> <br />
+                <button class="btn btn-disabled">Inspect</button><br />
+            </div>
+        </div>
+    </div>
+</div>

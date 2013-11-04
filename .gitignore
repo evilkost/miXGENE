@@ -1,3 +1,10 @@
+### Linux ###
+.*
+!.gitignore
+!.git*
+*~
+
+
 *.py[cod]
 
 # C extensions
@@ -33,3 +40,9 @@ nosetests.xml
 .mr.developer.cfg
 .project
 .pydevproject
+
+### PyCharm ###
+# PyCharm
+# http://www.jetbrains.com/pycharm/webhelp/project.html
+.idea
+.iml

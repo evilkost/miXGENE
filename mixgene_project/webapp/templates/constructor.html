@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block inner %}
+<input id="exp_id_storage" type="hidden" name="exp_id" value="{{ ctx.exp_id }}" />
+
+<div class="div">
+    <div class="col-lg-9 col-md-8 col-sm-6">
+        <div class="row">
+            <div class="col-lg-6">
+                <div class="alert alert-success">
+                    Welcome to the experiment constructor! <br />
+                    Start by choosing slot to add plugin.
+                </div>
+            </div>
+        </div>
+        <div id="worktable" class="row well">
+            {% for uuid, plugin in blocks %}
+                {% include plugin.widget %}
+            {% endfor %}
+            <button type="button" class="btn btn-lg btn-block btn-success plugin-placeholder">
+                Add plugin
+            </button>
+        </div>
+    </div>
+
+    <div id="plugins-pallet" class="col-lg-3 col-md-4 col-sm-5 bg-gray" style="display:none">
+        <h3></h3>
+        <div class="panel panel-default">
+            <div class="panel-heading">Input data</div>
+            <div class="panel-body">
+                <a href="#fetch_ncbi_gse" class="btn btn-default btn-plugin-provider">
+                    Fetch NCBI GSE
+                </a> <br />
+                <a href="#" class="btn btn-default">MSigDB gene sets</a> <br />
+            </div>
+        </div>
+        <div class="panel panel-default">
+            <div class="panel-heading">Unit conversion</div>
+            <div class="panel-body">
+                <a href="#" class="btn btn-default">PCA Aggregation</a> <br />
+                <a href="#" class="btn btn-default">Mean Aggregation</a> <br />
+            </div>
+        </div>
+        <div class="panel panel-default">
+            <div class="panel-heading">Classifiers</div>
+            <div class="panel-body">
+                <a href="#" class="btn btn-default">T-test</a> <br />
+                <a href="#" class="btn btn-default">SVM</a> <br />
+                <a href="#" class="btn btn-default">Decision tree</a> <br />
+            </div>
+        </div>
+        <div class="panel panel-default">
+            <div class="panel-heading">Visualizers</div>
+            <div class="panel-body">
+                <a href="#" class="btn btn-default">2D PCA plot</a> <br />
+                <a href="#" class="btn btn-default">Boxplot</a> <br />
+                <a href="#" class="btn btn-default">Raw table</a> <br />
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script type="text/javascript">
+    var csrf_token = '{{ csrf_token }}';
+    {% include 'constructor.js' %}
+</script>
+
+
+{% endblock %}

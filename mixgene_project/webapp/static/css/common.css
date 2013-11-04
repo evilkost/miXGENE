@@ -4,3 +4,12 @@ body {
 }
 
 .row { margin: 0; padding: 0 }
+
+.bg-gray {
+    background-color: #f9f9f9;
+}
+
+.worktable {
+    //border-width: 1px;
+    //border-style: solid;
+}
