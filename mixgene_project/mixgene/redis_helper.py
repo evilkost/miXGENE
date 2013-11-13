@@ -1,7 +1,17 @@
+from mixgene.util import get_redis_instance
+
 class ExpKeys(object):
     @staticmethod
     def get_context_store_key(exp_id):
         return "CSTP-%s" % exp_id
+
+    @staticmethod
+    def get_exp_blocks_list_key(exp_id):
+        return "EBS-%s" % exp_id
+
+    @staticmethod
+    def get_block_key(block_uuid):
+        return "BLOCK-%s" % block_uuid
 
     @staticmethod
     def get_par_return_subtask_key(exp_id, parent_task_name):
@@ -22,3 +32,11 @@ class ExpKeys(object):
     @classmethod
     def get_context_version_key(cls, exp_id):
         return "CVP-%s" % exp_id
+
+
+def register_sub_key(exp_id, key, redis_instance=None):
+    if redis_instance is None:
+        r = get_redis_instance()
+    else:
+        r = redis_instance
+    r.sadd(ExpKeys.get_all_exp_keys_key(exp_id), key)
