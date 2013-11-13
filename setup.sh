@@ -1,4 +1,5 @@
 #!/usr/bin/env sh
+#TODO: move pip install to requirements.txt
 
 sudo apt-get update
 sudo apt-get upgrade
@@ -22,7 +23,7 @@ quit
 
 
 # installing Django from PIP
-sudo pip install -U Django South Celery django-celery redis hiredis pandas biopython rpy2
+sudo pip install -U Django South Celery django-celery redis hiredis pandas biopython rpy2 fysom flower
 
 
 # init base db tables and prepare for migrations

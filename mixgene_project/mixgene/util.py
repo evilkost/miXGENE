@@ -31,13 +31,17 @@ def fetch_file_from_url(url, target_file):
         os.rm(target_file)
     except:
         pass
-    args = ['wget', '-nv', '-t', '3', '-O', target_file, url]
+    args = ['wget', '-nv', '-t', '3', '-O', str(target_file), str(url)]
+    print 'CMD: ' + ' '.join(args)
     #print "args", args
     output = Popen(args, stdout=PIPE, stderr=PIPE)
     retcode = output.wait()
     pipe=output.communicate()
-    #print "retcode", retcode
-    #print "pipe", pipe
+    print "retcode", retcode
+    print "pipe", pipe
+
+    if os.path.getsize(target_file) == 0:
+        raise RuntimeError("Got empty file, something bad happaned")
 
 
 def clean_GEO_file(src_path, target_path):

@@ -1,3 +1,4 @@
+from __builtin__ import staticmethod
 import os, shutil
 import cPickle as pickle
 import hashlib
@@ -91,6 +92,10 @@ class Experiment(models.Model):
     def __unicode__(self):
         return u"%s" % self.e_id
 
+    @staticmethod
+    def get_exp_by_ctx(ctx):
+        return Experiment.objects.get(e_id=ctx["exp_id"])
+
     def init_ctx(self, ctx, redis_instance=None):
         if redis_instance is None:
             r = get_redis_instance()
@@ -105,6 +110,10 @@ class Experiment(models.Model):
         # FIXME: replace with MSET
         pipe.set(key_context, pickle.dumps(ctx))
         pipe.set(key_context_version, 0)
+
+        pipe.sadd(ExpKeys.get_all_exp_keys_key(self.e_id),
+                  [key_context, key_context_version,
+                   ExpKeys.get_exp_blocks_list_key(self.e_id)])
 
         pipe.execute()
 
@@ -169,7 +178,6 @@ class Experiment(models.Model):
         if result != "ok":
             raise Exception("Failed to update context")
 
-
     def get_data_folder(self):
         return '/'.join(map(str, [MEDIA_ROOT, 'data', self.author.id, self.e_id]))
 
@@ -188,20 +196,59 @@ class Experiment(models.Model):
         self.update_ctx(new_ctx)
         self.save()
 
+    def store_block(self, block, new_block=False, redis_instance=None):
+        if redis_instance is None:
+            r = get_redis_instance()
+        else:
+            r = redis_instance
+
+        pipe = r.pipeline()
+        block_key = ExpKeys.get_block_key(block.uuid)
+        if new_block:
+            pipe.rpush(ExpKeys.get_exp_blocks_list_key(self.e_id), block.uuid)
+            pipe.sadd(ExpKeys.get_all_exp_keys_key(self.e_id), block_key)
+
+        pipe.set(block_key, pickle.dumps(block))
+        pipe.execute()
+
+        print "block %s was stored with state: %s" % (block.uuid, block.state)
+
+    def get_block(self, block_uuid, redis_instance=None):
+        if redis_instance is None:
+            r = get_redis_instance()
+        else:
+            r = redis_instance
+
+        return pickle.loads(r.get(ExpKeys.get_block_key(block_uuid)))
+
+    def get_all_block_uuids(self, include_inner_blocks=False, redis_instance=None):
+        if redis_instance is None:
+            r = get_redis_instance()
+        else:
+            r = redis_instance
+
+        return r.lrange(ExpKeys.get_exp_blocks_list_key(self.e_id), 0, -1) or []
+
+
+
+
 def delete_exp(exp):
     """
-        @param exp: Instance of Experiment  to be deleted
-        @return None
-            We need to clean 3 areas:
+        We need to clean 3 areas:
             - keys in redis storage
             - uploaded and created files
             - delete exp object through ORM
+
+        @param exp: Instance of Experiment  to be deleted
+        @return: None
+
     """
     # redis
     r = get_redis_instance()
-    keys_to_delete = r.smembers(ExpKeys.get_all_exp_keys_key(exp.e_id))
+    all_exp_keys = ExpKeys.get_all_exp_keys_key(exp.e_id)
+    keys_to_delete = r.smembers(all_exp_keys)
+    keys_to_delete.update(all_exp_keys)
     r.delete(keys_to_delete)
-    r.delete(ExpKeys.get_all_exp_keys_key(exp.e_id))
 
     # uploaded data
     data_files = UploadedData.objects.filter(exp=exp)

@@ -1,60 +1,89 @@
-<div id="{{ plugin.uuid }}"class="row">
+<div id="{{ block.uuid }}" class="row constructor-block">
     <div class="panel panel-default">
         <div class="panel-heading">
             Dataset from NCBI GEO
-            <div class="pull-right">
+            <!--div class="pull-right">
                 <a href="#" class="btn btn-warning btn-sm">
                     Remove
                 </a>
             </div>
+            <p></p -->
         </div>
         <div class="panel-body row">
-            <div class="col-lg-10">
-                <h3>Parameters:</h3>
-                {% with form=plugin.form %}
-                <form class="form form-horizontal form-ajax-submit"
-                      action="{% url 'save_widget_form' %}" method="post">
-                    {% csrf_token %}
-
-                    <input type="hidden" name="block_uuid" value="{{ plugin.uuid }}" />
-                    <input type="hidden" name="exp_id" value="{{ ctx.exp_id }}" />
-
-
-                    {{ form.non_field_error }}
-                    {% for field in form %}
-                    <div class="form-group {% if field.errors %} has-error {% endif %}">
-
-                        <label for="{{ field.name }}" class="col-sm-2 control-label">
-                            {{ field.label}}
-                        </label>
-                        <div class="col-sm-6">
-                          <input type="text" class="form-control" name="{{ field.name }}"
-                                 value="{{ field.data|default:'' }}" />
-                        </div>
-                        {% if field.errors %}
-                            {% for error in field.errors %}
-                            <span>{{ error|escape }}</span>
-                            {% endfor %}
-                        {% endif %}
-                    </div>
+            {% if block.errors %}
+                <div class="alert alert-danger">
+                    <ul class="list-unstyled">
+                    {% for error in block.errors %}
+                        <li>
+                            {{ error.msg|default:error }}
+                        </li>
                     {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+            <form class="form form-horizontal form-ajax-submit"
+                  action="{% url 'update_widget' %}" method="post">
+                {% csrf_token %}
+                <input type="hidden" name="block_uuid" value="{{ block.uuid }}" />
+                <input type="hidden" name="exp_id" value="{{ ctx.exp_id }}" />
 
-                    <div class="form-group">
-                        <div class="col-sm-offset-2 col-sm-10">
-                          <button type="submit" class="btn btn-default">
-                              Save
-                          </button>
+                <div class="col-lg-9">
+                    {% if block.is_form_fields_editable %}
+                        {{ block.form.non_field_error }}
+                        {% for field in block.form %}
+                        <div class="form-group {% if field.errors %} has-error {% endif %}">
+                            <!--suppress XmlInvalidId -->
+                            <label for="{{ field.name }}" class="col-sm-2 control-label">
+                                {{ field.label}}
+                            </label>
+                            <div class="col-sm-6">
+                              <input type="text" class="form-control" name="{{ field.name }}"
+                                     value="{{ field.value|default:'' }}" />
+                            </div>
+                            {% if field.errors %}
+                                {% for error in field.errors %}
+                                <span>{{ error|escape }}</span>
+                                {% endfor %}
+                            {% endif %}
                         </div>
-                    </div>
-                </form>
-                {% endwith %}
+                        {% endfor %}
+                    {% else %}
+                        <p>
+                            <strong>Source</strong>
+                            dataset GEO UID: {{ block.form.geo_uid.value }}
+                        </p>
+                        <p><strong>Provide objects:</strong>
+                        <dl class="dl-horizontal">
+                            {% for obj_type, name in block.get_provided_objects.iteritems %}
+                            <dt>{{obj_type}}: </dt>
+                            <dd>{{name}}</dd>
+                            {% endfor %}
+                        </dl>
+                        </p>
+                    {% endif %}
+                    <hr />
+                    <p><b>Block internal state: </b> {{ block.state }}</p>
+                <!--
+                    <p> File is being fetched </p>
+                        {{ block.celery_task }}
+                    <p> Source file was fetched. Started pre-processing. </p>
+                -->
+            </div>
+            <div class="col-lg-3">
+                {% for action_code, action_title in block.get_available_user_action %}
 
+                <button type="submit" class="btn btn-default btn-block"
+                        name="action" value="{{ action_code }}">
+                    {{ action_title }}
+                </button>
+
+                {% endfor %}
             </div>
-            <div class="col-lg-2">
-                <button>Do fetch</button><br />
-                <button class="btn btn-disabled">Assign sample classes</button> <br />
-                <button class="btn btn-disabled">Inspect</button><br />
-            </div>
+            </form>
+            {% if block.state == "source_was_preprocessed" %}
+                <p> <a href="#"> Inspect expression set </a></p>
+                <p> <a href="#"> Inspect GPL annotation </a></p>
+            {% endif %}
         </div>
     </div>
 </div>

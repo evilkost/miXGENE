@@ -21,9 +21,10 @@ from webapp.models import Experiment, WorkflowLayout, UploadedData, delete_exp
 from webapp.forms import UploadForm
 
 from workflow.actions import exc_action, set_exp_status
+from workflow.blocks import get_block_class_by_name
 from workflow.layout import write_result
 from workflow.common_tasks import fetch_geo_gse
-from workflow.plugins import get_plugin_by_name
+
 
 from mixgene.util import dyn_import, get_redis_instance, mkdir
 from mixgene.redis_helper import ExpKeys
@@ -55,9 +56,11 @@ def contact(request):
 
 def constructor(request, exp_id):
     exp = Experiment.objects.get(e_id=exp_id)
+    r = get_redis_instance()
+
     ctx = exp.get_ctx()
-    blocks_uids = ctx.get("exp_blocks_uid_list", [])
-    blocks = [(block_uid, ctx[block_uid]) for block_uid in blocks_uids]
+    blocks_uuids = exp.get_all_block_uuids(redis_instance=r)
+    blocks = [(block_uuid, exp.get_block(block_uuid)) for block_uuid in blocks_uuids]
     template = loader.get_template('constructor.html')
 
     context = {
@@ -66,31 +69,22 @@ def constructor(request, exp_id):
         "ctx": ctx,
         "blocks": blocks,
     }
+
     pprint(context)
     context = RequestContext(request, context)
-
     return HttpResponse(template.render(context))
 
 @csrf_protect
 def add_widget(request):
-    plugin_cls = get_plugin_by_name(request.POST['plugin'][1:])  # delete first # symbol
-    plugin = plugin_cls()
+    block_cls = get_block_class_by_name(request.POST['block'])  # delete first # symbol
+    block = block_cls()
     exp_id = int(request.POST['exp_id'])
     exp = Experiment.objects.get(e_id=exp_id)
-    ctx = exp.get_ctx()
 
-    #FIXME: possible race condition
-    #   Right solution: use more redis keys for one experiment
-    uids_list = ctx.get("exp_blocks_uid_list", [])
-    uids_list.append(plugin.uuid)
-    exp.update_ctx({
-        plugin.uuid: plugin,
-        "exp_blocks_uid_list": uids_list,
-    })
-
-    template = loader.get_template(plugin.widget)
+    exp.store_block(block, new_block=True)
+    template = loader.get_template(block.widget)
     context = {
-        "plugin": plugin,
+        "block": block,
         "ctx": exp.get_ctx(),
     }
     context = RequestContext(request, context)
@@ -103,12 +97,10 @@ def render_widget(request):
     exp = Experiment.objects.get(e_id=exp_id)
     ctx = exp.get_ctx()
 
-    block_uid = request.POST["block_uuid"]
-
-    plugin = ctx[block_uid]
-    template = loader.get_template(plugin.widget)
+    block = exp.get_block(request.POST["block_uuid"])
+    template = loader.get_template(block.widget)
     context = {
-        "plugin": plugin,
+        "block": block,
         "ctx": ctx,
     }
     context = RequestContext(request, context)
@@ -117,30 +109,21 @@ def render_widget(request):
 
 
 @csrf_protect
-def save_widget_form(request):
+def update_widget(request):
     if request.method == "POST":
         exp_id = int(request.POST['exp_id'])
         exp = Experiment.objects.get(e_id=exp_id)
         ctx = exp.get_ctx()
 
-        block_uid = request.POST['block_uuid']
-        plugin = ctx[block_uid]
+        action = request.POST['action']
+        block = exp.get_block(request.POST["block_uuid"])
+        block.do_action(action, exp=exp, ctx=ctx, request=request)
 
-        plugin.form = plugin.form_cls(request.POST)
-        if plugin.form.is_valid():
-            # process success
-            pass
-
-        exp.update_ctx({
-            block_uid: plugin,
-        })
-
-        template = loader.get_template(plugin.widget)
+        template = loader.get_template(block.widget)
         context = {
-            "plugin": plugin,
+            "block": block,
             "ctx": ctx,
         }
-
         context = RequestContext(request, context)
         return HttpResponse(template.render(context))
 

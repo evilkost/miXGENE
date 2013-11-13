@@ -2,6 +2,9 @@
 
 {% block inner %}
 <input id="exp_id_storage" type="hidden" name="exp_id" value="{{ ctx.exp_id }}" />
+<input id="csrf_token_storage" type="hidden" name="exp_id" value="{{ csrf_token }}" />
+
+
 
 <div class="div">
     <div class="col-lg-9 col-md-8 col-sm-6">
@@ -9,29 +12,29 @@
             <div class="col-lg-6">
                 <div class="alert alert-success">
                     Welcome to the experiment constructor! <br />
-                    Start by choosing slot to add plugin.
+                    Start by choosing slot to add block.
                 </div>
             </div>
         </div>
         <div id="worktable" class="row well">
-            {% for uuid, plugin in blocks %}
-                {% include plugin.widget %}
+            {% for uuid, block in blocks %}
+                {% include block.widget %}
             {% endfor %}
-            <button type="button" class="btn btn-lg btn-block btn-success plugin-placeholder">
-                Add plugin
+            <button type="button" class="btn btn-lg btn-block btn-success block-placeholder">
+                Add block
             </button>
         </div>
     </div>
 
-    <div id="plugins-pallet" class="col-lg-3 col-md-4 col-sm-5 bg-gray" style="display:none">
+    <div id="blocks-pallet" class="col-lg-3 col-md-4 col-sm-5 bg-gray" style="display:none">
         <h3></h3>
         <div class="panel panel-default">
             <div class="panel-heading">Input data</div>
             <div class="panel-body">
-                <a href="#fetch_ncbi_gse" class="btn btn-default btn-plugin-provider">
+                <a href="#fetch_ncbi_gse" class="btn btn-default btn-block-provider btn-block">
                     Fetch NCBI GSE
-                </a> <br />
-                <a href="#" class="btn btn-default">MSigDB gene sets</a> <br />
+                </a>
+                <a href="#" class="btn btn-default btn-block">MSigDB gene sets</a>
             </div>
         </div>
         <div class="panel panel-default">
@@ -62,7 +65,7 @@
 </div>
 
 <script type="text/javascript">
-    var csrf_token = '{{ csrf_token }}';
+
     {% include 'constructor.js' %}
 </script>
 

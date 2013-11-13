@@ -13,8 +13,8 @@ urlpatterns = patterns('',
     url(r'^constructor/(?P<exp_id>\d+)', 'webapp.views.constructor', name='constructor'),
     url(r'^add_widget', 'webapp.views.add_widget', name='add_widget'),
     url(r'^render_widget', 'webapp.views.render_widget', name='render_widget'),
-    url(r'^save_widget_form', 'webapp.views.save_widget_form',
-        name='save_widget_form'),
+    url(r'^update_widget', 'webapp.views.update_widget',
+        name='update_widget'),
 
 
     url(r'^experiments$', 'webapp.views.experiments', name='experiments'),

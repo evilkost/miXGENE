@@ -2,7 +2,7 @@ import cPickle as pickle
 
 from celery import task
 from mixgene.util import get_redis_instance
-from mixgene.redis_helper import ExpKeys
+from mixgene.redis_helper import ExpKeys, register_sub_key
 
 from webapp.models import Experiment
 
@@ -34,6 +34,12 @@ class AtomicAction(object):
             raw_res.pop(local_name)
         ctx.update(res)
         ctx.update(raw_res)
+
+        # temporary
+        #from webapp.models import Experiment
+        #exp = Experiment.objects.get(e_id=ctx["exp_id"])
+        #exp.update_ctx(ctx)
+
         return ctx
 
 
@@ -88,10 +94,8 @@ def set_exp_status(ctx):
 
     exp.save()
     #TODO: split into two functions or change name
-    key_context = ExpKeys.get_context_store_key(ctx['exp_id'])
     exp.update_ctx(ctx, r)
 
-    r.sadd(ExpKeys.get_all_exp_keys_key(ctx['exp_id']), key_context)
     print "SET_EXP_STATUS"
     print ctx
 
@@ -112,13 +116,14 @@ def collect_results(ctx):
 def par_collect(ctx, pre_ctx, subtask_name, parent_task):
     print "enter collect task"
     r = get_redis_instance()
-    key_done = ExpKeys.get_par_done_key(ctx['exp_id'])
+    key_done = ExpKeys.get_par_done_key(ctx['exp_id']) #FIXME: should depent on subtask also
     key_context = ExpKeys.get_par_context_result_key(ctx['exp_id'], subtask_name)
     member = subtask_name
     r.zadd(key_done, 1, member)
     r.set(key_context, pickle.dumps(ctx))
-    r.sadd(ExpKeys.get_all_exp_keys_key(ctx['exp_id']), key_done)
-    r.sadd(ExpKeys.get_all_exp_keys_key(ctx['exp_id']), key_context)
+
+    register_sub_key(ctx['exp_id'], key_done)
+    register_sub_key(ctx['exp_id'], key_context)
 
     entire_zset = r.zrange(key_done, 0, -1, withscores=True)
     print entire_zset
@@ -141,8 +146,8 @@ def exc_par(ctx, par_task, c_subtask):
     r = get_redis_instance()
     key_subtask = ExpKeys.get_par_return_subtask_key(ctx['exp_id'], par_task.name)
     csbp = pickle.dumps(c_subtask)
-    r.set(key_subtask, csbp )
-    r.sadd(ExpKeys.get_all_exp_keys_key(ctx['exp_id']), key_subtask)
+    r.set(key_subtask, csbp)
+    register_sub_key(ctx['exp_id'], key_subtask, r)
     for st in par_task.subtasks:
         cb_subtask = par_collect.s(ctx, st.name, par_task)
         exc_action.s(ctx, st, cb_subtask).apply_async()
