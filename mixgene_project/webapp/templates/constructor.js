@@ -48,9 +48,11 @@ var block_config = {};
 
 var block_placeholder_handle = null;
 
-$(".block-placeholder").click(function(event_obj) {
+$(".btn-block-placeholder").click(function(event_obj) {
     $("#blocks-pallet").show();
     block_placeholder_handle = this;
+    //alert($(event_obj.target).attr('class'));
+    $(event_obj.target).hide()
 });
 
 
@@ -68,6 +70,7 @@ $(".btn-block-provider").click(function(event_obj) {
         blocks_list.push(block_uuid);
 
         $("#blocks-pallet").hide();
+        $(".btn-block-provider").show();
     }
 
     $.ajax({

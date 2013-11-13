@@ -5,9 +5,8 @@
 <input id="csrf_token_storage" type="hidden" name="exp_id" value="{{ csrf_token }}" />
 
 
-
 <div class="div">
-    <div class="col-lg-9 col-md-8 col-sm-6">
+    <div class="col-lg-12">
         <div class="row">
             <div class="col-lg-6">
                 <div class="alert alert-success">
@@ -20,47 +19,57 @@
             {% for uuid, block in blocks %}
                 {% include block.widget %}
             {% endfor %}
-            <button type="button" class="btn btn-lg btn-block btn-success block-placeholder">
+            <button type="button" class="btn btn-lg btn-block btn-success btn-block-placeholder">
                 Add block
             </button>
+            <div id="blocks-pallet" class="row bg-gray" style="display:none">
+                <div class="col-xs-3" >
+                    <div class="panel panel-default">
+                        <div class="panel-heading">Input data</div>
+                        <div class="panel-body">
+                            <a href="#fetch_ncbi_gse" class="btn btn-default btn-block-provider btn-block">
+                                Fetch NCBI GSE
+                            </a>
+                            <a href="#" class="btn btn-default btn-block disabled">MSigDB gene sets</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xs-3" >
+                    <div class="panel panel-default">
+                        <div class="panel-heading">Unit conversion</div>
+                        <div class="panel-body">
+                            <a href="#" class="btn btn-default btn-block disabled">PCA Aggregation</a>
+                            <a href="#" class="btn btn-default btn-block disabled">Mean Aggregation</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xs-3" >
+                    <div class="panel panel-default">
+                        <div class="panel-heading">Classifiers</div>
+                        <div class="panel-body">
+                            <a href="#" class="btn btn-default btn-block disabled">T-test</a>
+                            <a href="#" class="btn btn-default btn-block disabled">SVM</a>
+                            <a href="#" class="btn btn-default btn-block disabled">Decision tree</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xs-3" >
+                    <div class="panel panel-default">
+                        <div class="panel-heading">Visualizers</div>
+                        <div class="panel-body">
+                            <a href="#" class="btn btn-default btn-block disabled">2D PCA plot</a>
+                            <a href="#" class="btn btn-default btn-block disabled">Boxplot</a>
+                            <a href="#" class="btn btn-default btn-block disabled">Raw table</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
         </div>
     </div>
 
-    <div id="blocks-pallet" class="col-lg-3 col-md-4 col-sm-5 bg-gray" style="display:none">
-        <h3></h3>
-        <div class="panel panel-default">
-            <div class="panel-heading">Input data</div>
-            <div class="panel-body">
-                <a href="#fetch_ncbi_gse" class="btn btn-default btn-block-provider btn-block">
-                    Fetch NCBI GSE
-                </a>
-                <a href="#" class="btn btn-default btn-block">MSigDB gene sets</a>
-            </div>
-        </div>
-        <div class="panel panel-default">
-            <div class="panel-heading">Unit conversion</div>
-            <div class="panel-body">
-                <a href="#" class="btn btn-default">PCA Aggregation</a> <br />
-                <a href="#" class="btn btn-default">Mean Aggregation</a> <br />
-            </div>
-        </div>
-        <div class="panel panel-default">
-            <div class="panel-heading">Classifiers</div>
-            <div class="panel-body">
-                <a href="#" class="btn btn-default">T-test</a> <br />
-                <a href="#" class="btn btn-default">SVM</a> <br />
-                <a href="#" class="btn btn-default">Decision tree</a> <br />
-            </div>
-        </div>
-        <div class="panel panel-default">
-            <div class="panel-heading">Visualizers</div>
-            <div class="panel-body">
-                <a href="#" class="btn btn-default">2D PCA plot</a> <br />
-                <a href="#" class="btn btn-default">Boxplot</a> <br />
-                <a href="#" class="btn btn-default">Raw table</a> <br />
-            </div>
-        </div>
-    </div>
+
 
 </div>
 
