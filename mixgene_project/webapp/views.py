@@ -292,17 +292,8 @@ def alter_exp(request, exp_id, action):
 
 @login_required(login_url='/auth/login/')
 def add_experiment(request):
-    template = loader.get_template('add_experiment.html')
-    context = RequestContext(request, {
-        "next": "/add_experiment",
-        "exp_add_page_active": True,
-        "all_layouts": WorkflowLayout.objects.all()
-    })
-    return HttpResponse(template.render(context))
-
-@login_required(login_url='auth/login/')
-def create_experiment(request, layout_id):
-    layout = WorkflowLayout.objects.get(w_id=layout_id)
+    #TODO: remove this temporary solution
+    layout = WorkflowLayout.objects.get(wfl_class="workflow.layout.DummyWfl")
     wfl_class = dyn_import(layout.wfl_class)
     wf = wfl_class()
 
@@ -323,14 +314,51 @@ def create_experiment(request, layout_id):
 
     mkdir(exp.get_data_folder())
 
-    template = loader.get_template(wf.template)
-    context = RequestContext(request, {
-        "exp_add_page_active": True,
-        "layout": layout,
-        "wf": wf,
-        "exp": exp,
-    })
-    return redirect("/experiment/%s" % exp.e_id) # TODO use reverse
+    return redirect("/constructor/%s" % exp.e_id) # TODO use reverse
+
+
+
+# @login_required(login_url='/auth/login/')
+# def add_experiment(request):
+#     template = loader.get_template('add_experiment.html')
+#     context = RequestContext(request, {
+#         "next": "/add_experiment",
+#         "exp_add_page_active": True,
+#         "all_layouts": WorkflowLayout.objects.all()
+#     })
+#     return HttpResponse(template.render(context))
+#
+# @login_required(login_url='auth/login/')
+# def create_experiment(request, layout_id):
+#     layout = WorkflowLayout.objects.get(w_id=layout_id)
+#     wfl_class = dyn_import(layout.wfl_class)
+#     wf = wfl_class()
+#
+#     exp = Experiment(
+#         author=request.user,
+#         workflow=layout,
+#         status='initiated',  # TODO: until layout configuration will be implemented
+#     )
+#     exp.save()
+#     ctx = wf.init_ctx
+#     ctx.update({
+#         "exp_id": exp.e_id,
+#
+#         "input_vars": wf.input_vars,
+#         "result_vars": wf.result_vars,
+#     })
+#     exp.init_ctx(ctx)
+#
+#     mkdir(exp.get_data_folder())
+#
+#     template = loader.get_template(wf.template)
+#     context = RequestContext(request, {
+#         "exp_add_page_active": True,
+#         "layout": layout,
+#         "wf": wf,
+#         "exp": exp,
+#     })
+#     return redirect("/experiment/%s" % exp.e_id) # TODO use reverse
 
 #@login_required(login_url='/auth/login/')
 def get_flot_2d_scatter(request, exp_id, filename):

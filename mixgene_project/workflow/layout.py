@@ -29,7 +29,7 @@ def write_result(ctx):
 #TODO: Or generate from json DSL
 class AbstractWorkflowLayout(object):
     """
-        Sceletone to create custom workflows
+        Skeleton to create custom workflows
     """
     def __init__(self, *args, **kwargs):
         self.input_vars = {}
@@ -123,6 +123,20 @@ class SampleWfL(AbstractWorkflowLayout):
         seqt = SeqActions("seqt", [at1, at2])
         main_action = ParActions("part", [seqt, at3])
         return main_action
+
+
+class DummyWfl(AbstractWorkflowLayout):
+    def __init__(self):
+        super(DummyWfl, self).__init__()
+        self.template = ""
+        self.template_result = ""
+
+    def validate_exp(self, exp, request):
+        ctx = exp.get_ctx()
+        return ctx, None
+
+    def get_main_action(self, ctx):
+        return None
 
 
 @task(name='workflow.layout.geo_fetch_dummy')

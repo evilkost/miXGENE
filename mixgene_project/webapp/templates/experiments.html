@@ -26,8 +26,8 @@
                 {% for exp in exps %}
                 <tr>
                     <th>
-                        <a href="{% url 'webapp.views.exp_details' exp.e_id %}">
-                            {% url 'webapp.views.exp_details' exp.e_id %}
+                        <a href="{% url 'webapp.views.constructor' exp.e_id %}">
+                            {% url 'webapp.views.constructor' exp.e_id %}
                         </a>
                     </th>
                     <!-- <th> {{ exp.e_id }}</th> -->

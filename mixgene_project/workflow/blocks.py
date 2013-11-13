@@ -47,16 +47,15 @@ class GenericBlock(object):
 
     def do_action(self, action_name, *args, **kwargs):
         #TODO: add notification to html client
-        #if action_name in [row[0] for row in self.get_allowed_actions()]:
+        if action_name in [row[0] for row in self.get_allowed_actions()]:
+            self.fsm.current = self.state
+            getattr(self.fsm, action_name)()
+            self.state = self.fsm.current
+            print "change state to: " + self.state
 
-        self.fsm.current = self.state
-        getattr(self.fsm, action_name)()
-        self.state = self.fsm.current
-        print "change state to: " + self.state
-
-        getattr(self, action_name)(*args, **kwargs)
-        #else:
-        #    raise RuntimeError("Action %s isn't available" % action_name)
+            getattr(self, action_name)(*args, **kwargs)
+        else:
+            raise RuntimeError("Action %s isn't available" % action_name)
 
     def is_runnable(self, ctx):
         return False
@@ -89,6 +88,7 @@ class FetchGseForm(forms.Form):
         # not.
         return data
 
+
 class FetchGSE(GenericBlock):
     fsm = Fysom({
         'events': [
@@ -112,7 +112,6 @@ class FetchGSE(GenericBlock):
 
             {'name': 'error_during_preprocess', 'src': 'source_is_being_preprocessed', 'dst': 'form_valid'},
             {'name': 'successful_preprocess', 'src': 'source_is_being_preprocessed', 'dst': 'source_was_preprocessed'},
-
         ],
     })
 
@@ -247,8 +246,23 @@ class FetchGSE(GenericBlock):
         #exp.store_block(self)
 
 
+class AssignSampleClasses(GenericBlock):
+    fsm = Fysom({
+        'events': [
+            {'name': 'bind_variable', 'src': 'created', 'dst': 'variable_bound'},
+            {'name': 'assign_samples', 'src': 'variable_bound', 'dst': 'some_samples_assigned'},
+            {'name': 'complete_assignement', 'src': 'some_samples_assigned', 'dst': 'assignement_done'},
+        ]
+    })
+
+
+    def __init__(self, *args, **kwargs):
+        super(AssignSampleClasses, self).__init__(*args, **kwargs)
+        self.state = 'created'
+
 block_classes_by_name = {
     "fetch_ncbi_gse": FetchGSE,
+    "assign_sample_classes": AssignSampleClasses,
 }
 
 
