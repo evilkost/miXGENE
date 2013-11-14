@@ -168,7 +168,7 @@ def preprocess_soft(exp, block):
 
         platform_annotation = PlatformAnnotation("TODO:GET NAME FROM SOFT",
              base_dir=exp.get_data_folder(),
-             base_filename=block.source_file.filename + "_annotation"
+             base_filename=block.uuid + "_annotation"
         )
 
         platform_annotation.gene_units = Units.ENTREZ_GENE_ID
@@ -185,13 +185,20 @@ def preprocess_soft(exp, block):
             )
             for i in range(3, len(soft))
         ]))
-        #import ipdb; ipdb.set_trace()
-        expression_set = ExpressionSet(exp.get_data_folder(), block.source_file.filename + "_es")
+
+        expression_set = ExpressionSet(exp.get_data_folder(), block.uuid + "_es")
         expression_set.store_assay_data_frame(assay_df)
 
         factors = [soft[i].entity_attributes
                    for i in range(3, len(soft))]
-        pheno_df = DataFrame(factors)
+        pheno_index = []
+        for factor in factors:
+            factor.pop('sample_table_begin')
+            factor.pop('sample_table_end')
+            pheno_index.append(factor.pop('Sample_geo_accession'))
+
+        pheno_df = DataFrame([Series(factor) for factor in factors], index=pheno_index)
+        pheno_df.index.name = 'Sample_geo_accession'
         expression_set.store_pheno_data_frame(pheno_df)
         block.expression_set = expression_set
 

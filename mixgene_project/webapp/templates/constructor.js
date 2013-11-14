@@ -1,16 +1,35 @@
 var $exp_id = $("#exp_id_storage").attr("value");
 var $csrf_token = $("#csrf_token_storage").attr("value");
 
+var spin_opts = {
+    lines: 9, // The number of lines to draw
+    length: 0, // The length of each line
+    width: 3, // The line thickness
+    radius: 6, // The radius of the inner circle
+    corners: 1, // Corner roundness (0..1)
+    rotate: 0, // The rotation offset
+    direction: 1, // 1: clockwise, -1: counterclockwise
+    color: '#000', // #rgb or #rrggbb or array of colors
+    speed: 1, // Rounds per second
+    trail: 37, // Afterglow percentage
+    shadow: true, // Whether to render a shadow
+    hwaccel: false, // Whether to use hardware acceleration
+    className: 'spinner', // The CSS class to assign to the spinner
+    zIndex: 2e9, // The z-index (defaults to 2000000000)
+    top: 'auto', // Top position relative to parent in px
+    left: 'auto' // Left position relative to parent in px
+};
+
 function block_action_click(eventObj){
     document.obj = eventObj;
     var $target = $(eventObj.target);
     var block_uuid = $target.attr("data-block-uuid")
     var action_name = $target.attr("href").substr(1);
 
-    var url = "/update_widget/" + action_name;
+    var url = "/update_block/" + action_name;
     function onDataReceived(response){
         $("#"+block_uuid).replaceWith(response)
-        register_block_callbacks(block_uuid);
+        restore_bindings_after_injection(block_uuid);
     }
     $.ajax({
         url: url,
@@ -28,12 +47,17 @@ function block_action_click(eventObj){
 function ajaxFormShowResponse(response_text, status_text, xhr, $form){
     var block_uuid = $form.children("input[name='block_uuid']").attr('value');
     $("#"+block_uuid).replaceWith(response_text);
-    register_block_callbacks(block_uuid);
+    restore_bindings_after_injection(block_uuid);
 }
 
-function register_block_callbacks(block_uuid){
+function add_spinner($obj){
+    new Spinner(spin_opts).spin($obj)
+}
+
+function restore_bindings_after_injection(block_uuid){
     $("#"+block_uuid).find(".form-ajax-submit").ajaxForm(ajaxFormShowResponse);
     //$("#"+block_uuid).find(".btn-block-action").click(block_action_click);
+    add_spinner($('#'+block_uuid+' .spin-placeholder'))
 }
 
 
@@ -58,19 +82,19 @@ $(".btn-block-placeholder").click(function(event_obj) {
 
 $(".btn-block-provider").click(function(event_obj) {
     var block = $(event_obj.target).attr("href").substr(1);
-    var url = "/add_widget";
+    var url = "/add_block";
 
     function onDataReceived(response){
         $(block_placeholder_handle).before(response);
         var block_uuid = $(response).attr('id');
 
-        register_block_callbacks(block_uuid);
+        restore_bindings_after_injection(block_uuid);
         document.block_uuid = block_uuid;
 
         blocks_list.push(block_uuid);
 
         $("#blocks-pallet").hide();
-        $(".btn-block-provider").show();
+        $(".btn-block-placeholder").show();
     }
 
     $.ajax({

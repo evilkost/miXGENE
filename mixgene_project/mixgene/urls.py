@@ -11,11 +11,12 @@ urlpatterns = patterns('',
     url(r'^contact$', 'webapp.views.contact', name='contact'),
 
     url(r'^constructor/(?P<exp_id>\d+)', 'webapp.views.constructor', name='constructor'),
-    url(r'^add_widget', 'webapp.views.add_widget', name='add_widget'),
-    url(r'^render_widget', 'webapp.views.render_widget', name='render_widget'),
-    url(r'^update_widget', 'webapp.views.update_widget',
-        name='update_widget'),
+    url(r'^add_block', 'webapp.views.add_block', name='add_block'),
+    url(r'^render_block', 'webapp.views.render_block', name='render_block'),
+    url(r'^update_block', 'webapp.views.update_block', name='update_block'),
 
+    url(r'^block_sub_page/(?P<exp_id>\d+)/(?P<block_uuid>[\w|\d]+)/(?P<sub_page>\w+)/',
+        'webapp.views.block_sub_page', name="block_sub_page"),
 
     url(r'^experiments$', 'webapp.views.experiments', name='experiments'),
     url(r'^experiment/(?P<exp_id>\d+)/$', 'webapp.views.exp_details', name='exp_details'),
@@ -36,7 +37,7 @@ urlpatterns = patterns('',
     url(r'^get_flot_2d_scatter/(?P<exp_id>\d+)/(?P<filename>.*)$', 'webapp.views.get_flot_2d_scatter', name='get_flot_2d_scatter'),
     url(r'^get_csv_as_table/(?P<exp_id>\d+)/(?P<filename>.*)$', 'webapp.views.get_csv_as_table', name='get_csv_as_table'),
 
-    url(r'^get_gse_samples_info/(?P<exp_id>\d+)/(?P<var_name>.*)$', 'webapp.views.get_gse_samples_info',
+    url(r'^get_gse_samples_info/(?P<exp_id>\d+)/(?P<block_uuid>.*)$', 'webapp.views.get_gse_samples_info',
         name='get_gse_samples_info'),
     # Examples:
     # url(r'^$', 'mixgene.views.home', name='home'),

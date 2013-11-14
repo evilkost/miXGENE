@@ -5,6 +5,8 @@ import gzip
 from pprint import pprint
 from collections import defaultdict
 
+import numpy as np
+
 from django.http import HttpResponse
 from django.template import RequestContext, loader
 from django.shortcuts import redirect
@@ -21,7 +23,7 @@ from webapp.models import Experiment, WorkflowLayout, UploadedData, delete_exp
 from webapp.forms import UploadForm
 
 from workflow.actions import exc_action, set_exp_status
-from workflow.blocks import get_block_class_by_name
+from workflow.blocks import get_block_class_by_name, FetchGSE
 from workflow.layout import write_result
 from workflow.common_tasks import fetch_geo_gse
 
@@ -75,7 +77,7 @@ def constructor(request, exp_id):
     return HttpResponse(template.render(context))
 
 @csrf_protect
-def add_widget(request):
+def add_block(request):
     block_cls = get_block_class_by_name(request.POST['block'])  # delete first # symbol
     block = block_cls()
     exp_id = int(request.POST['exp_id'])
@@ -92,7 +94,7 @@ def add_widget(request):
     return HttpResponse(template.render(context))
 
 
-def render_widget(request):
+def render_block(request):
     exp_id = int(request.POST['exp_id'])
     exp = Experiment.objects.get(e_id=exp_id)
     ctx = exp.get_ctx()
@@ -109,7 +111,7 @@ def render_widget(request):
 
 
 @csrf_protect
-def update_widget(request):
+def update_block(request):
     if request.method == "POST":
         exp_id = int(request.POST['exp_id'])
         exp = Experiment.objects.get(e_id=exp_id)
@@ -129,6 +131,21 @@ def update_widget(request):
 
     return HttpResponse("")
 
+
+def block_sub_page(request, exp_id, block_uuid, sub_page):
+    exp = Experiment.objects.get(e_id=exp_id)
+    ctx = exp.get_ctx()
+    block = exp.get_block(block_uuid)
+    print block.uuid
+
+    template = loader.get_template(block.pages[sub_page])
+    context = {
+        "block_": block,
+        "ctx": ctx,
+        "exp": exp,
+    }
+    context = RequestContext(request, context)
+    return HttpResponse(template.render(context))
 
 
 @csrf_protect
@@ -390,35 +407,45 @@ def get_flot_2d_scatter(request, exp_id, filename):
     json.dump(result, resp)
     return resp
 
+
 #@cache_page(60 * 15)
-def get_gse_samples_info(request, exp_id, var_name):
+def get_gse_samples_info(request, exp_id, block_uuid):
     exp = Experiment.objects.get(e_id=exp_id)
-    ctx = exp.get_ctx()
-    fin = ctx['input_vars'][var_name]
+    block = exp.get_block(block_uuid)
+    assert isinstance(block, FetchGSE)
 
-    from Bio.Geo import parse as parse_geo
+    pheno_df = block.expression_set.get_pheno_data_frame()
+    pheno_headers = [pheno_df.index.name]
+    pheno_headers.extend(pheno_df.columns.tolist())
 
-    assert fin.geo_type == "GSE"
-    # TODO: check var type
-    samples = {}
-    for record in parse_geo(gzip.open(fin.filepath)):
-        if record.entity_type == "SAMPLE":
-            sample_id = record.entity_attributes['Sample_geo_accession']
-            samples[sample_id] = record.entity_attributes
-            # cleanup
-            samples[sample_id].pop('sample_table_begin')
-            samples[sample_id].pop('sample_table_end')
+    classes = []
+    if 'User_class' in pheno_df.columns:
+        for _, x in tuple(pheno_df[['User_class']].to_records()):
 
-    #TODO: cache samples object
-    gse_factors = ctx.get("gse_factors", {})
+            if isinstance(x, float) and np.isnan(x):
+                pass
+            else:
+                classes.append(str(x))
+    else:
+        pheno_headers.append('User_class')
+    classes = list(set(classes))
+
+    pheno = []
+    for rec in pheno_df.to_records():
+        row = []
+        for cell in tuple(rec):
+            if isinstance(cell, float) and np.isnan(cell):
+                row.append('')
+            else:
+                row.append(str(cell))
+        pheno.append(row)
+    #import ipdb; ipdb.set_trace()
     result = {
-        "samples": samples,
-        "gse_factors": gse_factors,
-        "classes": [c for c in
-                    set(map(str, gse_factors.values()))
-                    if c != ""],
-    }
+        "classes": classes,
+        "pheno": pheno,
+        "pheno_headers": pheno_headers,
 
+    }
     resp = HttpResponse(content_type="application/json")
     json.dump(result, resp)
 

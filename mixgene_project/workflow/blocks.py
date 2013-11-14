@@ -1,7 +1,9 @@
+import json
 from uuid import uuid1
 
 from django import forms
 from fysom import Fysom
+import  pandas as pd
 
 from structures import ExpressionSet, PlatformAnnotation
 from webapp.models import Experiment
@@ -23,10 +25,10 @@ class GenericBlock(object):
         self.required_inputs = []
         self.provide_outputs = []
 
-        self.widget = None
-
-        self.all_actions = []
         self.state = None
+
+        self.errors = []
+        self.warnings = []
 
     def get_available_user_action(self):
         return self.get_allowed_actions(True)
@@ -112,18 +114,43 @@ class FetchGSE(GenericBlock):
 
             {'name': 'error_during_preprocess', 'src': 'source_is_being_preprocessed', 'dst': 'form_valid'},
             {'name': 'successful_preprocess', 'src': 'source_is_being_preprocessed', 'dst': 'source_was_preprocessed'},
+
+            {'name': 'assign_sample_classes', 'src': 'source_was_preprocessed', 'dst': 'sample_classes_assigned'},
+            {'name': 'assign_sample_classes', 'src': 'sample_classes_assigned', 'dst': 'sample_classes_assigned'},
         ],
     })
 
+    all_actions = [
+        # method name, human readable title, user visible
+        ("save_form", "Save parameters", True),
+
+        ("on_form_is_valid", "", False),
+        ("on_form_not_valid", "", False),
+
+        ("show_form", "Edit parameters", True),
+        ("reset_form", "Reset parameters", True),
+
+        ("start_fetch", "Fetch data", True),
+        ("error_during_fetch", "", False),
+        ("successful_fetch", "", False),
+
+        ("start_preprocess", "", False),
+        ("error_during_preprocess", "", False),
+        ("successful_preprocess", "", False),
+
+        ("assign_sample_classes", "", False),
+    ]
+    widget = "widgets/fetch_ncbi_gse.html"
+    pages = {
+        "assign_sample_classes": "widgets/fetch_gse/assign_sample_classes.html",
+    }
+    form_data = {
+        "expression_set_name": "expression",
+        "gpl_annotation_name": "annotation",
+    }
+
     def __init__(self):
         super(FetchGSE, self).__init__("Fetch ncbi gse", "user_input")
-
-        self.widget = "widgets/fetch_ncbi_gse.html"
-
-        self.form_data = {
-            "expression_set_name": "expression",
-            "gpl_annotation_name": "annotation",
-        }
 
         self.form_cls = FetchGseForm
         self.form = self.form_cls(self.form_data)
@@ -139,24 +166,7 @@ class FetchGSE(GenericBlock):
         self.expression_set = None
         self.gpl_annotation = None
 
-        self.all_actions = [
-            # method name, human readable title, user visible
-            ("save_form", "Save parameters", True),
 
-            ("on_form_is_valid", "", False),
-            ("on_form_not_valid", "", False),
-
-            ("show_form", "Edit parameters", True),
-            ("reset_form", "Reset parameters", True),
-
-            ("start_fetch", "Fetch data", True),
-            ("error_during_fetch", "", False),
-            ("successful_fetch", "", False),
-
-            ("start_preprocess", "", False),
-            ("error_during_preprocess", "", False),
-            ("successful_preprocess", "", False),
-        ]
 
     def get_expression_set_name(self):
         return self.form["expression_set_name"].value()
@@ -178,6 +188,11 @@ class FetchGSE(GenericBlock):
 
     def is_form_fields_editable(self):
         if self.state in ['created', 'form_modified']:
+            return True
+        return False
+
+    def is_sub_pages_visible(self):
+        if self.state in ['source_was_preprocessed', 'sample_classes_assigned']:
             return True
         return False
 
@@ -238,6 +253,14 @@ class FetchGSE(GenericBlock):
 
     def successful_preprocess(self, exp, *args, **kwargs):
         self.clean_errors()
+        exp.store_block(self)
+
+    def assign_sample_classes(self, exp, ctx, request):
+        pheno_df = self.expression_set.get_pheno_data_frame()
+        sample_classes = json.loads(request.POST['sample_classes'])
+        pheno_df['User_class'] = pd.Series(sample_classes)
+
+        self.expression_set.store_pheno_data_frame(pheno_df)
         exp.store_block(self)
 
     def revoke_task(self, exp, *args, **kwargs):

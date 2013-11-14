@@ -23,7 +23,7 @@ quit
 
 
 # installing Django from PIP
-sudo pip install -U Django South Celery django-celery redis hiredis pandas biopython rpy2 fysom flower
+sudo pip install -U Django South Celery django-celery redis hiredis pandas biopython rpy2 fysom flower django-extensions
 
 
 # init base db tables and prepare for migrations

@@ -1,5 +1,6 @@
 from __builtin__ import staticmethod
-import os, shutil
+import os
+import shutil
 import cPickle as pickle
 import hashlib
 
@@ -34,7 +35,7 @@ class CachedFile(models.Model):
         res = CachedFile.objects.filter(uri=uri)
         if len(res) == 0:
             cf = CachedFile()
-            cf.uri = uri;
+            cf.uri = uri
             cf.save()
         else:
             cf = res[0]
@@ -48,7 +49,6 @@ class CachedFile(models.Model):
             return None
         else:
             return res[0]
-
 
 
 class WorkflowLayout(models.Model):
@@ -214,6 +214,16 @@ class Experiment(models.Model):
         print "block %s was stored with state: %s" % (block.uuid, block.state)
 
     def get_block(self, block_uuid, redis_instance=None):
+        """
+            @type  block_uuid: str
+            @param block_uuid: Block instance identifier
+
+            @type  redis_instance: Redis
+            @param redis_instance: Instance of redis client
+
+            @rtype: GenericBlock
+            @return: Block instance
+        """
         if redis_instance is None:
             r = get_redis_instance()
         else:
@@ -228,8 +238,6 @@ class Experiment(models.Model):
             r = redis_instance
 
         return r.lrange(ExpKeys.get_exp_blocks_list_key(self.e_id), 0, -1) or []
-
-
 
 
 def delete_exp(exp):

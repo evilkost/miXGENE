@@ -9,13 +9,13 @@ from mixgene.settings import R_LIB_CUSTOM_PATH
 
 
 class DataFrameStorage(object):
+    sep = " "
+    header = 0
+    index_col = 0
+    compression = "gzip"
+
     def __init__(self, filepath):
         self.filepath = filepath
-
-        self.sep = " "
-        self.header = 0
-        self.index_col = None
-        self.compression = "gzip"
 
     def load(self):
         """
@@ -41,7 +41,6 @@ class DataFrameStorage(object):
             df.to_csv(
                 output,
                 sep=self.sep,
-                header=self.header,
                 index_col=self.index_col,
             )
 
