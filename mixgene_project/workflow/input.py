@@ -1,5 +1,4 @@
 from uuid import uuid1
-
 #TODO: Maybe somehow merge with django form fields
 
 
@@ -11,7 +10,6 @@ class AbsInputVar(object):
         self.uuid = str(uuid1())
 
         self.required = kwargs.get("required", False)
-
         self.error = None
 
 

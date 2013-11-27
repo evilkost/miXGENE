@@ -11,6 +11,7 @@ from webapp.models import Experiment
 from workflow.common_tasks import fetch_geo_gse, preprocess_soft, append_error_to_block
 
 
+
 class GenericBlock(object):
     def __init__(self, name, type):
         """
@@ -285,8 +286,30 @@ class AssignSampleClasses(GenericBlock):
 
 block_classes_by_name = {
     "fetch_ncbi_gse": FetchGSE,
-    "assign_sample_classes": AssignSampleClasses,
 }
+
+blocks_by_group = [
+    ("Input data", [
+        ("fetch_ncbi_gse", "Fetch NCBI GSE"),
+        ("fetch_msigdb_gs", "Fetch MSigDB gene sets"),
+    ]),
+    ("Conversion", [
+        ("pca_aggregation", "PCA aggregation"),
+        ("mean_aggregation", "Mean aggregation"),
+    ]),
+    ("Classifiers", [
+        ("t_test", "T-test"),
+        ("svm", "SVM"),
+        ("dtree", "Decision tree"),
+    ]),
+    ("Visualisation", [
+        ("2d_pca", "2D PCA Plot"),
+        ("boxplot", "Boxplot"),
+        ("render_table", "Raw table")
+    ]),
+]
+
+
 
 
 def get_block_class_by_name(name):

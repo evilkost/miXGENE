@@ -23,7 +23,7 @@ from webapp.models import Experiment, WorkflowLayout, UploadedData, delete_exp
 from webapp.forms import UploadForm
 
 from workflow.actions import exc_action, set_exp_status
-from workflow.blocks import get_block_class_by_name, FetchGSE
+from workflow.blocks import get_block_class_by_name, FetchGSE, blocks_by_group
 from workflow.layout import write_result
 from workflow.common_tasks import fetch_geo_gse
 
@@ -70,6 +70,7 @@ def constructor(request, exp_id):
         "exp": exp,
         "ctx": ctx,
         "blocks": blocks,
+        "blocks_by_group": blocks_by_group,
     }
 
     pprint(context)

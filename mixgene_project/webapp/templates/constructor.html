@@ -23,49 +23,21 @@
                 Add block
             </button>
             <div id="blocks-pallet" class="row bg-gray" style="display:none">
+                {% for group_title, group in blocks_by_group %}
                 <div class="col-xs-3" >
                     <div class="panel panel-default">
                         <div class="panel-heading">Input data</div>
                         <div class="panel-body">
-                            <a href="#fetch_ncbi_gse" class="btn btn-default btn-block-provider btn-block">
-                                Fetch NCBI GSE
+                            {% for block_code, block_title in group %}
+                            <a href="#{{block_code}}" class="btn btn-default btn-block-provider btn-block">
+                                {{ block_title}}
                             </a>
-                            <a href="#" class="btn btn-default btn-block disabled">MSigDB gene sets</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-xs-3" >
-                    <div class="panel panel-default">
-                        <div class="panel-heading">Unit conversion</div>
-                        <div class="panel-body">
-                            <a href="#" class="btn btn-default btn-block disabled">PCA Aggregation</a>
-                            <a href="#" class="btn btn-default btn-block disabled">Mean Aggregation</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-xs-3" >
-                    <div class="panel panel-default">
-                        <div class="panel-heading">Classifiers</div>
-                        <div class="panel-body">
-                            <a href="#" class="btn btn-default btn-block disabled">T-test</a>
-                            <a href="#" class="btn btn-default btn-block disabled">SVM</a>
-                            <a href="#" class="btn btn-default btn-block disabled">Decision tree</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-xs-3" >
-                    <div class="panel panel-default">
-                        <div class="panel-heading">Visualizers</div>
-                        <div class="panel-body">
-                            <a href="#" class="btn btn-default btn-block disabled">2D PCA plot</a>
-                            <a href="#" class="btn btn-default btn-block disabled">Boxplot</a>
-                            <a href="#" class="btn btn-default btn-block disabled">Raw table</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                            {% endfor %}
 
-
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
         </div>
     </div>
 
