@@ -1,4 +1,5 @@
 from __builtin__ import staticmethod
+from collections import defaultdict
 import os
 import shutil
 import cPickle as pickle
@@ -12,8 +13,6 @@ from mixgene.util import get_redis_instance
 from mixgene.redis_helper import ExpKeys
 from mixgene.util import dyn_import
 
-
-# Create your models here.
 
 class CachedFile(models.Model):
     uri = models.TextField(default="")
@@ -92,6 +91,10 @@ class Experiment(models.Model):
     def __unicode__(self):
         return u"%s" % self.e_id
 
+    def __init__(self, *args, **kwargs):
+        super(Experiment, self).__init__(*args, **kwargs)
+        self._blocks_grouped_by_provided_type = None
+
     @staticmethod
     def get_exp_by_ctx(ctx):
         return Experiment.objects.get(e_id=ctx["exp_id"])
@@ -112,8 +115,11 @@ class Experiment(models.Model):
         pipe.set(key_context_version, 0)
 
         pipe.sadd(ExpKeys.get_all_exp_keys_key(self.e_id),
-                  [key_context, key_context_version,
-                   ExpKeys.get_exp_blocks_list_key(self.e_id)])
+                  [key_context,
+                   key_context_version,
+                   ExpKeys.get_exp_blocks_list_key(self.e_id),
+                   ExpKeys.get_blocks_uuid_by_alias(self.e_id),
+                  ])
 
         pipe.execute()
 
@@ -209,9 +215,34 @@ class Experiment(models.Model):
             pipe.sadd(ExpKeys.get_all_exp_keys_key(self.e_id), block_key)
 
         pipe.set(block_key, pickle.dumps(block))
+        pipe.hset(ExpKeys.get_blocks_uuid_by_alias(self.e_id), block.base_name, block.uuid)
         pipe.execute()
 
         print "block %s was stored with state: %s" % (block.uuid, block.state)
+
+    @staticmethod
+    def get_exp_from_request(request):
+        exp_id = int(request.POST['exp_id'])
+        return Experiment.objects.get(e_id=exp_id)
+
+    def get_block_by_alias(self, alias, redis_instance=None):
+        """
+            @type  alias: str
+            @param alias: Human readable block name, can be altered
+
+            @type  redis_instance: Redis
+            @param redis_instance: Instance of redis client
+
+            @rtype: GenericBlock
+            @return: Block instance
+        """
+        if redis_instance is None:
+            r = get_redis_instance()
+        else:
+            r = redis_instance
+
+        uuid = r.hget(ExpKeys.get_blocks_uuid_by_alias(self.e_id), alias)
+        return self.get_block(uuid, r)
 
     def get_block(self, block_uuid, redis_instance=None):
         """
@@ -231,7 +262,36 @@ class Experiment(models.Model):
 
         return pickle.loads(r.get(ExpKeys.get_block_key(block_uuid)))
 
-    def get_all_block_uuids(self, include_inner_blocks=False, redis_instance=None):
+    def group_blocks_by_provided_type(self, included_inner_blocks=None, redis_instance=None):
+        if self._blocks_grouped_by_provided_type is not None:
+            return self._blocks_grouped_by_provided_type
+        if redis_instance is None:
+            r = get_redis_instance()
+        else:
+            r = redis_instance
+
+        uuid_list = self.get_all_block_uuids(included_inner_blocks, r);
+
+        self._blocks_grouped_by_provided_type = defaultdict(list)
+        for uuid in uuid_list:
+            block = self.get_block(uuid, r)
+            provided = block.get_provided_objects()
+            for data_type, field_name in provided.iteritems():
+                self._blocks_grouped_by_provided_type[data_type].append(
+                    (uuid, block.base_name, field_name)
+                )
+
+        return self._blocks_grouped_by_provided_type
+
+    def get_all_block_uuids(self, included_inner_blocks=None, redis_instance=None):
+        """
+        @type included_inner_blocks: list of str
+        @param included_inner_blocks: uuids of inner blocks to be included
+
+        @param redis_instance: Redis client
+
+        @return: list of block uuids
+        """
         if redis_instance is None:
             r = get_redis_instance()
         else:
@@ -278,6 +338,29 @@ def delete_exp(exp):
 
     # deleting an experiment
     exp.delete()
+
+#TODO: move to DB
+blocks_by_group = [
+    ("Input data", [
+        ("fetch_ncbi_gse", "Fetch NCBI GSE"),
+        ("fetch_msigdb_gs", "Fetch MSigDB gene sets"),
+        ]),
+    ("Conversion", [
+        ("pca_aggregation", "PCA aggregation"),
+        ("mean_aggregation", "Mean aggregation"),
+        ]),
+    ("Classifiers", [
+        ("t_test", "T-test"),
+        ("svm", "SVM"),
+        ("dtree", "Decision tree"),
+        ]),
+    ("Visualisation", [
+        ("ES_details", "Detail view of Expression Set"),
+        ("2d_pca", "2D PCA Plot"),
+        ("boxplot", "Boxplot"),
+        ("render_table", "Raw table")
+    ]),
+    ]
 
 
 def content_file_name(instance, filename):

@@ -19,18 +19,14 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 
-from webapp.models import Experiment, WorkflowLayout, UploadedData, delete_exp
+from webapp.models import Experiment, WorkflowLayout, UploadedData, delete_exp, blocks_by_group
 from webapp.forms import UploadForm
+from webapp.store import add_block_to_exp_from_request
 
-from workflow.actions import exc_action, set_exp_status
-from workflow.blocks import get_block_class_by_name, FetchGSE, blocks_by_group
-from workflow.layout import write_result
-from workflow.common_tasks import fetch_geo_gse
 
 
 from mixgene.util import dyn_import, get_redis_instance, mkdir
-from mixgene.redis_helper import ExpKeys
-from django.views.decorators.cache import cache_page
+
 
 def index(request):
     template = loader.get_template('index.html')
@@ -62,74 +58,64 @@ def constructor(request, exp_id):
 
     ctx = exp.get_ctx()
     blocks_uuids = exp.get_all_block_uuids(redis_instance=r)
+    # TODO: remove blocks from direct rendering
+    # all of them should be loaded by ajax
     blocks = [(block_uuid, exp.get_block(block_uuid)) for block_uuid in blocks_uuids]
-    template = loader.get_template('constructor.html')
-
     context = {
         "next": "/",
         "exp": exp,
         "ctx": ctx,
         "blocks": blocks,
-        "blocks_by_group": blocks_by_group,
+        "blocks_by_group": blocks_by_group,  # TODO: NAMES <- block which can be added
+        "blocks_by_provided_data_type":
+            exp.group_blocks_by_provided_type(redis_instance=r),
     }
+    for _, block in blocks:
+        context.update(block.before_render(exp))
+
+    template = loader.get_template('constructor.html')
+
+
 
     pprint(context)
     context = RequestContext(request, context)
     return HttpResponse(template.render(context))
 
-@csrf_protect
-def add_block(request):
-    block_cls = get_block_class_by_name(request.POST['block'])  # delete first # symbol
-    block = block_cls()
-    exp_id = int(request.POST['exp_id'])
-    exp = Experiment.objects.get(e_id=exp_id)
 
-    exp.store_block(block, new_block=True)
+def _render_block(request, exp, block):
+    block.before_render(exp)
     template = loader.get_template(block.widget)
     context = {
-        "block": block,
+        "exp_block": block,
+        "exp": exp,
         "ctx": exp.get_ctx(),
     }
     context = RequestContext(request, context)
-    #pprint(context)
     return HttpResponse(template.render(context))
+
+
+@csrf_protect
+def add_block(request):
+    exp = Experiment.get_exp_from_request(request)
+    block = add_block_to_exp_from_request(request)
+    return _render_block(request, exp, block)
 
 
 def render_block(request):
-    exp_id = int(request.POST['exp_id'])
-    exp = Experiment.objects.get(e_id=exp_id)
-    ctx = exp.get_ctx()
-
+    exp = Experiment.get_exp_from_request(request)
     block = exp.get_block(request.POST["block_uuid"])
-    template = loader.get_template(block.widget)
-    context = {
-        "block": block,
-        "ctx": ctx,
-    }
-    context = RequestContext(request, context)
-    #pprint(context)
-    return HttpResponse(template.render(context))
+    return _render_block(request, exp, block)
 
 
 @csrf_protect
 def update_block(request):
     if request.method == "POST":
-        exp_id = int(request.POST['exp_id'])
-        exp = Experiment.objects.get(e_id=exp_id)
+        exp = Experiment.get_exp_from_request(request)
         ctx = exp.get_ctx()
-
         action = request.POST['action']
         block = exp.get_block(request.POST["block_uuid"])
         block.do_action(action, exp=exp, ctx=ctx, request=request)
-
-        template = loader.get_template(block.widget)
-        context = {
-            "block": block,
-            "ctx": ctx,
-        }
-        context = RequestContext(request, context)
-        return HttpResponse(template.render(context))
-
+        return _render_block(request, exp, block)
     return HttpResponse("")
 
 
@@ -178,7 +164,7 @@ def upload_data(request):
                     print "var_name %s was already uploaded " % (var_name, )
     return redirect(request.POST['next'])
 
-
+"""
 @csrf_protect
 @never_cache
 def geo_fetch_data(request):
@@ -196,12 +182,13 @@ def geo_fetch_data(request):
 
         #TODO: check "GSE" prefix
 
-        st = fetch_geo_gse.s(exp, var_name, geo_uid, file_format)
-        st.apply_async()
+        #st = fetch_geo_gse.s(exp, var_name, geo_uid, file_format)
+        #st.apply_async()
         return redirect(request.POST['next'])
 
     else:
         return redirect("/")
+"""
 
 @csrf_protect
 @never_cache
@@ -413,7 +400,7 @@ def get_flot_2d_scatter(request, exp_id, filename):
 def get_gse_samples_info(request, exp_id, block_uuid):
     exp = Experiment.objects.get(e_id=exp_id)
     block = exp.get_block(block_uuid)
-    assert isinstance(block, FetchGSE)
+    #assert isinstance(block, FetchGSE)
 
     pheno_df = block.expression_set.get_pheno_data_frame()
     pheno_headers = [pheno_df.index.name]

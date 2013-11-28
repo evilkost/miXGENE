@@ -3,33 +3,32 @@ from uuid import uuid1
 
 from django import forms
 from fysom import Fysom
-import  pandas as pd
+import pandas as pd
 
-from structures import ExpressionSet, PlatformAnnotation
-from webapp.models import Experiment
-
-from workflow.common_tasks import fetch_geo_gse, preprocess_soft, append_error_to_block
-
+from workflow.common_tasks import fetch_geo_gse, preprocess_soft
 
 
 class GenericBlock(object):
+    block_base_name = "GENERIC_BLOCK"
+
     def __init__(self, name, type):
         """
             Building block for workflow
             @type can be: "user_input", "computation"
         """
         self.uuid = uuid1().hex
-        self.name = name
+        #self.name = name
         self.type = type
 
         # pairs of (var name, data type, default name in context)
         self.required_inputs = []
         self.provide_outputs = []
 
-        self.state = None
+        self.state = "created"
 
         self.errors = []
         self.warnings = []
+        self.base_name = ""
 
     def get_available_user_action(self):
         return self.get_allowed_actions(True)
@@ -60,17 +59,16 @@ class GenericBlock(object):
         else:
             raise RuntimeError("Action %s isn't available" % action_name)
 
-    def is_runnable(self, ctx):
-        return False
+    def get_provided_objects(self):
+        return {}
 
-    def is_configurable(self, ctx):
-        return True
-
-    def is_configurated(self, ctx):
-        return False
-
-    def is_visible(self, ctx):
-        return True
+    def before_render(self, exp, *args, **kwargs):
+        """
+        Invoke prior to template applying, prepare relevant data
+        @param exp: Experiment
+        @return: additional content for template context
+        """
+        return {}
 
 
 class FetchGseForm(forms.Form):
@@ -149,6 +147,7 @@ class FetchGSE(GenericBlock):
         "expression_set_name": "expression",
         "gpl_annotation_name": "annotation",
     }
+    block_base_name = "FETCH_GEO"
 
     def __init__(self):
         super(FetchGSE, self).__init__("Fetch ncbi gse", "user_input")
@@ -162,12 +161,9 @@ class FetchGSE(GenericBlock):
         self.celery_task_preprocess = None
 
         self.errors = []
-        self.state = 'created'
 
         self.expression_set = None
         self.gpl_annotation = None
-
-
 
     def get_expression_set_name(self):
         return self.form["expression_set_name"].value()
@@ -183,8 +179,8 @@ class FetchGSE(GenericBlock):
 
     def get_provided_objects(self):
         return {
-            "ExpressionSet": self.form["expression_set_name"].value(),
-            "PlatformAnnotation": self.form["gpl_annotation_name"].value(),
+            "ExpressionSet": "expression_set",
+            "PlatformAnnotation": "annotation",
         }
 
     def is_form_fields_editable(self):
@@ -214,7 +210,7 @@ class FetchGSE(GenericBlock):
     def on_form_not_valid(self):
         pass
 
-    def save_form(self, exp, ctx, request, *args, **kwargs):
+    def save_form(self, exp, request, *args, **kwargs):
         print request.POST
         print self.state
         self.form = self.form_cls(request.POST)
@@ -222,7 +218,7 @@ class FetchGSE(GenericBlock):
         print self.state
         exp.store_block(self)
 
-    def show_form(self, exp, ctx, *args, **kwargs):
+    def show_form(self, exp, *args, **kwargs):
         exp.store_block(self)
 
     def reset_form(self, exp, *args, **kwargs):
@@ -232,7 +228,7 @@ class FetchGSE(GenericBlock):
         self.file_can_be_fetched = False
         exp.store_block(self)
 
-    def start_fetch(self, exp, ctx, *args, **kwargs):
+    def start_fetch(self, exp, *args, **kwargs):
         self.clean_errors()
         self.celery_task_fetch = fetch_geo_gse.s(exp, self, ignore_cache=False).apply_async()
         exp.store_block(self)
@@ -256,7 +252,7 @@ class FetchGSE(GenericBlock):
         self.clean_errors()
         exp.store_block(self)
 
-    def assign_sample_classes(self, exp, ctx, request):
+    def assign_sample_classes(self, exp, request, *args, **kwargs):
         pheno_df = self.expression_set.get_pheno_data_frame()
         sample_classes = json.loads(request.POST['sample_classes'])
         pheno_df['User_class'] = pd.Series(sample_classes)
@@ -270,47 +266,37 @@ class FetchGSE(GenericBlock):
         #exp.store_block(self)
 
 
-class AssignSampleClasses(GenericBlock):
+class ExpressionSetDetails(GenericBlock):
     fsm = Fysom({
         'events': [
             {'name': 'bind_variable', 'src': 'created', 'dst': 'variable_bound'},
-            {'name': 'assign_samples', 'src': 'variable_bound', 'dst': 'some_samples_assigned'},
-            {'name': 'complete_assignement', 'src': 'some_samples_assigned', 'dst': 'assignement_done'},
         ]
     })
 
+    widget = "widgets/expression_set_view.html"
+    block_base_name = "ES_VIEW"
+    all_actions = [
+        ("bind_variable", "Select expression set", True)
+    ]
 
     def __init__(self, *args, **kwargs):
-        super(AssignSampleClasses, self).__init__(*args, **kwargs)
-        self.state = 'created'
+        super(ExpressionSetDetails, self).__init__("Expression set details", "Visualisation",                                                   *args, **kwargs)
+
+    def bind_variable(self, exp, request, *args, **kwargs):
+        pass
+
+    def before_render(self, exp, *args, **kwargs):
+        available = exp.group_blocks_by_provided_type()
+        self.variable_options = available["ExpressionSet"]
+        if len(self.variable_options) == 0:
+            self.errors.append(Exception("There is no blocks which provides Expression Set"))
+        #return {"variable_options": available["ExpressionSet"]}
+        return {}
 
 block_classes_by_name = {
     "fetch_ncbi_gse": FetchGSE,
+    "ES_details": ExpressionSetDetails,
 }
-
-blocks_by_group = [
-    ("Input data", [
-        ("fetch_ncbi_gse", "Fetch NCBI GSE"),
-        ("fetch_msigdb_gs", "Fetch MSigDB gene sets"),
-    ]),
-    ("Conversion", [
-        ("pca_aggregation", "PCA aggregation"),
-        ("mean_aggregation", "Mean aggregation"),
-    ]),
-    ("Classifiers", [
-        ("t_test", "T-test"),
-        ("svm", "SVM"),
-        ("dtree", "Decision tree"),
-    ]),
-    ("Visualisation", [
-        ("2d_pca", "2D PCA Plot"),
-        ("boxplot", "Boxplot"),
-        ("render_table", "Raw table")
-    ]),
-]
-
-
-
 
 def get_block_class_by_name(name):
     if name in block_classes_by_name.keys():

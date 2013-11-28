@@ -1,0 +1,31 @@
+<div id="{{ block.uuid }}" class="row constructor-block">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <div class="pull-left">
+
+            </div>
+            {% block panel_heading %}
+            {% endblock %}
+
+            <div class="pull-right">
+                <a class="block-reload glyphicon glyphicon-repeat"></a>
+                &nbsp;&nbsp;&nbsp;&nbsp;
+                <a class="block-move-down glyphicon glyphicon-resize-small"></a>
+                <a class="block-move-down hidden glyphicon glyphicon-resize-full"></a>
+                &nbsp;&nbsp;&nbsp;&nbsp;
+                <a class="block-move-down glyphicon glyphicon-arrow-down"></a>
+                <a class="block-move-up glyphicon glyphicon-arrow-up"></a>
+                &nbsp;&nbsp;&nbsp;&nbsp;
+                <a class="block-remove text-danger glyphicon glyphicon-trash"></a>
+            </div>
+
+
+        </div>
+        <div class="panel-body">
+            <div class="row">
+                {% block panel_body %}
+                {% endblock %}
+            </div>
+        </div>
+    </div>
+</div>

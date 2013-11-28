@@ -6,6 +6,11 @@ class ExpKeys(object):
         return "CSTP-%s" % exp_id
 
     @staticmethod
+    def get_blocks_uuid_by_alias(exp_id):
+        # redis hash set
+        return "GBUIA-%s" % exp_id
+
+    @staticmethod
     def get_exp_blocks_list_key(exp_id):
         return "EBS-%s" % exp_id
 

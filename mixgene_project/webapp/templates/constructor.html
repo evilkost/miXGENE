@@ -12,12 +12,13 @@
                 <div class="alert alert-success">
                     Welcome to the experiment constructor! <br />
                     Start by choosing slot to add block.
+                    {{ blocks_by_provided_data_type }}
                 </div>
             </div>
         </div>
         <div id="worktable" class="row well">
             {% for uuid, block in blocks %}
-                {% include block.widget %}
+                {% include block.widget with exp_block=block %}
             {% endfor %}
             <button type="button" class="btn btn-lg btn-block btn-success btn-block-placeholder">
                 Add block

@@ -27,7 +27,7 @@ urlpatterns = patterns('',
     #url(r'^create_experiment/(?P<layout_id>\d+)', 'webapp.views.create_experiment', name='create_experiment'),
 
     url(r'^upload_data/', 'webapp.views.upload_data', name='upload_data'),
-    url(r'^geo_fetch_data/', 'webapp.views.geo_fetch_data', name='geo_fetch_data'),
+    #url(r'^geo_fetch_data/', 'webapp.views.geo_fetch_data', name='geo_fetch_data'),
 
     url(r'^auth/login/$', 'django.contrib.auth.views.login', {'template_name': 'auth/login.html'}),
     url(r'^auth/logout/$', 'django.contrib.auth.views.logout', {}),

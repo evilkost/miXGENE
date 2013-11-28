@@ -1,97 +1,88 @@
-<div id="{{ block.uuid }}" class="row constructor-block">
-    <div class="panel panel-default">
-        <div class="panel-heading">
-            Dataset from NCBI GEO
-            <!--div class="pull-right">
-                <a href="#" class="btn btn-warning btn-sm">
-                    Remove
-                </a>
-            </div>
-            <p></p -->
-            <div class="spin-placeholder pull-right">
-            </div>
-        </div>
-        <div class="panel-body">
-        <div class="row">
-            {% if block.errors %}
-                <div class="alert alert-danger">
-                    <ul class="list-unstyled">
-                    {% for error in block.errors %}
-                        <li>
-                            {{ error.msg|default:error }}
-                        </li>
-                    {% endfor %}
-                    </ul>
-                </div>
-            {% endif %}
-            <form class="form form-horizontal form-ajax-submit"
-                  action="{% url 'update_block' %}" method="post">
-                {% csrf_token %}
-                <input type="hidden" name="block_uuid" value="{{ block.uuid }}" />
-                <input type="hidden" name="exp_id" value="{{ ctx.exp_id }}" />
+{% extends "widgets/base_block_template.html" %}
 
-                <div class="col-lg-9">
-                    {% if block.is_form_fields_editable %}
-                        {{ block.form.non_field_error }}
-                        {% for field in block.form %}
-                        <div class="form-group {% if field.errors %} has-error {% endif %}">
-                            <!--suppress XmlInvalidId -->
-                            <label for="{{ field.name }}" class="col-sm-2 control-label">
-                                {{ field.label}}
-                            </label>
-                            <div class="col-sm-6">
-                              <input type="text" class="form-control" name="{{ field.name }}"
-                                     value="{{ field.value|default:'' }}" />
-                            </div>
-                            {% if field.errors %}
-                                {% for error in field.errors %}
-                                <span>{{ error|escape }}</span>
-                                {% endfor %}
-                            {% endif %}
-                        </div>
-                        {% endfor %}
-                    {% else %}
-                        <p>
-                            <strong>Source</strong>
-                            dataset GEO UID: {{ block.form.geo_uid.value }}
-                        </p>
-                        <p><strong>Provide objects:</strong>
-                        <dl class="dl-horizontal">
-                            {% for obj_type, name in block.get_provided_objects.iteritems %}
-                            <dt>{{obj_type}}: </dt>
-                            <dd>{{name}}</dd>
-                            {% endfor %}
-                        </dl>
-                        </p>
-                    {% endif %}
-                    <hr />
-                    <p><b>Block internal state: </b> {{ block.state }}</p>
-                <!--
-                    <p> File is being fetched </p>
-                        {{ block.celery_task }}
-                    <p> Source file was fetched. Started pre-processing. </p>
-                -->
-            </div>
-            <div class="col-lg-3">
-                {% for action_code, action_title in block.get_available_user_action %}
+{% block panel_heading %}
+    Dataset from NCBI GEO [ {{exp_block.base_name}}]
+{% endblock panel_heading %}
 
-                <button type="submit" class="btn btn-default btn-block"
-                        name="action" value="{{ action_code }}">
-                    {{ action_title }}
-                </button>
 
-                {% endfor %}
-            </div>
-            </form>
-            {% if block.is_sub_pages_visible %}
-                <p> <a href="{% url 'block_sub_page' ctx.exp_id block.uuid 'assign_sample_classes' %}">
-                    Assign sample classes
-                </a></p>
-                <!--p> <a href="#" class="disabled">
-                    Inspect GPL annotation
-                </a></p -->
-            {% endif %}
-        </div>
-        </div>
+{% block panel_body %}
+    {% if exp_block.errors %}
+    <div class="alert alert-danger">
+        <ul class="list-unstyled">
+            {% for error in exp_block.errors %}
+            <li>
+                {{ error.msg|default:error }}
+            </li>
+            {% endfor %}
+        </ul>
     </div>
-</div>
+    {% endif %}
+    <form class="form form-horizontal form-ajax-submit"
+          action="{% url 'update_block' %}" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="block_uuid" value="{{ exp_block.uuid }}" />
+        <input type="hidden" name="exp_id" value="{{ ctx.exp_id }}" />
+
+        <div class="col-lg-9">
+            {% if exp_block.is_form_fields_editable %}
+            {{ exp_block.form.non_field_error }}
+            {% for field in exp_block.form %}
+            <div class="form-group {% if field.errors %} has-error {% endif %}">
+                <label for="{{ field.name }}" class="col-sm-2 control-label">
+                    {{ field.label}}
+                </label>
+                <div class="col-sm-6">
+                    <input type="text" class="form-control" name="{{ field.name }}"
+                           value="{{ field.value|default:'' }}" />
+                </div>
+                {% if field.errors %}
+                {% for error in field.errors %}
+                <span>{{ error|escape }}</span>
+                {% endfor %}
+                {% endif %}
+            </div>
+            {% endfor %}
+            {% else %}
+            <p>
+                <strong>Source</strong>
+                dataset GEO UID: {{ exp_block.form.geo_uid.value }}
+            </p>
+            <p><strong>Provide objects:</strong>
+            <dl class="dl-horizontal">
+                {% for obj_type, name in exp_block.get_provided_objects.iteritems %}
+                <dt>{{obj_type}}: </dt>
+                <dd>{{name}}</dd>
+                {% endfor %}
+            </dl>
+            </p>
+            {% endif %}
+            <hr />
+            <p><b>Block internal state: </b> {{ exp_block.state }}</p>
+            <!--
+                <p> File is being fetched </p>
+                    {{ exp_block.celery_task }}
+                <p> Source file was fetched. Started pre-processing. </p>
+            -->
+        </div>
+        <div class="col-lg-3">
+            {% for action_code, action_title in exp_block.get_available_user_action %}
+
+            <button type="submit" class="btn btn-default btn-block"
+                    name="action" value="{{ action_code }}">
+                {{ action_title }}
+            </button>
+
+            {% endfor %}
+        </div>
+    </form>
+    {% if exp_block.is_sub_pages_visible %}
+    <p> <a href="{% url 'block_sub_page' ctx.exp_id exp_block.uuid 'assign_sample_classes' %}">
+        Assign sample classes
+    </a></p>
+    <!--p> <a href="#" class="disabled">
+        Inspect GPL annotation
+    </a></p -->
+    {% endif %}
+
+{% endblock panel_body %}
+
