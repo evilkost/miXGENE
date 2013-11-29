@@ -92,10 +92,29 @@
         <!-- tablesorter end -->
 
 
+        <!-- datatable  -->
+        <!--<link type="text/css" rel="stylesheet" href="//cdn.jsdelivr.net/jquery.datatables/1.9.4/css/jquery.dataTables.css" />-->
+        <!--<link type="text/css" rel="stylesheet" href="//cdn.jsdelivr.net/jquery.datatables/1.9.4/css/jquery.dataTables_themeroller.css" />-->
+        <!--<script type="text/javascript" src="//cdn.jsdelivr.net/jquery.datatables/1.9.4/js/jquery.dataTables.js"></script>-->
+        <script type="text/javascript" src="//cdn.jsdelivr.net/jquery.datatables/1.9.4/js/jquery.dataTables.min.js"></script>
+        <!--<link type="text/css" rel="stylesheet" href="//cdn.jsdelivr.net/jquery.datatables/1.9.4/plugins/DT_bootstrap.css" />-->
+        <!--<script type="text/javascript" src="//cdn.jsdelivr.net/jquery.datatables/1.9.4/plugins/DT_bootstrap.js"></script>-->
+        <!--<script type="text/javascript" src="//cdn.jsdelivr.net/jquery.datatables/1.9.4/plugins/jquery.dataTables.rowGrouping-1.2.9.js"></script>-->
+        <!--<script type="text/javascript" src="//cdn.jsdelivr.net/jquery.datatables/1.9.4/plugins/jquery.dataTables.rowGrouping.js"></script>-->
+
+
+        <link href="{% static 'datatables/css/datatables.css' %}" rel="stylesheet">
+        <script src="{% static 'datatables/js/datatables.js' %}"></script>
+        <!-- datatable end -->
+
+
         <link href="{% static 'css/flot_specific.css' %}" rel="stylesheet">
         <link href="{% static 'css/common.css' %}" rel="stylesheet">
 
         <link rel="shortcut icon" href="static/ico/favicon.png">
+        <script type="text/javascript">
+            {% include "common_js.js" %} // TODO: pack js to static
+        </script>
     </head>
 
     <body>

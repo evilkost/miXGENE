@@ -244,7 +244,8 @@ class Experiment(models.Model):
         uuid = r.hget(ExpKeys.get_blocks_uuid_by_alias(self.e_id), alias)
         return self.get_block(uuid, r)
 
-    def get_block(self, block_uuid, redis_instance=None):
+    @staticmethod
+    def get_block(block_uuid, redis_instance=None):
         """
             @type  block_uuid: str
             @param block_uuid: Block instance identifier
@@ -280,7 +281,6 @@ class Experiment(models.Model):
                 self._blocks_grouped_by_provided_type[data_type].append(
                     (uuid, block.base_name, field_name)
                 )
-
         return self._blocks_grouped_by_provided_type
 
     def get_all_block_uuids(self, included_inner_blocks=None, redis_instance=None):
@@ -356,7 +356,7 @@ blocks_by_group = [
         ]),
     ("Visualisation", [
         ("ES_details", "Detail view of Expression Set"),
-        ("2d_pca", "2D PCA Plot"),
+        ("Pca_visualize", "2D PCA Plot"),
         ("boxplot", "Boxplot"),
         ("render_table", "Raw table")
     ]),

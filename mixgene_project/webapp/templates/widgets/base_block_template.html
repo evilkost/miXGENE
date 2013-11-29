@@ -1,4 +1,4 @@
-<div id="{{ block.uuid }}" class="row constructor-block">
+<div id="{{ exp_block.uuid }}" class="row constructor-block">
     <div class="panel panel-default">
         <div class="panel-heading">
             <div class="pull-left">
@@ -6,6 +6,12 @@
             </div>
             {% block panel_heading %}
             {% endblock %}
+
+            {% if exp_block.is_base_name_visible %}
+            [   {{exp_block.base_name}}
+                <a class="block-reload glyphicon glyphicon-pencil"></a>
+            ]
+            {% endif %}
 
             <div class="pull-right">
                 <a class="block-reload glyphicon glyphicon-repeat"></a>
@@ -22,10 +28,9 @@
 
         </div>
         <div class="panel-body">
-            <div class="row">
-                {% block panel_body %}
-                {% endblock %}
-            </div>
+
+            {% block panel_body %}
+            {% endblock %}
         </div>
     </div>
 </div>

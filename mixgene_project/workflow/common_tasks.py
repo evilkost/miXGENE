@@ -72,7 +72,10 @@ def fetch_geo_gse(exp, block, ignore_cache=False):
         block.do_action("successful_fetch", exp)
 
     except RuntimeError, e:
-        print e
+        import sys, traceback
+        ex_type, ex, tb = sys.exc_info()
+        traceback.print_tb(tb)
+        #print e
         block.errors.append(e)
         block.do_action("error_during_fetch", exp)
 
@@ -102,8 +105,8 @@ def preprocess_soft(exp, block):
         ])
 
         platform_annotation = PlatformAnnotation("TODO:GET NAME FROM SOFT",
-                                                 base_dir=exp.get_data_folder(),
-                                                 base_filename=block.uuid + "_annotation"
+            base_dir=exp.get_data_folder(),
+            base_filename=block.uuid + "_annotation"
         )
 
         platform_annotation.gene_units = Units.ENTREZ_GENE_ID
@@ -139,6 +142,9 @@ def preprocess_soft(exp, block):
 
         block.do_action("successful_preprocess", exp)
     except Exception, e:
+        import sys, traceback
+        ex_type, ex, tb = sys.exc_info()
+        traceback.print_tb(tb)
         print e
         #TODO: LOG ERROR AND TRACEBACK OR WE LOSE IT!
         #import ipdb; ipdb.set_trace()

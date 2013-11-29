@@ -6,6 +6,7 @@ import pandas as pd
 import rpy2.robjects as R
 from rpy2.robjects.packages import importr
 from mixgene.settings import R_LIB_CUSTOM_PATH
+import json
 
 
 class DataFrameStorage(object):
@@ -17,8 +18,11 @@ class DataFrameStorage(object):
     def __init__(self, filepath):
         self.filepath = filepath
 
-    def load(self):
+    def load(self, nrows=None):
         """
+            @type nrows: int or None
+            @param nrows: Number of rows to read
+
             @rtype  : pandas.DataFrame
             @return : Stored matrix
         """
@@ -28,6 +32,7 @@ class DataFrameStorage(object):
             compression=self.compression,
             header=self.header,
             index_col=self.index_col,
+            nrows=nrows
         )
 
     def store(self, df):
@@ -52,7 +57,32 @@ class DataFrameStorage(object):
         return R.r["read.table"](self.filepath, sep=self.sep, header=self.header)
 
 
-class ExpressionSet(object):
+class GenericStoreStructure(object):
+    def __init__(self, base_dir, base_filename, *args, **kwargs):
+        self.base_dir = base_dir
+        self.base_filename = base_filename
+
+    def form_filepath(self, suffix):
+        return "%s/%s_%s.csv.gz" % (self.base_dir, self.base_filename, suffix)
+
+
+class PcaResult(GenericStoreStructure):
+    def __init__(self, base_dir, base_filename):
+        super(PcaResult, self).__init__(base_dir, base_filename)
+        self.pca_storage = None
+
+    def store_pca(self, df):
+        if self.pca_storage is None:
+            self.pca_storage = DataFrameStorage(self.form_filepath("pca"))
+        self.pca_storage.store(df)
+
+    def get_pca(self):
+        if self.pca_storage is None:
+            raise RuntimeError("PCA data wasn't stored prior")
+        return self.pca_storage.load()
+
+
+class ExpressionSet(GenericStoreStructure):
     def __init__(self, base_dir, base_filename):
         """
             Expression data from micro array experiment.
@@ -66,8 +96,7 @@ class ExpressionSet(object):
             @type  base_filename: string
             @param base_filename: Basic name which is used as prefix for all stored data objects
         """
-        self.base_dir = base_dir
-        self.base_filename = base_filename
+        super(ExpressionSet, self).__init__(base_dir, base_filename)
 
         self.assay_data_storage = None
         self.assay_metadata = {}
@@ -119,6 +148,18 @@ class ExpressionSet(object):
 
     def to_r_obj(self):
         pass
+
+    def to_json_preview(self, row_number=20):
+        assay_df = self.assay_data_storage.load(row_number)
+        pheno_df = self.pheno_data_storage.load(row_number)
+
+        result = {
+            "assay_metadata": self.assay_metadata,
+            "assay": json.loads(assay_df.to_json(orient="split")),
+            "pheno_metadata": self.pheno_metadata,
+            "pheno": json.loads(pheno_df.to_json(orient="split")),
+        }
+        return json.dumps(result)
 
 
 class GmtStorage(object):
@@ -186,7 +227,7 @@ class PlatformAnnotation(object):
         """
         if self.gmt_storage is None:
             self.gmt_storage = GmtStorage(
-                filepath="%s\%s.gmt.gz" % (self.base_dir, self.base_filename)
+                filepath="%s/%s.gmt.gz" % (self.base_dir, self.base_filename)
             )
         self.gmt_storage.store(gene_sets)
 

@@ -4,9 +4,12 @@ from uuid import uuid1
 from django import forms
 from fysom import Fysom
 import pandas as pd
+from webapp.models import Experiment
 
 from workflow.common_tasks import fetch_geo_gse, preprocess_soft
 
+from workflow.structures import ExpressionSet
+from workflow import wrappers
 
 class GenericBlock(object):
     block_base_name = "GENERIC_BLOCK"
@@ -29,6 +32,9 @@ class GenericBlock(object):
         self.errors = []
         self.warnings = []
         self.base_name = ""
+
+    def clean_errors(self):
+        self.errors = []
 
     def get_available_user_action(self):
         return self.get_allowed_actions(True)
@@ -75,10 +81,10 @@ class FetchGseForm(forms.Form):
     # Add custom validator to check GSE prefix
     #  If file is fetched or is being fetched don't allow to change geo_uid
     geo_uid = forms.CharField(min_length=4, max_length=31, required=True)
-    expression_set_name = forms.CharField(label="Name for expression set",
-                                          max_length=255)
-    gpl_annotation_name = forms.CharField(label="Name for GPL annotation",
-                                          max_length=255)
+    # expression_set_name = forms.CharField(label="Name for expression set",
+    #                                       max_length=255)
+    # gpl_annotation_name = forms.CharField(label="Name for GPL annotation",
+    #                                       max_length=255)
 
     def clean_geo_uid(self):
         data = self.cleaned_data['geo_uid']
@@ -148,6 +154,7 @@ class FetchGSE(GenericBlock):
         "gpl_annotation_name": "annotation",
     }
     block_base_name = "FETCH_GEO"
+    is_base_name_visible = True
 
     def __init__(self):
         super(FetchGSE, self).__init__("Fetch ncbi gse", "user_input")
@@ -193,8 +200,7 @@ class FetchGSE(GenericBlock):
             return True
         return False
 
-    def clean_errors(self):
-        self.errors = []
+
 
     def validate(self):
         if self.form.is_valid():
@@ -266,10 +272,91 @@ class FetchGSE(GenericBlock):
         #exp.store_block(self)
 
 
+def mark_bound_block_variable(available, block_name, field_name):
+    marked = []
+    for uuid, i_block_name, i_field_name in available:
+        if i_block_name == block_name and i_field_name == field_name:
+            marked.append((uuid, i_block_name, i_field_name, True))
+        else:
+            marked.append((uuid, i_block_name, i_field_name, False))
+    return marked
+
+
+class PCA_visualize(GenericBlock):
+    fsm = Fysom({
+        'events': [
+            {'name': 'bind_variable', 'src': 'created', 'dst': 'variable_bound'},
+            {'name': 'bind_variable', 'src': 'variable_bound', 'dst': 'variable_bound'},
+
+            {'name': 'run_pca', 'src': 'variable_bound', 'dst': 'pca_computing'},
+
+            {'name': 'success', 'src': 'pca_computing', 'dst': 'pca_computed'},
+            {'name': 'error', 'src': 'pca_computing', 'dst': 'variable_bound'},
+        ]
+    })
+
+    widget = "widgets/pca_view.html"
+    block_base_name = "PCA_VIEW"
+    all_actions = [
+        ("bind_variable", "Select variable", True),
+        ("run_pca", "Run PCA", True),
+
+        ("success", "", False),
+        ("error", "", False)
+    ]
+
+    def __init__(self, *args, **kwargs):
+        super(PCA_visualize, self).__init__("PCA Analysis", "Visualisation", *args, **kwargs)
+        self.bound_variable_field = None
+        self.bound_variable_block = None
+        self.bound_variable_block_alias = None
+
+        self.pca_result = None
+        self.celery_task = None
+
+    @property
+    def pca_result_in_json(self):
+        df = self.pca_result.get_pca()
+        return df.to_json(orient="split")
+
+    def run_pca(self, exp, request, *args, **kwargs):
+        self.clean_errors()
+        bound_block = Experiment.get_block(self.bound_variable_block)
+        es = getattr(bound_block, self.bound_variable_field)
+        self.celery_task = wrappers.pca_test.s(exp, self, es)
+        exp.store_block(self)
+        self.celery_task.apply_async()
+
+    def success(self, exp):
+        exp.store_block(self)
+
+    def error(self, exp):
+        exp.store_block(self)
+
+    def bind_variable(self, exp, request, *args, **kwargs):
+        split = request.POST['variable_name'].split(":")
+        self.bound_variable_block = split[0]
+        bound_block = exp.get_block(self.bound_variable_block)
+        self.bound_variable_block_alias = bound_block.base_name
+        self.bound_variable_field = ''.join(split[1:])
+        exp.store_block(self)
+
+    def before_render(self, exp, *args, **kwargs):
+        context_add = {}
+        available = exp.group_blocks_by_provided_type()
+        self.variable_options = mark_bound_block_variable(
+            available["ExpressionSet"], self.bound_variable_block_alias, self.bound_variable_field)
+        if len(self.variable_options) == 0:
+            self.errors.append(Exception("There is no blocks which provides Expression Set"))
+
+        return context_add
+
+
 class ExpressionSetDetails(GenericBlock):
     fsm = Fysom({
         'events': [
             {'name': 'bind_variable', 'src': 'created', 'dst': 'variable_bound'},
+            {'name': 'bind_variable', 'src': 'variable_bound', 'dst': 'variable_bound'},
         ]
     })
 
@@ -280,22 +367,51 @@ class ExpressionSetDetails(GenericBlock):
     ]
 
     def __init__(self, *args, **kwargs):
-        super(ExpressionSetDetails, self).__init__("Expression set details", "Visualisation",                                                   *args, **kwargs)
+        super(ExpressionSetDetails, self).__init__("Expression set details", "Visualisation", *args, **kwargs)
+        self.bound_variable_field = None
+        self.bound_variable_block = None
+        self.bound_variable_block_alias = None
 
     def bind_variable(self, exp, request, *args, **kwargs):
-        pass
+        self.clean_errors()
+        split = request.POST['variable_name'].split(":")
+        self.bound_variable_block = split[0]
+        bound_block = exp.get_block(self.bound_variable_block)
+        self.bound_variable_block_alias = bound_block.base_name
+        self.bound_variable_field = ''.join(split[1:])
+        exp.store_block(self)
 
     def before_render(self, exp, *args, **kwargs):
+        context_add = {}
         available = exp.group_blocks_by_provided_type()
-        self.variable_options = available["ExpressionSet"]
+        self.variable_options = mark_bound_block_variable(
+            available["ExpressionSet"], self.bound_variable_block_alias, self.bound_variable_field)
         if len(self.variable_options) == 0:
             self.errors.append(Exception("There is no blocks which provides Expression Set"))
         #return {"variable_options": available["ExpressionSet"]}
-        return {}
+
+        if self.state == "variable_bound":
+            bound_block = Experiment.get_block(self.bound_variable_block)
+            #import ipdb; ipdb.set_trace()
+            if not isinstance(getattr(bound_block, self.bound_variable_field), ExpressionSet):
+                self.errors.append(Exception("Bound variable isn't ready"))
+        return context_add
+
+    def get_es_preview(self):
+        if self.state != "variable_bound":
+            return ""
+        bound_block = Experiment.get_block(self.bound_variable_block)
+        es = getattr(bound_block, self.bound_variable_field)
+
+        if not isinstance(es, ExpressionSet):
+            return ""
+        return es.to_json_preview(200)
+
 
 block_classes_by_name = {
     "fetch_ncbi_gse": FetchGSE,
     "ES_details": ExpressionSetDetails,
+    "Pca_visualize": PCA_visualize,
 }
 
 def get_block_class_by_name(name):

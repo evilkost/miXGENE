@@ -60,6 +60,8 @@ def constructor(request, exp_id):
     blocks_uuids = exp.get_all_block_uuids(redis_instance=r)
     # TODO: remove blocks from direct rendering
     # all of them should be loaded by ajax
+    #  than block wouldnt contain temporary data
+
     blocks = [(block_uuid, exp.get_block(block_uuid)) for block_uuid in blocks_uuids]
     context = {
         "next": "/",
@@ -111,10 +113,11 @@ def render_block(request):
 def update_block(request):
     if request.method == "POST":
         exp = Experiment.get_exp_from_request(request)
-        ctx = exp.get_ctx()
+        #ctx = exp.get_ctx()
+        #import ipdb; ipdb.set_trace()
         action = request.POST['action']
         block = exp.get_block(request.POST["block_uuid"])
-        block.do_action(action, exp=exp, ctx=ctx, request=request)
+        block.do_action(action, exp=exp, request=request)
         return _render_block(request, exp, block)
     return HttpResponse("")
 

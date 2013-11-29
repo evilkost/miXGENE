@@ -1,0 +1,24 @@
+<div class="col-xs-12">
+    <div class="well">
+        <h5>PCA points</h5>
+        <div class="points-table-placeholder" style="overflow: auto;"/></div>
+    </div>
+    <div class="well demo-container">
+        <div id="{{exp_block.uuid}}_plot" class="demo-placeholder">
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    {% autoescape off %}
+    var pca_result={{exp_block.pca_result_in_json }};
+    {% endautoescape %}
+
+    document.pca = pca_result;
+
+    render_table($("#{{exp_block.uuid}} .points-table-placeholder"), pca_result);
+    render_plot_2d($("#{{exp_block.uuid}}_plot"), pca_result);
+
+
+
+</script>
