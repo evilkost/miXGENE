@@ -8,6 +8,7 @@ server {
     server_name  217.172.23.200;
     access_log  /var/log/nginx.localhost.access.log;
 
+    client_max_body_size 200M;
 
     location /static/ {
         autoindex on;

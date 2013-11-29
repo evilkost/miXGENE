@@ -375,3 +375,24 @@ class UploadedData(models.Model):
 
     def __unicode__(self):
         return u"%s:%s" % (self.exp.e_id, self.var_name)
+
+
+def gene_sets_file_name(instance, filename):
+    return "broad_institute/%s" % filename
+
+
+class BroadInstituteGeneSet(models.Model):
+    section = models.CharField(max_length=255)
+    name = models.CharField(max_length=255)
+    UNIT_CHOICES = (
+        ('entrez', 'Entrez IDs'),
+        ('symbols', 'gene symbols'),
+        ('orig', 'original identifiers'),
+    )
+    unit = models.CharField(max_length=31,
+                            choices=UNIT_CHOICES,
+                            default='entrez')
+    gmt_file = models.FileField(null=False, upload_to=gene_sets_file_name)
+
+    def __unicode__(self):
+        return u"%s->%s format: %s" % (self.section, self.name, self.get_unit_display())

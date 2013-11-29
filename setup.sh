@@ -47,6 +47,7 @@ python mixgene_project/manage.py migrate
 python mixgene_project/manage.py collectstatic --noinput
 
 mkdir -p $BASE_DIR/media/data/cache/
+mkdir -p $BASE_DIR/media/data/broad_institute/
 
 # run server
 sh run_all.sh
