@@ -1,0 +1,26 @@
+DB_ROOT_PASSWORD = ""
+
+DATABASE_NAME = 'django_miGENEX'
+DATABASE_USER = 'mixgene_app'
+DATABASE_PASSWORD = ''
+
+ADMINS = (
+    ('Admin Name', 'admin@example.com')
+)
+
+BASE_DIR = "" # root director for media, static, cache
+SOURCE_DIR = ""  # directory with fetched git repo, we need it for templates only
+TEMPLATE_DIRS = (
+    SOURCE_DIR + "/mixgene_project/webapp/templates",
+    # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
+    # Always use forward slashes, even on Windows.
+    # Don't forget to use absolute paths, not relative paths.
+)
+
+def gen_new_secret():
+    from django.utils.crypto import get_random_string
+    chars = 'abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)'
+    print get_random_string(50, chars)
+
+# Make this unique, and don't share it with anybody.
+SECRET_KEY = "" # generate this key with function from above
