@@ -1,13 +1,6 @@
 {% extends "widgets/base_block_template.html" %}
 
 {% block panel_heading %}
-{% if exp_block.state == "variable_bound" %}
-<span><strong>Bound to </strong>
-        {{ exp_block.bound_variable_block_alias }}->
-        {{ exp_block.bound_variable_field }}
-    </span>
-{% endif %}
-
 {% endblock panel_heading %}
 
 
@@ -20,20 +13,20 @@
         <input type="hidden" name="exp_id" value="{{ ctx.exp_id }}" />
 
         <div class="col-lg-9">
-            {% if exp_block.variable_options %}
             <div class="form-group">
-                <label class="col-sm-2 control-label">Select variable</label>
+                <label class="col-sm-2 control-label">Gene set</label>
                 <div class="col-sm-10">
-                    <select name="variable_name" class="form-control">
-                        {% for uuid, alias, field_name, selected in  exp_block.variable_options %}
-                        <option value = "{{uuid}}:{{field_name}}" {% if selected %} selected {% endif %}>
-                        {{alias}} -> {{ field_name}}
+                    <select name="gene_set_id" class="form-control">
+                        {% for bi_gene_set in  exp_block.all_gene_sets %}
+                        <!-- {{ bi_gene_set.id }} -- {{ exp_block.selected_gs_id}} -->
+                        <option value = "{{bi_gene_set.id}}"
+                            {% ifequal bi_gene_set.id|stringformat:"s" exp_block.selected_gs_id|stringformat:"s" %} selected {% endifequal %}>
+                            {{  bi_gene_set  }}
                         </option>
                         {% endfor %}
                     </select>
                 </div>
             </div>
-            {% endif %}
         </div>
         <div class="col-lg-3">
             {% for action_code, action_title in exp_block.get_available_user_action %}
@@ -47,16 +40,5 @@
         </div>
 
     </form>
-    <p><strong>Internal state:</strong> {{ exp_block.state}}</p>
 </div>
-
-{% if exp_block.state == "pca_computed" %}
-
-<hr />
-<div class="row">
-    {% include 'widgets/pca/plot_pca.html' %}
-
-</div>
-{% endif %}
-
 {% endblock panel_body %}

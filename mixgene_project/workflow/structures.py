@@ -162,34 +162,75 @@ class ExpressionSet(GenericStoreStructure):
         return json.dumps(result)
 
 
+class GMT(object):
+    def __init__(self, description=None, genes=None):
+        self.description = description
+        self.genes = genes
+
+        self.org = ""
+        self.units = ""
+
+
 class GmtStorage(object):
-    def __init__(self, filepath):
+    def __init__(self, filepath, compression=None, sep=None):
+        """
+
+        @param sep:
+        @type filepath: str
+        @param filepath: absolute path to stored object
+
+        @param compression: either None of "gzip"
+
+        @param sep: elements separator, default  \t
+
+        @rtype: GMT
+        @return:
+        """
         self.filepath = filepath
-        self.compression = "gzip"
+        self.compression = compression
+        if sep is not None:
+            self.sep = sep
+        else:
+            self.sep = "\t"
 
     def load(self):
         """
-            @rtype  : dict
-            @return : {Set Name -> (Set description, [Set elements])}
+            @rtype  : GMT
+            @return : Gene sets
         """
-        gene_sets = {}
-        with gzip.open(self.filepath) as inp:
+        gene_sets = GMT(dict(), dict())
+
+        def read_inp(inp):
             for line in inp:
-                split = line.strip().split("\t")
+                split = line.strip().split(self.sep)
                 if len(split) < 3:
                     continue
                 key = split[0]
-                gene_sets[key] = (split[1], split[2:])
+                gene_sets.description[key] = split[1]
+                gene_sets.genes[key] = split[2:]
+        if self.compression == "gzip":
+            with gzip.open(self.filepath) as inp:
+                read_inp(inp)
+        else:
+            with open(self.filepath) as inp:
+                read_inp(inp)
 
         return gene_sets
 
     def store(self, gene_sets):
-        with gzip.open(self.filepath, "w") as output:
-            for key, rest in gene_sets.iteritems():
-                description, elements = rest
+        def write_out(out):
+            for key in gene_sets.description.keys():
+                description = gene_sets.description[key]
+                elements = gene_sets.genes[key]
                 output.write("%s\t%s\t%s\n" % (
                     (key, description, "\t".join(elements))
                 ))
+        if self.compression == "gzip":
+            with gzip.open(self.filepath, "w") as output:
+                write_out(output)
+        else:
+            with open(self.filepath, "w") as output:
+                write_out(output)
 
 
 class PlatformAnnotation(object):
@@ -227,7 +268,8 @@ class PlatformAnnotation(object):
         """
         if self.gmt_storage is None:
             self.gmt_storage = GmtStorage(
-                filepath="%s/%s.gmt.gz" % (self.base_dir, self.base_filename)
+                filepath="%s/%s.gmt.gz" % (self.base_dir, self.base_filename),
+                compression="gzip"
             )
         self.gmt_storage.store(gene_sets)
 

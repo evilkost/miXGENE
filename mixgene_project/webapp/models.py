@@ -12,6 +12,7 @@ from mixgene.settings import MEDIA_ROOT
 from mixgene.util import get_redis_instance
 from mixgene.redis_helper import ExpKeys
 from mixgene.util import dyn_import
+from workflow.structures import GmtStorage
 
 
 class CachedFile(models.Model):
@@ -339,28 +340,7 @@ def delete_exp(exp):
     # deleting an experiment
     exp.delete()
 
-#TODO: move to DB
-blocks_by_group = [
-    ("Input data", [
-        ("fetch_ncbi_gse", "Fetch NCBI GSE"),
-        ("fetch_msigdb_gs", "Fetch MSigDB gene sets"),
-        ]),
-    ("Conversion", [
-        ("pca_aggregation", "PCA aggregation"),
-        ("mean_aggregation", "Mean aggregation"),
-        ]),
-    ("Classifiers", [
-        ("t_test", "T-test"),
-        ("svm", "SVM"),
-        ("dtree", "Decision tree"),
-        ]),
-    ("Visualisation", [
-        ("ES_details", "Detail view of Expression Set"),
-        ("Pca_visualize", "2D PCA Plot"),
-        ("boxplot", "Boxplot"),
-        ("render_table", "Raw table")
-    ]),
-    ]
+
 
 
 def content_file_name(instance, filename):
@@ -395,4 +375,10 @@ class BroadInstituteGeneSet(models.Model):
     gmt_file = models.FileField(null=False, upload_to=gene_sets_file_name)
 
     def __unicode__(self):
-        return u"%s->%s format: %s" % (self.section, self.name, self.get_unit_display())
+        return u"%s: %s. Units: %s" % (self.section, self.name, self.get_unit_display())
+
+    def get_gmt(self):
+        gmt_s = GmtStorage(self.gmt_file.path)
+        gmt = gmt_s.load()
+        gmt.units = self.unit
+        return gmt

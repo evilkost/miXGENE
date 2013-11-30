@@ -19,9 +19,10 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 
-from webapp.models import Experiment, WorkflowLayout, UploadedData, delete_exp, blocks_by_group
+from webapp.models import Experiment, WorkflowLayout, UploadedData, delete_exp
 from webapp.forms import UploadForm
 from webapp.store import add_block_to_exp_from_request
+from workflow.blocks import blocks_by_group
 
 
 

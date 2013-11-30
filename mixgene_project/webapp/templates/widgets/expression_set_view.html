@@ -1,8 +1,6 @@
 {% extends "widgets/base_block_template.html" %}
 
 {% block panel_heading %}
-Detail view for Expression Set
-
 {% if exp_block.state == "variable_bound" %}
     <span><strong>Bound to </strong>
         {{ exp_block.bound_variable_block_alias }}->
@@ -15,18 +13,6 @@ Detail view for Expression Set
 
 {% block panel_body %}
     <div class="row">
-        {% if exp_block.errors %}
-        <div class="alert alert-danger">
-            <ul class="list-unstyled">
-                {% for error in exp_block.errors %}
-                <li>
-                    {{ error.msg|default:error }}
-                </li>
-                {% endfor %}
-            </ul>
-        </div>
-        {% endif %}
-
         <form class="form form-horizontal form-ajax-submit"
               action="{% url 'update_block' %}" method="post">
             {% csrf_token %}

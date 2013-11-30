@@ -48,5 +48,6 @@ function render_plot_2d($handle, df_data){
     };
 
     $.plot($handle, [df_data.data], options);
-
 }
+
+

@@ -2,14 +2,16 @@ import json
 from uuid import uuid1
 
 from django import forms
+from django.forms import ModelForm
 from fysom import Fysom
 import pandas as pd
-from webapp.models import Experiment
+from webapp.models import Experiment, BroadInstituteGeneSet
 
 from workflow.common_tasks import fetch_geo_gse, preprocess_soft
 
 from workflow.structures import ExpressionSet
 from workflow import wrappers
+
 
 class GenericBlock(object):
     block_base_name = "GENERIC_BLOCK"
@@ -20,7 +22,7 @@ class GenericBlock(object):
             @type can be: "user_input", "computation"
         """
         self.uuid = uuid1().hex
-        #self.name = name
+        self.name = name
         self.type = type
 
         # pairs of (var name, data type, default name in context)
@@ -75,6 +77,74 @@ class GenericBlock(object):
         @return: additional content for template context
         """
         return {}
+
+    def save_form(self, exp, request, *args, **kwargs):
+        self.form = self.form_cls(request.POST)
+        self.validate_form()
+        exp.store_block(self)
+
+    def validate_form(self):
+        if self.form.is_valid():
+            #TODO: additional checks e.g. other blocks doesn't provide
+            #      variables with the same names
+            self.do_action("on_form_is_valid")
+        else:
+            self.do_action("on_form_not_valid")
+
+
+class GeneSetSelectionForm(forms.Form):
+    gene_set_id = forms.IntegerField()
+
+    def clean_gene_set_id(self):
+        data = self.cleaned_data['gene_set_id']
+        if len(BroadInstituteGeneSet.objects.filter(id=data)) == 0 :
+            raise forms.ValidationError("Got wrong gene set identifier, try again")
+
+
+class GetBroadInstituteGeneSet(GenericBlock):
+    fsm = Fysom({
+        'events': [
+        {'name': 'save_form', 'src': 'created', 'dst': 'form_modified'},
+        {'name': 'save_form', 'src': 'form_modified', 'dst': 'form_modified'},
+        {'name': 'save_form', 'src': 'form_valid', 'dst': 'form_modified'},
+
+        {'name': 'on_form_is_valid', 'src': 'form_modified', 'dst': 'form_valid'},
+        {'name': 'on_form_not_valid', 'src': 'form_modified', 'dst': 'form_modified'},
+
+    ]})
+
+    all_actions = [
+        # method name, human readable title, user visible
+        ("save_form", "Select", True),
+
+        ("on_form_is_valid", "", False),
+        ("on_form_not_valid", "", False),
+    ]
+
+    widget = "widgets/get_bi_gene_set.html"
+    form_cls = GeneSetSelectionForm
+    block_base_name = "BI_GENE_SET"
+    is_base_name_visible = True
+
+
+    def __init__(self):
+        super(GetBroadInstituteGeneSet, self).__init__("Get MSigDB gene set", "user_input")
+        self.gmt = None
+        self.errors = []
+        self.form = None
+        self.selected_gs_id = None
+
+    def before_render(self, exp, *args, **kwargs):
+        self.all_gene_sets = BroadInstituteGeneSet.objects.order_by("section", "name", "unit")
+        return {}
+
+    def on_form_is_valid(self):
+        self.errors = []
+        self.selected_gs_id = int(self.form["gene_set_id"].value())
+        print self.selected_gs_id
+
+    def on_form_not_valid(self):
+        pass
 
 
 class FetchGseForm(forms.Form):
@@ -149,6 +219,7 @@ class FetchGSE(GenericBlock):
     pages = {
         "assign_sample_classes": "widgets/fetch_gse/assign_sample_classes.html",
     }
+    form_cls = FetchGseForm
     form_data = {
         "expression_set_name": "expression",
         "gpl_annotation_name": "annotation",
@@ -159,7 +230,7 @@ class FetchGSE(GenericBlock):
     def __init__(self):
         super(FetchGSE, self).__init__("Fetch ncbi gse", "user_input")
 
-        self.form_cls = FetchGseForm
+
         self.form = self.form_cls(self.form_data)
 
         self.source_file = None
@@ -200,29 +271,11 @@ class FetchGSE(GenericBlock):
             return True
         return False
 
-
-
-    def validate(self):
-        if self.form.is_valid():
-            #TODO: additional checks e.g. other blocks doesn't provide
-            #      variables with the same names
-            self.do_action("on_form_is_valid")
-            return
-        self.do_action("on_form_not_valid")
-
     def on_form_is_valid(self):
         self.errors = []
 
     def on_form_not_valid(self):
         pass
-
-    def save_form(self, exp, request, *args, **kwargs):
-        print request.POST
-        print self.state
-        self.form = self.form_cls(request.POST)
-        self.validate()
-        print self.state
-        exp.store_block(self)
 
     def show_form(self, exp, *args, **kwargs):
         exp.store_block(self)
@@ -408,14 +461,39 @@ class ExpressionSetDetails(GenericBlock):
         return es.to_json_preview(200)
 
 
-block_classes_by_name = {
-    "fetch_ncbi_gse": FetchGSE,
-    "ES_details": ExpressionSetDetails,
-    "Pca_visualize": PCA_visualize,
-}
-
 def get_block_class_by_name(name):
     if name in block_classes_by_name.keys():
         return block_classes_by_name[name]
     else:
         raise KeyError("No such plugin: %s" % name)
+
+#TODO: move to DB
+block_classes_by_name = {
+    "fetch_ncbi_gse": FetchGSE,
+    "ES_details": ExpressionSetDetails,
+    "Pca_visualize": PCA_visualize,
+    "get_bi_gene_set": GetBroadInstituteGeneSet
+}
+
+
+blocks_by_group = [
+    ("Input data", [
+        ("fetch_ncbi_gse", "Fetch NCBI GSE"),
+        ("get_bi_gene_set", "Get MSigDB gene set"),
+    ]),
+    ("Conversion", [
+        ("pca_aggregation", "PCA aggregation"),
+        ("mean_aggregation", "Mean aggregation"),
+    ]),
+    ("Classifiers", [
+        ("t_test", "T-test"),
+        ("svm", "SVM"),
+        ("dtree", "Decision tree"),
+    ]),
+    ("Visualisation", [
+        ("ES_details", "Detail view of Expression Set"),
+        ("Pca_visualize", "2D PCA Plot"),
+        ("boxplot", "Boxplot"),
+        ("render_table", "Raw table")
+    ]),
+]

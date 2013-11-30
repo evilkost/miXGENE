@@ -1,22 +1,11 @@
 {% extends "widgets/base_block_template.html" %}
 
 {% block panel_heading %}
-    Dataset from NCBI GEO
 {% endblock panel_heading %}
 
 
 {% block panel_body %}
-    {% if exp_block.errors %}
-    <div class="alert alert-danger">
-        <ul class="list-unstyled">
-            {% for error in exp_block.errors %}
-            <li>
-                {{ error.msg|default:error }}
-            </li>
-            {% endfor %}
-        </ul>
-    </div>
-    {% endif %}
+
     <form class="form form-horizontal form-ajax-submit"
           action="{% url 'update_block' %}" method="post">
         {% csrf_token %}

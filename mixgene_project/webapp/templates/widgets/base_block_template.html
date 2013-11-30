@@ -4,7 +4,9 @@
             <div class="pull-left">
 
             </div>
+            {{ exp_block.name }}
             {% block panel_heading %}
+
             {% endblock %}
 
             {% if exp_block.is_base_name_visible %}
@@ -28,6 +30,17 @@
 
         </div>
         <div class="panel-body">
+            {% if exp_block.errors %}
+            <div class="alert alert-danger">
+                <ul class="list-unstyled">
+                    {% for error in exp_block.errors %}
+                    <li>
+                        {{ error.msg|default:error }}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
 
             {% block panel_body %}
             {% endblock %}
