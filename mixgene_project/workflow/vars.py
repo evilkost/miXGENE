@@ -106,7 +106,7 @@ class MixPheno(MetaMixin, SetNameMixin):
         return DataFrame.from_csv(self.filepath, sep=self.delimiter)
 
 
-class GeneSets(MetaMixin, SetNameMixin):
+class GeneSetsOld(MetaMixin, SetNameMixin):
     def __init__(self):
         """
             Stores in .gmt file format

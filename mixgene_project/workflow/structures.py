@@ -162,10 +162,17 @@ class ExpressionSet(GenericStoreStructure):
         return json.dumps(result)
 
 
-class GMT(object):
+class GeneSets(object):
     def __init__(self, description=None, genes=None):
-        self.description = description
-        self.genes = genes
+        if description is not None:
+            self.description = description
+        else:
+            self.description = {}
+
+        if genes is not None:
+            self.genes = genes
+        else:
+            self.genes = {}
 
         self.org = ""
         self.units = ""
@@ -183,7 +190,7 @@ class GmtStorage(object):
 
         @param sep: elements separator, default  \t
 
-        @rtype: GMT
+        @rtype: GeneSets
         @return:
         """
         self.filepath = filepath
@@ -195,10 +202,10 @@ class GmtStorage(object):
 
     def load(self):
         """
-            @rtype  : GMT
+            @rtype  : GeneSets
             @return : Gene sets
         """
-        gene_sets = GMT(dict(), dict())
+        gene_sets = GeneSets(dict(), dict())
 
         def read_inp(inp):
             for line in inp:
@@ -218,11 +225,17 @@ class GmtStorage(object):
         return gene_sets
 
     def store(self, gene_sets):
+        """
+            @type gene_sets: GeneSets
+            @param gene_sets: Gene sets
+
+            @return: None
+        """
         def write_out(out):
             for key in gene_sets.description.keys():
                 description = gene_sets.description[key]
                 elements = gene_sets.genes[key]
-                output.write("%s\t%s\t%s\n" % (
+                out.write("%s\t%s\t%s\n" % (
                     (key, description, "\t".join(elements))
                 ))
         if self.compression == "gzip":

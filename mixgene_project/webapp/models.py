@@ -215,6 +215,9 @@ class Experiment(models.Model):
             pipe.rpush(ExpKeys.get_exp_blocks_list_key(self.e_id), block.uuid)
             pipe.sadd(ExpKeys.get_all_exp_keys_key(self.e_id), block_key)
 
+            for data_type, var_name in block.provided_objects.iteritems():
+                self.register_variable(block.scope, block.uuid, var_name, data_type, pipe)
+
         pipe.set(block_key, pickle.dumps(block))
         pipe.hset(ExpKeys.get_blocks_uuid_by_alias(self.e_id), block.base_name, block.uuid)
         pipe.execute()
@@ -300,6 +303,48 @@ class Experiment(models.Model):
 
         return r.lrange(ExpKeys.get_exp_blocks_list_key(self.e_id), 0, -1) or []
 
+    def get_block_aliases_map(self, redis_instance=None):
+        if redis_instance is None:
+            r = get_redis_instance()
+        else:
+            r = redis_instance
+
+        orig_map = r.hgetall(ExpKeys.get_blocks_uuid_by_alias(self.e_id))
+        return dict([
+            (uuid, alias)
+            for alias, uuid in orig_map.iteritems()
+        ])
+
+    def get_visible_variables(self, scopes=None, data_types=None, redis_instance=None):
+        if scopes is None:
+            scopes = ["root"]
+
+        if redis_instance is None:
+            r = get_redis_instance()
+        else:
+            r = redis_instance
+
+        all_variables = r.hgetall(ExpKeys.get_scope_vars_keys(self.e_id))
+        visible = []
+        for key, val in all_variables.iteritems():
+            scope, uuid, var_name, var_data_type = pickle.loads(val)
+            if scope not in scopes:
+                continue
+
+            if data_types is None or var_data_type in data_types:
+                visible.append((uuid, var_name))
+
+        return visible
+
+    def register_variable(self, scope, block_uuid, var_name, data_type, redis_instance=None):
+        if redis_instance is None:
+            r = get_redis_instance()
+        else:
+            r = redis_instance
+
+        record = pickle.dumps((scope, block_uuid, var_name, data_type))
+        r.hset(ExpKeys.get_scope_vars_keys(self.e_id), "%s:%s" % (block_uuid, var_name), record)
+
 
 def delete_exp(exp):
     """
@@ -342,7 +387,6 @@ def delete_exp(exp):
 
 
 
-
 def content_file_name(instance, filename):
     return '/'.join(map(str, ['data', instance.exp.author.id, instance.exp.e_id, filename]))
 
@@ -372,13 +416,13 @@ class BroadInstituteGeneSet(models.Model):
     unit = models.CharField(max_length=31,
                             choices=UNIT_CHOICES,
                             default='entrez')
-    gmt_file = models.FileField(null=False, upload_to=gene_sets_file_name)
+    gene_sets_file = models.FileField(null=False, upload_to=gene_sets_file_name)
 
     def __unicode__(self):
         return u"%s: %s. Units: %s" % (self.section, self.name, self.get_unit_display())
 
-    def get_gmt(self):
-        gmt_s = GmtStorage(self.gmt_file.path)
-        gmt = gmt_s.load()
-        gmt.units = self.unit
-        return gmt
+    def get_gene_sets(self):
+        gene_sets_s = GmtStorage(self.gene_sets_file.path)
+        gene_sets = gene_sets_s.load()
+        gene_sets.units = self.unit
+        return gene_sets

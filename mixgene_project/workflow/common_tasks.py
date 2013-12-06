@@ -13,8 +13,8 @@ from webapp.models import CachedFile, Experiment
 from workflow.constants import Units
 from workflow.input import FileInputVar
 from workflow.parsers import GMT
-from workflow.structures import ExpressionSet, PlatformAnnotation
-from workflow.vars import MixData, MixPheno, GeneSets
+from workflow.structures import ExpressionSet, PlatformAnnotation, GeneSets
+from workflow.vars import MixData, MixPheno, GeneSetsOld
 
 
 @task(name="workflow.common_tasks.append_error_to_block")
@@ -96,13 +96,10 @@ def preprocess_soft(exp, block):
         pl = soft[2].table_rows
         id_idx = pl[0].index('ID')
         entrez_idx = pl[0].index('ENTREZ_GENE_ID')
-        probe_to_genes_mapping = dict([
-            (
-                row[id_idx],
-                ("", row[entrez_idx].split(" /// "))
-            )
-            for row in pl[1:]
-        ])
+        probe_to_genes_GS = GeneSets()
+        for row in pl[1:]:
+            probe_to_genes_GS.description[row[id_idx]] = ""
+            probe_to_genes_GS.genes[row[id_idx]] = row[entrez_idx].split(" /// ")
 
         platform_annotation = PlatformAnnotation("TODO:GET NAME FROM SOFT",
             base_dir=exp.get_data_folder(),
@@ -111,7 +108,7 @@ def preprocess_soft(exp, block):
 
         platform_annotation.gene_units = Units.ENTREZ_GENE_ID
         platform_annotation.set_units = Units.PROBE_ID
-        platform_annotation.store_gmt(probe_to_genes_mapping)
+        platform_annotation.store_gmt(probe_to_genes_GS)
         block.gpl_annotation = platform_annotation
 
         id_ref_idx = soft[3].table_rows[0].index("ID_REF")
@@ -256,7 +253,7 @@ def converse_probes_to_genes(ctx):
 def fetch_msigdb(ctx):
     exp = Experiment.objects.get(e_id=ctx["exp_id"])
 
-    msigdb_gs = GeneSets()
+    msigdb_gs = GeneSetsOld()
     msigdb_gs.gene_units = "ENTREZ_GENE_ID"
     msigdb_gs.set_units = "gene_sets"
 
@@ -307,7 +304,7 @@ def map_gene_sets_to_probes(ctx):
     new_gmt.description = msigdb_gmt.description
     new_gmt.units = ["PROBE_ID",]
 
-    new_gs = GeneSets()
+    new_gs = GeneSetsOld()
     new_gs.filename = "%s_gs.gmt" % "gs_probes_merged"
     new_gs.filepath = exp.get_data_file_path(new_gs.filename)
     new_gs.gene_units = "PROBE_ID"

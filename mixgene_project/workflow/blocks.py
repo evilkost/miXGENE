@@ -15,6 +15,7 @@ from workflow import wrappers
 
 class GenericBlock(object):
     block_base_name = "GENERIC_BLOCK"
+    provided_objects = {}
 
     def __init__(self, name, type):
         """
@@ -34,6 +35,8 @@ class GenericBlock(object):
         self.errors = []
         self.warnings = []
         self.base_name = ""
+
+        self.scope = "root"
 
     def clean_errors(self):
         self.errors = []
@@ -67,8 +70,7 @@ class GenericBlock(object):
         else:
             raise RuntimeError("Action %s isn't available" % action_name)
 
-    def get_provided_objects(self):
-        return {}
+
 
     def before_render(self, exp, *args, **kwargs):
         """
@@ -126,6 +128,9 @@ class GetBroadInstituteGeneSet(GenericBlock):
     block_base_name = "BI_GENE_SET"
     is_base_name_visible = True
 
+    provided_objects = {
+        "GeneSets": "gene_sets",
+    }
 
     def __init__(self):
         super(GetBroadInstituteGeneSet, self).__init__("Get MSigDB gene set", "user_input")
@@ -227,6 +232,11 @@ class FetchGSE(GenericBlock):
     block_base_name = "FETCH_GEO"
     is_base_name_visible = True
 
+    provided_objects =  {
+        "ExpressionSet": "expression_set",
+        "PlatformAnnotation": "annotation",
+    }
+
     def __init__(self):
         super(FetchGSE, self).__init__("Fetch ncbi gse", "user_input")
 
@@ -255,11 +265,7 @@ class FetchGSE(GenericBlock):
     def get_annotation_name(self):
         return self.form["gpl_annotation_name"].value()
 
-    def get_provided_objects(self):
-        return {
-            "ExpressionSet": "expression_set",
-            "PlatformAnnotation": "annotation",
-        }
+
 
     def is_form_fields_editable(self):
         if self.state in ['created', 'form_modified']:
@@ -325,9 +331,26 @@ class FetchGSE(GenericBlock):
         #exp.store_block(self)
 
 
-def mark_bound_block_variable(available, block_name, field_name):
+def prepare_bound_variable_select_input(available, block_aliases_map, block_name, field_name):
+    """
+    @type  available: [(block_uuid, var_name),]
+    @param available: list of available variables
+
+    @type  block_aliases_map: dict
+    @param block_aliases_map: Block uuid -> block alias
+
+    @type  block_name: str
+    @param block_name: Current bound variable parent block
+
+    @type  field_name: str
+    @param field_name: Current bound variable name
+
+    @rtype: list of [(uuid, block_name, field_name, ?is_selected)]
+    @return: prepared list for select input
+    """
     marked = []
-    for uuid, i_block_name, i_field_name in available:
+    for uuid, i_field_name in available:
+        i_block_name = block_aliases_map[uuid]
         if i_block_name == block_name and i_field_name == field_name:
             marked.append((uuid, i_block_name, i_field_name, True))
         else:
@@ -339,6 +362,7 @@ class PCA_visualize(GenericBlock):
     fsm = Fysom({
         'events': [
             {'name': 'bind_variable', 'src': 'created', 'dst': 'variable_bound'},
+            {'name': 'bind_variable', 'src': 'pca_computed', 'dst': 'variable_bound'},
             {'name': 'bind_variable', 'src': 'variable_bound', 'dst': 'variable_bound'},
 
             {'name': 'run_pca', 'src': 'variable_bound', 'dst': 'pca_computing'},
@@ -396,9 +420,12 @@ class PCA_visualize(GenericBlock):
 
     def before_render(self, exp, *args, **kwargs):
         context_add = {}
-        available = exp.group_blocks_by_provided_type()
-        self.variable_options = mark_bound_block_variable(
-            available["ExpressionSet"], self.bound_variable_block_alias, self.bound_variable_field)
+        available = exp.get_visible_variables(scopes=[self.scope], data_types=["ExpressionSet"])
+
+        self.variable_options = prepare_bound_variable_select_input(
+            available, exp.get_block_aliases_map(),
+            self.bound_variable_block_alias, self.bound_variable_field)
+
         if len(self.variable_options) == 0:
             self.errors.append(Exception("There is no blocks which provides Expression Set"))
 
@@ -436,9 +463,12 @@ class ExpressionSetDetails(GenericBlock):
 
     def before_render(self, exp, *args, **kwargs):
         context_add = {}
-        available = exp.group_blocks_by_provided_type()
-        self.variable_options = mark_bound_block_variable(
-            available["ExpressionSet"], self.bound_variable_block_alias, self.bound_variable_field)
+
+        available = exp.get_visible_variables(scopes=[self.scope], data_types=["ExpressionSet"])
+        self.variable_options = prepare_bound_variable_select_input(
+            available, exp.get_block_aliases_map(),
+            self.bound_variable_block_alias, self.bound_variable_field)
+
         if len(self.variable_options) == 0:
             self.errors.append(Exception("There is no blocks which provides Expression Set"))
         #return {"variable_options": available["ExpressionSet"]}

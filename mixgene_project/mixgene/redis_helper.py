@@ -1,5 +1,6 @@
 from mixgene.util import get_redis_instance
 
+
 class ExpKeys(object):
     @staticmethod
     def get_context_store_key(exp_id):
@@ -11,7 +12,15 @@ class ExpKeys(object):
         return "GBUIA-%s" % exp_id
 
     @staticmethod
+    def get_scope_vars_keys(exp_id):
+        # redis hash set  "block_uuid:var_name"->
+        #                   pickle( (scope, block_uuid, var_name, var_data_type))
+
+        return "SV-%s" % exp_id
+
+    @staticmethod
     def get_exp_blocks_list_key(exp_id):
+        # TODO: remove this, since we alseo have blocks_uuid_by_alias
         return "EBS-%s" % exp_id
 
     @staticmethod
