@@ -51,13 +51,13 @@ function ajaxFormShowResponse(response_text, status_text, xhr, $form){
 }
 
 function add_spinner($obj){
-    new Spinner(spin_opts).spin($obj)
+    var spinner = new Spinner(spin_opts).spin($obj);
 }
 
 function restore_bindings_after_injection(block_uuid){
     $("#"+block_uuid).find(".form-ajax-submit").ajaxForm(ajaxFormShowResponse);
-    //$("#"+block_uuid).find(".btn-block-action").click(block_action_click);
-    add_spinner($('#'+block_uuid+' .spin-placeholder'))
+
+    // /add_spinner($('#'+block_uuid+' .spin-placeholder')[0])
 }
 
 

@@ -1,0 +1,45 @@
+<div id="{$ uuid $}" class="row constructor-block" ng-controller="BlockCtrl">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <div class="pull-left">
+            </div>
+            {$  block.name $}
+
+
+            [   {$ block.base_name $}
+            <a class="block-reload glyphicon glyphicon-pencil"></a>
+            ]
+
+            <div class="pull-right">
+                <a class="block-reload glyphicon glyphicon-repeat"></a>
+                &nbsp;&nbsp;&nbsp;&nbsp;
+                <a class="block-move-down glyphicon glyphicon-resize-small"
+                    ng-click='toggleBodyVisibility()'>
+                </a>
+                <a class="block-move-down hidden glyphicon glyphicon-resize-full"></a>
+                &nbsp;&nbsp;&nbsp;&nbsp;
+                <a class="block-move-down glyphicon glyphicon-arrow-down"></a>
+                <a class="block-move-up glyphicon glyphicon-arrow-up"></a>
+                &nbsp;&nbsp;&nbsp;&nbsp;
+                <a class="block-remove text-danger glyphicon glyphicon-trash"></a>
+            </div>
+
+
+        </div>
+        <div class="panel-body" ng-show="show_panel_body">
+
+            <div ng-if="has_errors" class="alert alert-danger">
+                <ul class="list-unsyled">
+                    <li ng-repeat="error in block.errors">
+                        {$ error.msg $}
+                    </li>
+                </ul>
+            </div>
+
+
+
+
+
+        </div>
+    </div>
+</div>

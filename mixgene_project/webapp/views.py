@@ -63,24 +63,28 @@ def constructor(request, exp_id):
     # all of them should be loaded by ajax
     #  than block wouldnt contain temporary data
 
-    blocks = [(block_uuid, exp.get_block(block_uuid)) for block_uuid in blocks_uuids]
+    blocks = [(block_uuid, exp.get_block(block_uuid)) for
+              block_uuid in blocks_uuids]
+
+    blocks_jsonified = dict([(block_uuid, exp.get_block(block_uuid).serialize_to_dict(exp)) for
+                       block_uuid in blocks_uuids])
     context = {
         "next": "/",
+        "scope": "root",
         "exp": exp,
         "ctx": ctx,
         "blocks": blocks,
+        "blocks_jsonified": json.dumps(blocks_jsonified),
         "blocks_by_group": blocks_by_group,  # TODO: NAMES <- block which can be added
-        "blocks_by_provided_data_type":
-            exp.group_blocks_by_provided_type(redis_instance=r),
+        "blocks_by_group_json": json.dumps(blocks_by_group),  # TODO: NAMES <- block which can be added
+        #"blocks_by_provided_data_type":
+        #    exp.group_blocks_by_provided_type(redis_instance=r),
     }
     for _, block in blocks:
         context.update(block.before_render(exp))
 
     template = loader.get_template('constructor.html')
-
-
-
-    pprint(context)
+    #pprint(context)
     context = RequestContext(request, context)
     return HttpResponse(template.render(context))
 

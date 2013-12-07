@@ -1,3 +1,4 @@
+from collections import defaultdict
 import json
 from uuid import uuid1
 
@@ -75,8 +76,6 @@ class GenericBlock(object):
         else:
             raise RuntimeError("Action %s isn't available" % action_name)
 
-
-
     def before_render(self, exp, *args, **kwargs):
         """
         Invoke prior to template applying, prepare relevant data
@@ -98,6 +97,20 @@ class GenericBlock(object):
         else:
             self.do_action("on_form_not_valid")
 
+    def serialize_to_dict(self, exp):
+        self.before_render(exp)
+        keys_to_snatch = set([
+            "uuid", "base_name", "name", "type",
+            "errors", "warnings"
+        ])
+        hash = {}
+        for key in keys_to_snatch:
+            hash[key] = getattr(self, key)
+        return hash
+
+    #def to_json(self):
+    #    return json.dumps(self.serialize_to_dict())
+
 
 class GeneSetSelectionForm(forms.Form):
     gene_set_id = forms.IntegerField()
@@ -117,7 +130,6 @@ class GetBroadInstituteGeneSet(GenericBlock):
 
         {'name': 'on_form_is_valid', 'src': 'form_modified', 'dst': 'form_valid'},
         {'name': 'on_form_not_valid', 'src': 'form_modified', 'dst': 'form_modified'},
-
     ]})
 
     all_actions = [
@@ -269,8 +281,6 @@ class FetchGSE(GenericBlock):
 
     def get_annotation_name(self):
         return self.form["gpl_annotation_name"].value()
-
-
 
     def is_form_fields_editable(self):
         if self.state in ['created', 'form_modified']:
@@ -561,6 +571,7 @@ class ExpressionSetDetails(GenericBlock):
     def before_render(self, exp, *args, **kwargs):
         context_add = {}
 
+        #import ipdb; ipdb.set_trace()
         available = exp.get_visible_variables(scopes=[self.scope], data_types=["ExpressionSet"])
         self.variable_options = prepare_bound_variable_select_input(
             available, exp.get_block_aliases_map(),
@@ -575,6 +586,11 @@ class ExpressionSetDetails(GenericBlock):
             #import ipdb; ipdb.set_trace()
             if not isinstance(getattr(bound_block, self.bound_variable_field), ExpressionSet):
                 self.errors.append(Exception("Bound variable isn't ready"))
+
+
+        self.errors.append({
+            "msg": "Not implemented !"
+        })
         return context_add
 
     def get_es_preview(self):
@@ -595,39 +611,52 @@ def get_block_class_by_name(name):
         raise KeyError("No such plugin: %s" % name)
 
 #TODO: move to DB
-block_classes_by_name = {
-    "fetch_ncbi_gse": FetchGSE,
-
-    "ES_details": ExpressionSetDetails,
-    "Pca_visualize": PCA_visualize,
-
-    "get_bi_gene_set": GetBroadInstituteGeneSet,
-
-    "cross_validation": CrossValidation,
-}
+block_classes_by_name = {}
+blocks_by_group = defaultdict(list)
 
 
-blocks_by_group = [
-    ("Input data", [
+def register_block(code_name, human_title, group, cls):
+    block_classes_by_name[code_name] = cls
+    blocks_by_group[group].append({
+        "name": code_name,
+        "title": human_title,
+    })
+
+
+class GroupType(object):
+    INPUT_DATA = "Input data"
+    META_PLUGIN = "Meta plugins"
+    VISUALIZE = "Visualize"
+
+register_block("fetch_ncbi_gse", "Fetch NCBI GSE", GroupType.INPUT_DATA, FetchGSE)
+register_block("get_bi_gene_set", "Get MSigDB gene set", GroupType.INPUT_DATA, GetBroadInstituteGeneSet)
+
+register_block("cross_validation", "Cross validation", GroupType.META_PLUGIN, CrossValidation)
+
+register_block("Pca_visualize", "2D PCA Plot", GroupType.VISUALIZE, PCA_visualize)
+
+
+old_blocks_by_group = [
+    ("Input data", dict([
         ("fetch_ncbi_gse", "Fetch NCBI GSE"),
         ("get_bi_gene_set", "Get MSigDB gene set"),
-    ]),
-    ("Conversion", [
+    ])),
+    ("Conversion", dict([
         ("pca_aggregation", "PCA aggregation"),
         ("mean_aggregation", "Mean aggregation"),
-    ]),
-    ("Classifiers", [
+    ])),
+    ("Classifiers", dict([
         ("t_test", "T-test"),
         ("svm", "SVM"),
         ("dtree", "Decision tree"),
-    ]),
-    ("Meta plugins", [
+    ])),
+    ("Meta plugins", dict([
         ("cross_validation", "Cross validation"),
-    ]),
-    ("Visualisation", [
+    ])),
+    ("Visualisation", dict([
         ("ES_details", "Detail view of Expression Set"),
         ("Pca_visualize", "2D PCA Plot"),
         ("boxplot", "Boxplot"),
         ("render_table", "Raw table")
-    ]),
+    ])),
 ]
