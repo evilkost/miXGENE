@@ -16,8 +16,12 @@ from workflow import wrappers
 class GenericBlock(object):
     block_base_name = "GENERIC_BLOCK"
     provided_objects = {}
+    provided_objects_inner = {}
+    create_new_scope = False
+    sub_scope = None
+    is_base_name_visible = True
 
-    def __init__(self, name, type):
+    def __init__(self, name, type, exp_id):
         """
             Building block for workflow
             @type can be: "user_input", "computation"
@@ -25,6 +29,7 @@ class GenericBlock(object):
         self.uuid = uuid1().hex
         self.name = name
         self.type = type
+        self.exp_id = exp_id
 
         # pairs of (var name, data type, default name in context)
         self.required_inputs = []
@@ -129,11 +134,11 @@ class GetBroadInstituteGeneSet(GenericBlock):
     is_base_name_visible = True
 
     provided_objects = {
-        "GeneSets": "gene_sets",
+        "gene_sets": "GeneSets",
     }
 
-    def __init__(self):
-        super(GetBroadInstituteGeneSet, self).__init__("Get MSigDB gene set", "user_input")
+    def __init__(self, *args, **kwargs):
+        super(GetBroadInstituteGeneSet, self).__init__("Get MSigDB gene set", "user_input",  *args, **kwargs)
         self.gmt = None
         self.errors = []
         self.form = None
@@ -233,12 +238,12 @@ class FetchGSE(GenericBlock):
     is_base_name_visible = True
 
     provided_objects =  {
-        "ExpressionSet": "expression_set",
-        "PlatformAnnotation": "annotation",
+        "expression_set": "ExpressionSet",
+        "annotation": "PlatformAnnotation",
     }
 
-    def __init__(self):
-        super(FetchGSE, self).__init__("Fetch ncbi gse", "user_input")
+    def __init__(self, *args, **kwargs):
+        super(FetchGSE, self).__init__("Fetch ncbi gse", "user_input",  *args, **kwargs)
 
 
         self.form = self.form_cls(self.form_data)
@@ -358,6 +363,96 @@ def prepare_bound_variable_select_input(available, block_aliases_map, block_name
     return marked
 
 
+class CrossValidation(GenericBlock):
+    fsm = Fysom({
+        'events': [
+            {'name': 'bind_variable', 'src': 'created', 'dst': 'variable_bound'},
+            {'name': 'bind_variable', 'src': 'finished', 'dst': 'variable_bound'},
+            {'name': 'bind_variable', 'src': 'variable_bound', 'dst': 'variable_bound'},
+
+            {'name': 'split_dataset', 'src': 'variable_bound', 'dst': 'split_dataset'},
+
+            {'name': 'run_sub_blocks', 'src': 'split_dataset', 'dst': 'split_dataset'},
+            {'name': 'run_sub_blocks', 'src': 'split_dataset', 'dst': 'finished'},
+
+        ]
+    })
+    widget = "widgets/cross_validation_base.html"
+    block_base_name = "CROSS_VALID"
+    all_actions = [
+        ("bind_variable", "Select variable", True),
+
+        ("success", "", False),
+        ("error", "", False)
+
+    ]
+    create_new_scope = True
+
+    provided_objects = {}
+    provided_objects_inner = {
+        "es_train_i": "ExpressionSet",
+        "es_test_i": "ExpressionSet",
+    }
+
+
+    @property
+    def sub_blocks(self):
+        uuids_blocks = Experiment.get_blocks(self.children_blocks)
+        exp = Experiment.objects.get(e_id = self.exp_id)
+        for uuid, block in uuids_blocks:
+            block.before_render(exp)
+
+        return uuids_blocks
+
+
+    @property
+    def sub_scope(self):
+        return "%s_%s" % (self.scope, self.uuid)
+
+    def __init__(self, *args, **kwargs):
+        super(CrossValidation, self).__init__("Cross Validation", "Meta", *args, **kwargs)
+        self.bound_variable_field = None
+        self.bound_variable_block = None
+        self.bound_variable_block_alias = None
+
+        self.children_blocks = []
+
+        self.active_fold = -1
+        self.fold_number = 10
+        self.train_test_ratio = 0.7
+
+    ### inner variables provider
+    @property
+    def es_train_i(self):
+        return None
+
+    @property
+    def es_test_i(self):
+        return None
+
+    ### end inner variables
+    def bind_variable(self, exp, request, *args, **kwargs):
+        split = request.POST['variable_name'].split(":")
+        self.bound_variable_block = split[0]
+        bound_block = exp.get_block(self.bound_variable_block)
+        self.bound_variable_block_alias = bound_block.base_name
+        self.bound_variable_field = ''.join(split[1:])
+        exp.store_block(self)
+
+    def before_render(self, exp, *args, **kwargs):
+        context_add = {}
+        available = exp.get_visible_variables(scopes=[self.scope], data_types=["ExpressionSet"])
+
+        self.variable_options = prepare_bound_variable_select_input(
+            available, exp.get_block_aliases_map(),
+            self.bound_variable_block_alias, self.bound_variable_field)
+
+        if len(self.variable_options) == 0:
+            self.errors.append(Exception("There is no blocks which provides Expression Set"))
+
+        return context_add
+
+
 class PCA_visualize(GenericBlock):
     fsm = Fysom({
         'events': [
@@ -452,6 +547,8 @@ class ExpressionSetDetails(GenericBlock):
         self.bound_variable_block = None
         self.bound_variable_block_alias = None
 
+        self.variable_options = []
+
     def bind_variable(self, exp, request, *args, **kwargs):
         self.clean_errors()
         split = request.POST['variable_name'].split(":")
@@ -500,9 +597,13 @@ def get_block_class_by_name(name):
 #TODO: move to DB
 block_classes_by_name = {
     "fetch_ncbi_gse": FetchGSE,
+
     "ES_details": ExpressionSetDetails,
     "Pca_visualize": PCA_visualize,
-    "get_bi_gene_set": GetBroadInstituteGeneSet
+
+    "get_bi_gene_set": GetBroadInstituteGeneSet,
+
+    "cross_validation": CrossValidation,
 }
 
 
@@ -519,6 +620,9 @@ blocks_by_group = [
         ("t_test", "T-test"),
         ("svm", "SVM"),
         ("dtree", "Decision tree"),
+    ]),
+    ("Meta plugins", [
+        ("cross_validation", "Cross validation"),
     ]),
     ("Visualisation", [
         ("ES_details", "Detail view of Expression Set"),

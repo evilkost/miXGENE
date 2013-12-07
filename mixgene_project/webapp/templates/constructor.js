@@ -73,7 +73,8 @@ var block_config = {};
 var block_placeholder_handle = null;
 
 $(".btn-block-placeholder").click(function(event_obj) {
-    $("#blocks-pallet").show();
+    var scope = $(event_obj.target).attr("data-scope");
+    $("#blocks-pallet-"+scope).show();
     block_placeholder_handle = this;
     //alert($(event_obj.target).attr('class'));
     $(event_obj.target).hide()
@@ -82,6 +83,7 @@ $(".btn-block-placeholder").click(function(event_obj) {
 
 $(".btn-block-provider").click(function(event_obj) {
     var block = $(event_obj.target).attr("href").substr(1);
+    var scope = $(event_obj.target).attr("data-scope");
     var url = "/add_block";
 
     function onDataReceived(response){
@@ -93,7 +95,7 @@ $(".btn-block-provider").click(function(event_obj) {
 
         blocks_list.push(block_uuid);
 
-        $("#blocks-pallet").hide();
+        $("#blocks-pallet-"+scope).hide();
         $(".btn-block-placeholder").show();
     }
 
@@ -105,6 +107,7 @@ $(".btn-block-provider").click(function(event_obj) {
         data: {
             csrfmiddlewaretoken: $csrf_token,
             block: block,
+            scope: scope,
             exp_id: $exp_id
         }
     });

@@ -15,8 +15,12 @@ class ExpKeys(object):
     def get_scope_vars_keys(exp_id):
         # redis hash set  "block_uuid:var_name"->
         #                   pickle( (scope, block_uuid, var_name, var_data_type))
-
         return "SV-%s" % exp_id
+
+    @staticmethod
+    def get_scope_creating_block_uuid_keys(exp_id):
+        # redis hash set "scope" -> "block_uuid"
+        return "SCBU-%s" % exp_id
 
     @staticmethod
     def get_exp_blocks_list_key(exp_id):

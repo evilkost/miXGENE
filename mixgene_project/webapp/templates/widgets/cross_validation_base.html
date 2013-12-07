@@ -1,0 +1,90 @@
+{% extends "widgets/base_block_template.html" %}
+
+{% block panel_heading %}
+{% if exp_block.state == "variable_bound" %}
+<span><strong>Bound to </strong>
+        {{ exp_block.bound_variable_block_alias }}->
+        {{ exp_block.bound_variable_field }}
+    </span>
+{% endif %}
+
+{% endblock panel_heading %}
+
+
+{% block panel_body %}
+<div class="row">
+    <div class="col-xs-12">
+    <form class="form form-horizontal form-ajax-submit"
+          action="{% url 'update_block' %}" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="block_uuid" value="{{ exp_block.uuid }}" />
+        <input type="hidden" name="exp_id" value="{{ ctx.exp_id }}" />
+
+        <div class="col-lg-9">
+            {% if exp_block.variable_options %}
+            <div class="form-group">
+                <label class="col-sm-2 control-label">Select variable</label>
+                <div class="col-sm-10">
+                    <select name="variable_name" class="form-control">
+                        {% for uuid, alias, field_name, selected in  exp_block.variable_options %}
+                        <option value = "{{uuid}}:{{field_name}}" {% if selected %} selected {% endif %}>
+                        {{alias}} -> {{ field_name}}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        <div class="col-lg-3">
+            {% for action_code, action_title in exp_block.get_available_user_action %}
+
+            <button type="submit" class="btn btn-default btn-block"
+                    name="action" value="{{ action_code }}">
+                {{ action_title }}
+            </button>
+
+            {% endfor %}
+        </div>
+
+    </form>
+    </div>
+
+    <div class="row">
+    <div class="col-xs-4">
+        <dl class="dl-horizontal">
+            <dt>Folds number:</dt>
+            <dd>{{ exp_block.fold_number }}</dd>
+            <dt>Train/test ratio</dt>
+            <dd>{{ exp_block.train_test_ratio }}</dd>
+            <dt>Current fold</dt>
+            <dd>{{ exp_block.active_fold }}</dd>
+        </dl>
+    </div>
+
+
+    </div>
+
+
+    <div class="row">
+        <h3>Sub blocks:</h3>
+
+        {% for uuid, exp_block in exp_block.sub_blocks %}
+
+            {% include exp_block.widget  %}
+        {% endfor %}
+        <button type="button" class="btn btn-lg btn-block btn-success btn-block-placeholder"
+                data-scope="{{ exp_block.sub_scope}}">
+            Add block
+        </button>
+
+        {% include "widgets/blocks_pallet.html" with scope=exp_block.sub_scope %}
+
+
+    </div>
+    <hr />
+    <p><strong>Internal state:</strong> {{ exp_block.state}}</p>
+</div>
+
+
+{% endblock panel_body %}

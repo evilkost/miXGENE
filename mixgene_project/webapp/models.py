@@ -7,6 +7,7 @@ import hashlib
 
 from django.db import models
 from django.contrib.auth.models import User
+from redis.client import StrictPipeline
 
 from mixgene.settings import MEDIA_ROOT
 from mixgene.util import get_redis_instance
@@ -120,6 +121,8 @@ class Experiment(models.Model):
                    key_context_version,
                    ExpKeys.get_exp_blocks_list_key(self.e_id),
                    ExpKeys.get_blocks_uuid_by_alias(self.e_id),
+                   ExpKeys.get_scope_vars_keys(self.e_id),
+                   ExpKeys.get_scope_creating_block_uuid_keys(self.e_id),
                   ])
 
         pipe.execute()
@@ -203,24 +206,50 @@ class Experiment(models.Model):
         self.update_ctx(new_ctx)
         self.save()
 
-    def store_block(self, block, new_block=False, redis_instance=None):
+    def store_block(self, block, new_block=False, redis_instance=None, dont_execute_pipe=False):
         if redis_instance is None:
             r = get_redis_instance()
         else:
             r = redis_instance
 
-        pipe = r.pipeline()
+        if not isinstance(r, StrictPipeline):
+            pipe = r.pipeline()
+        else:
+            pipe = r
+
         block_key = ExpKeys.get_block_key(block.uuid)
         if new_block:
             pipe.rpush(ExpKeys.get_exp_blocks_list_key(self.e_id), block.uuid)
             pipe.sadd(ExpKeys.get_all_exp_keys_key(self.e_id), block_key)
 
-            for data_type, var_name in block.provided_objects.iteritems():
+            for var_name, data_type in block.provided_objects.iteritems():
                 self.register_variable(block.scope, block.uuid, var_name, data_type, pipe)
+
+            if block.create_new_scope:
+                #import ipdb; ipdb.set_trace()
+                for var_name, data_type in block.provided_objects_inner.iteritems():
+                    self.register_variable(block.sub_scope, block.uuid, var_name, data_type, pipe)
+
+                pipe.hset(ExpKeys.get_scope_creating_block_uuid_keys(self.e_id),
+                          block.sub_scope, block.uuid)
+
+            if block.scope != "root":
+                # need to register in parent block
+                parent_uuid = r.hget(ExpKeys.get_scope_creating_block_uuid_keys(self.e_id),
+                                     block.scope)
+                parent = self.get_block(parent_uuid, r)
+                #import ipdb; ipdb.set_trace()
+                parent.children_blocks.append(block.uuid)
+                self.store_block(parent,
+                                 new_block=False,
+                                 redis_instance=pipe,
+                                 dont_execute_pipe=True)
 
         pipe.set(block_key, pickle.dumps(block))
         pipe.hset(ExpKeys.get_blocks_uuid_by_alias(self.e_id), block.base_name, block.uuid)
-        pipe.execute()
+
+        if not dont_execute_pipe:
+            pipe.execute()
 
         print "block %s was stored with state: %s" % (block.uuid, block.state)
 
@@ -266,6 +295,26 @@ class Experiment(models.Model):
             r = redis_instance
 
         return pickle.loads(r.get(ExpKeys.get_block_key(block_uuid)))
+
+    @staticmethod
+    def get_blocks(block_uuid_list, redis_instance=None):
+        """
+            @type  block_uuid_list: list
+            @param block_uuid_list: List of Block instance identifier
+
+            @type  redis_instance: Redis
+            @param redis_instance: Instance of redis client
+
+            @rtype: GenericBlock
+            @return: Block instance
+        """
+        if redis_instance is None:
+            r = get_redis_instance()
+        else:
+            r = redis_instance
+
+        return [(uuid, pickle.loads(r.get(ExpKeys.get_block_key(uuid))))
+                for uuid in block_uuid_list]
 
     def group_blocks_by_provided_type(self, included_inner_blocks=None, redis_instance=None):
         if self._blocks_grouped_by_provided_type is not None:
@@ -318,6 +367,9 @@ class Experiment(models.Model):
     def get_visible_variables(self, scopes=None, data_types=None, redis_instance=None):
         if scopes is None:
             scopes = ["root"]
+
+        scopes = set(scopes)
+        scopes.add("root")
 
         if redis_instance is None:
             r = get_redis_instance()
@@ -416,13 +468,13 @@ class BroadInstituteGeneSet(models.Model):
     unit = models.CharField(max_length=31,
                             choices=UNIT_CHOICES,
                             default='entrez')
-    gene_sets_file = models.FileField(null=False, upload_to=gene_sets_file_name)
+    gmt_file = models.FileField(null=False, upload_to=gene_sets_file_name)
 
     def __unicode__(self):
         return u"%s: %s. Units: %s" % (self.section, self.name, self.get_unit_display())
 
     def get_gene_sets(self):
-        gene_sets_s = GmtStorage(self.gene_sets_file.path)
+        gene_sets_s = GmtStorage(self.gmt_file.path)
         gene_sets = gene_sets_s.load()
         gene_sets.units = self.unit
         return gene_sets

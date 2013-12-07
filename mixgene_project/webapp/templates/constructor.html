@@ -16,33 +16,20 @@
             </div>
         </div>
         <div id="worktable" class="row well">
-            {% for uuid, block in blocks %}
-                {% include block.widget with exp_block=block %}
+            {% for uuid, exp_block in blocks %}
+                {% if exp_block.scope == "root" %}
+                    {% include exp_block.widget %}
+                {% endif %}
             {% endfor %}
-            <button type="button" class="btn btn-lg btn-block btn-success btn-block-placeholder">
+            <button type="button" class="btn btn-lg btn-block btn-success btn-block-placeholder"
+                    data-scope="root">
                 Add block
             </button>
-            <div id="blocks-pallet" class="row bg-gray" style="display:none">
-                {% for group_title, group in blocks_by_group %}
-                <div class="col-xs-3" >
-                    <div class="panel panel-default">
-                        <div class="panel-heading">Input data</div>
-                        <div class="panel-body">
-                            {% for block_code, block_title in group %}
-                            <a href="#{{block_code}}" class="btn btn-default btn-block-provider btn-block">
-                                {{ block_title}}
-                            </a>
-                            {% endfor %}
 
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
+            {% include "widgets/blocks_pallet.html" %}
+
         </div>
     </div>
-
-
-
 </div>
 
 <script type="text/javascript">
