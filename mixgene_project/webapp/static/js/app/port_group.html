@@ -1,0 +1,23 @@
+<div >
+    {$ groupName $}
+<div ng-controller="PortGroupCtrl" ng-show="showPortGroup" >
+
+    <div ng-repeat="(group_name, ports_group) in block.ports"> <!--  ng-controller='PortCtrl' class='row'> -->
+        <!--{$ group_name $}-->
+        <div ng-repeat="(port_name, port) in ports_group" ng-controller='PortCtrl' class='row'>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">Select variable for
+                    {$ port.name $} of type <b> {$ port.data_type$}</b>
+                </label>
+                <div class="col-sm-9">
+                <select class="form-control"
+                        ng-model="port.bound_key"
+                        ng-options="option.key as render_option(option.obj) for option in port.options" >
+                </select>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+

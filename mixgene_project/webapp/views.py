@@ -7,7 +7,7 @@ from collections import defaultdict
 
 import numpy as np
 
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseNotAllowed, HttpRequest
 from django.template import RequestContext, loader
 from django.shortcuts import redirect
 
@@ -22,9 +22,7 @@ from django.contrib.auth.decorators import login_required
 from webapp.models import Experiment, WorkflowLayout, UploadedData, delete_exp
 from webapp.forms import UploadForm
 from webapp.store import add_block_to_exp_from_request
-from workflow.blocks import blocks_by_group
-
-
+from workflow.blocks import blocks_by_group, old_blocks_by_group
 
 from mixgene.util import dyn_import, get_redis_instance, mkdir
 
@@ -66,16 +64,19 @@ def constructor(request, exp_id):
     blocks = [(block_uuid, exp.get_block(block_uuid)) for
               block_uuid in blocks_uuids]
 
-    blocks_jsonified = dict([(block_uuid, exp.get_block(block_uuid).serialize_to_dict(exp)) for
+    blocks_jsonified = dict([(block_uuid, exp.get_block(block_uuid).serialize(exp)) for
                        block_uuid in blocks_uuids])
     context = {
         "next": "/",
         "scope": "root",
         "exp": exp,
+        "exp_json": json.dumps({
+            "exp_id": exp_id,
+        }),
         "ctx": ctx,
         "blocks": blocks,
         "blocks_jsonified": json.dumps(blocks_jsonified),
-        "blocks_by_group": blocks_by_group,  # TODO: NAMES <- block which can be added
+        "blocks_by_group": old_blocks_by_group,  # TODO: NAMES <- block which can be added
         "blocks_by_group_json": json.dumps(blocks_by_group),  # TODO: NAMES <- block which can be added
         #"blocks_by_provided_data_type":
         #    exp.group_blocks_by_provided_type(redis_instance=r),
@@ -126,6 +127,40 @@ def update_block(request):
         return _render_block(request, exp, block)
     return HttpResponse("")
 
+
+
+@csrf_protect
+def block_resource_list(request, exp_id):
+    exp = Experiment.objects.get(e_id=exp_id)
+    pass
+
+
+@csrf_protect
+def block_resource(request, exp_id, block_uuid, action_code=None):
+    """
+
+    @type request: HttpRequest
+    """
+    exp = Experiment.objects.get(e_id=exp_id)
+    block = exp.get_block(str(block_uuid))
+
+    #import time
+    #time.sleep(0.5)
+    if request.method == "POST":
+        try:
+            received_block = json.loads(request.body)
+        except Exception, e:
+            # TODO log errors
+            received_block = {}
+        block.do_action(action_code, exp=exp, request=request, received_block=received_block)
+
+    if request.method == "GET" or request.method == "POST":
+        block_dict = exp.get_block(block_uuid).serialize(exp)
+        resp = HttpResponse(content_type="application/json")
+        json.dump(block_dict, resp)
+        return resp
+
+    return HttpResponseNotAllowed(["POST", "GET"])
 
 def block_sub_page(request, exp_id, block_uuid, sub_page):
     exp = Experiment.objects.get(e_id=exp_id)

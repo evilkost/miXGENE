@@ -9,9 +9,10 @@
             [   {$ block.base_name $}
             <a class="block-reload glyphicon glyphicon-pencil"></a>
             ]
-
+            <i>State: {$ block.state $}</i>
             <div class="pull-right">
-                <a class="block-reload glyphicon glyphicon-repeat"></a>
+                <a class="block-reload glyphicon glyphicon-repeat"
+                    ng-click="reloadBlock()"></a>
                 &nbsp;&nbsp;&nbsp;&nbsp;
                 <a class="block-move-down glyphicon glyphicon-resize-small"
                     ng-click='toggleBodyVisibility()'>
@@ -26,8 +27,11 @@
 
 
         </div>
-        <div class="panel-body" ng-show="show_panel_body">
+        <div class="pangel-body" ng-show="is_block_updating" >
+            Processing block!
+        </div>
 
+        <div class="panel-body" ng-show="show_panel_body" ng-hide="is_block_updating">
             <div ng-if="has_errors" class="alert alert-danger">
                 <ul class="list-unsyled">
                     <li ng-repeat="error in block.errors">
@@ -36,10 +40,32 @@
                 </ul>
             </div>
 
+            <div class="row">
 
+            <div class="col-xs-8">
+                <div ports-group block="block" groupName="input" >
+                </div>
 
+            </div>
 
+            <div class="col-xs-4">
+                <div class="btn-group-vertical">
+                    <button type="button" class="btn btn-default"
+                        ng-repeat="action in block.actions"
+                        ng-controller="BlockActionCtrl"
+                        ng-click="send_action(action.code)"
+                         >
+                        {$ action.title $}
+                    </button>
+                </div>
+            </div>
+            <!--{-->
+            <!--block_alias: FETCH_GEO:1-->
+            <!--var_name: expression_set-->
+            <!--block_uuid: 9535c4b25f7911e39ac828107bb6ae27-->
+            <!--}-->
 
+            </div>
         </div>
     </div>
 </div>

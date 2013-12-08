@@ -353,6 +353,12 @@ class Experiment(models.Model):
         return r.lrange(ExpKeys.get_exp_blocks_list_key(self.e_id), 0, -1) or []
 
     def get_block_aliases_map(self, redis_instance=None):
+        """
+        @param redis_instance: Redis
+
+        @return: Map { uuid -> alias }
+        @rtype: dict
+        """
         if redis_instance is None:
             r = get_redis_instance()
         else:
@@ -363,6 +369,19 @@ class Experiment(models.Model):
             (uuid, alias)
             for alias, uuid in orig_map.iteritems()
         ])
+
+    def get_registered_variables(self, redis_instance=None):
+        if redis_instance is None:
+            r = get_redis_instance()
+        else:
+            r = redis_instance
+
+        variables = []
+        for key, val in r.hgetall(ExpKeys.get_scope_vars_keys(self.e_id)).iteritems():
+            #scope, uuid, var_name, var_data_type = pickle.loads(val)
+            variables.append(pickle.loads(val))
+
+        return variables
 
     def get_visible_variables(self, scopes=None, data_types=None, redis_instance=None):
         if scopes is None:

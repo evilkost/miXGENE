@@ -3,15 +3,33 @@ import json
 from uuid import uuid1
 
 from django import forms
-from django.forms import ModelForm
 from fysom import Fysom
 import pandas as pd
 from webapp.models import Experiment, BroadInstituteGeneSet
 
 from workflow.common_tasks import fetch_geo_gse, preprocess_soft
+from workflow.ports import BlockPort, BoundVar
 
 from workflow.structures import ExpressionSet
 from workflow import wrappers
+
+#TODO: move to DB
+block_classes_by_name = {}
+blocks_by_group = defaultdict(list)
+
+
+def register_block(code_name, human_title, group, cls):
+    block_classes_by_name[code_name] = cls
+    blocks_by_group[group].append({
+        "name": code_name,
+        "title": human_title,
+    })
+
+
+class GroupType(object):
+    INPUT_DATA = "Input data"
+    META_PLUGIN = "Meta plugins"
+    VISUALIZE = "Visualize"
 
 
 class GenericBlock(object):
@@ -22,7 +40,7 @@ class GenericBlock(object):
     sub_scope = None
     is_base_name_visible = True
 
-    def __init__(self, name, type, exp_id):
+    def __init__(self, name, type, exp_id, scope):
         """
             Building block for workflow
             @type can be: "user_input", "computation"
@@ -42,7 +60,8 @@ class GenericBlock(object):
         self.warnings = []
         self.base_name = ""
 
-        self.scope = "root"
+        self.scope = scope
+        self.ports = {}  # {group_name -> [BlockPort1, BlockPort2]}
 
     def clean_errors(self):
         self.errors = []
@@ -51,6 +70,7 @@ class GenericBlock(object):
         return self.get_allowed_actions(True)
 
     def get_allowed_actions(self, only_user_actions=False):
+        # TODO: REFACTOR!!!!!
         action_list = []
         for line in self.all_actions:
             # action_code, action_title, user_visible = line
@@ -71,7 +91,6 @@ class GenericBlock(object):
             getattr(self.fsm, action_name)()
             self.state = self.fsm.current
             print "change state to: " + self.state
-
             getattr(self, action_name)(*args, **kwargs)
         else:
             raise RuntimeError("Action %s isn't available" % action_name)
@@ -82,6 +101,7 @@ class GenericBlock(object):
         @param exp: Experiment
         @return: additional content for template context
         """
+        self.collect_port_options(exp)
         return {}
 
     def save_form(self, exp, request, *args, **kwargs):
@@ -97,19 +117,58 @@ class GenericBlock(object):
         else:
             self.do_action("on_form_not_valid")
 
-    def serialize_to_dict(self, exp):
+    def serialize(self, exp, to="dict"):
         self.before_render(exp)
-        keys_to_snatch = set([
-            "uuid", "base_name", "name", "type",
-            "errors", "warnings"
-        ])
-        hash = {}
-        for key in keys_to_snatch:
-            hash[key] = getattr(self, key)
-        return hash
+        if to == "dict":
+            keys_to_snatch = set([
+                "uuid", "base_name", "name", "type",
+                "errors", "warnings", "state"
+            ])
+            hash = {}
+            for key in keys_to_snatch:
+                hash[key] = getattr(self, key)
 
-    #def to_json(self):
-    #    return json.dumps(self.serialize_to_dict())
+                pass
+
+            hash['ports'] = {
+                group_name: {
+                    port_name: port.serialize()
+                    for port_name, port in group_ports.iteritems()
+                }
+                for group_name, group_ports in self.ports.iteritems()
+            }
+            hash['actions'] = [
+                {
+                    "code": action_code,
+                    "title": action_title
+                }
+                for action_code, action_title, _ in
+                self.get_available_user_action()
+            ]
+
+            return hash
+
+    def collect_port_options(self, exp):
+        """
+        @type exp: Experiment
+        """
+        #import ipdb; ipdb.set_trace()
+        variables = exp.get_registered_variables()
+        aliases_map = exp.get_block_aliases_map()
+        # structure: (scope, uuid, var_name, var_data_type)
+        for group_name, port_group in self.ports.iteritems():
+            for port_name, port in port_group.iteritems():
+                port.options = {}
+                for scope, uuid, var_name, var_data_type in variables:
+                    if scope in port.scopes and var_data_type == port.data_type:
+                        var = BoundVar(
+                            block_uuid=uuid,
+                            block_alias=aliases_map[uuid],
+                            var_name=var_name
+                        )
+                        port.options[var.key] = var
+                if port.bound_key is not None and port.bound_key not in port.options.keys():
+                    port.bound_key = None
 
 
 class GeneSetSelectionForm(forms.Form):
@@ -376,11 +435,11 @@ def prepare_bound_variable_select_input(available, block_aliases_map, block_name
 class CrossValidation(GenericBlock):
     fsm = Fysom({
         'events': [
-            {'name': 'bind_variable', 'src': 'created', 'dst': 'variable_bound'},
-            {'name': 'bind_variable', 'src': 'finished', 'dst': 'variable_bound'},
-            {'name': 'bind_variable', 'src': 'variable_bound', 'dst': 'variable_bound'},
+            {'name': 'bind_variables', 'src': 'created', 'dst': 'variable_bound'},
+            {'name': 'bind_variables', 'src': 'finished', 'dst': 'variable_bound'},
+            {'name': 'bind_variables', 'src': 'variable_bound', 'dst': 'variable_bound'},
 
-            {'name': 'split_dataset', 'src': 'variable_bound', 'dst': 'split_dataset'},
+            {'name': 'generate_fold', 'src': 'variable_bound', 'dst': 'generating_folds'},
 
             {'name': 'run_sub_blocks', 'src': 'split_dataset', 'dst': 'split_dataset'},
             {'name': 'run_sub_blocks', 'src': 'split_dataset', 'dst': 'finished'},
@@ -390,7 +449,9 @@ class CrossValidation(GenericBlock):
     widget = "widgets/cross_validation_base.html"
     block_base_name = "CROSS_VALID"
     all_actions = [
-        ("bind_variable", "Select variable", True),
+        ("bind_variables", "Select variables", True),
+        ("generate_folds", "Generate folds", True),
+
 
         ("success", "", False),
         ("error", "", False)
@@ -398,12 +459,13 @@ class CrossValidation(GenericBlock):
     ]
     create_new_scope = True
 
+    # TODO: replace by two-level dict:
+    #   provided_objects_by_scope:    {scope -> { var_name -> data_type}}
     provided_objects = {}
     provided_objects_inner = {
         "es_train_i": "ExpressionSet",
         "es_test_i": "ExpressionSet",
     }
-
 
     @property
     def sub_blocks(self):
@@ -413,7 +475,6 @@ class CrossValidation(GenericBlock):
             block.before_render(exp)
 
         return uuids_blocks
-
 
     @property
     def sub_scope(self):
@@ -431,6 +492,21 @@ class CrossValidation(GenericBlock):
         self.fold_number = 10
         self.train_test_ratio = 0.7
 
+        self.ports = {
+            "input": {
+                "es": BlockPort(name="es", title="Choose expression set",
+                                data_type="ExpressionSet", scopes=[self.scope]),
+                "ann": BlockPort(name="ann", title="Choose annotation",
+                                data_type="PlatformAnnotation", scopes=[self.scope])
+
+            },
+            # "collect_internal": {
+            #     "es_fixed": BlockPort(name="es_fixed", title="Choose expression set",
+            #                     data_type="ExpressionSet", scopes=[self.scope, self.sub_scope]),
+            #
+            # }
+        }
+
     ### inner variables provider
     @property
     def es_train_i(self):
@@ -441,16 +517,18 @@ class CrossValidation(GenericBlock):
         return None
 
     ### end inner variables
-    def bind_variable(self, exp, request, *args, **kwargs):
-        split = request.POST['variable_name'].split(":")
-        self.bound_variable_block = split[0]
-        bound_block = exp.get_block(self.bound_variable_block)
-        self.bound_variable_block_alias = bound_block.base_name
-        self.bound_variable_field = ''.join(split[1:])
+    def bind_variables(self, exp, request, received_block):
+        # TODO: Rename to bound inner variables, or somehow detect only changed variables
+        for port_group in ['input']:
+            for port_name in self.ports[port_group].keys():
+                port = self.ports[port_group][port_name]
+                received_port = received_block['ports'][port_group][port_name]
+                port.bound_key = received_port.get('bound_key')
+
         exp.store_block(self)
 
     def before_render(self, exp, *args, **kwargs):
-        context_add = {}
+        context_add = super(CrossValidation, self).before_render(exp, *args, **kwargs)
         available = exp.get_visible_variables(scopes=[self.scope], data_types=["ExpressionSet"])
 
         self.variable_options = prepare_bound_variable_select_input(
@@ -466,9 +544,9 @@ class CrossValidation(GenericBlock):
 class PCA_visualize(GenericBlock):
     fsm = Fysom({
         'events': [
-            {'name': 'bind_variable', 'src': 'created', 'dst': 'variable_bound'},
-            {'name': 'bind_variable', 'src': 'pca_computed', 'dst': 'variable_bound'},
-            {'name': 'bind_variable', 'src': 'variable_bound', 'dst': 'variable_bound'},
+            {'name': 'bind_variables', 'src': 'created', 'dst': 'variable_bound'},
+            {'name': 'bind_variables', 'src': 'pca_computed', 'dst': 'variable_bound'},
+            {'name': 'bind_variables', 'src': 'variable_bound', 'dst': 'variable_bound'},
 
             {'name': 'run_pca', 'src': 'variable_bound', 'dst': 'pca_computing'},
 
@@ -480,7 +558,7 @@ class PCA_visualize(GenericBlock):
     widget = "widgets/pca_view.html"
     block_base_name = "PCA_VIEW"
     all_actions = [
-        ("bind_variable", "Select variable", True),
+        ("bind_variables", "Select variable", True),
         ("run_pca", "Run PCA", True),
 
         ("success", "", False),
@@ -515,7 +593,7 @@ class PCA_visualize(GenericBlock):
     def error(self, exp):
         exp.store_block(self)
 
-    def bind_variable(self, exp, request, *args, **kwargs):
+    def bind_variables(self, exp, request, received_block=None, *args, **kwargs):
         split = request.POST['variable_name'].split(":")
         self.bound_variable_block = split[0]
         bound_block = exp.get_block(self.bound_variable_block)
@@ -540,15 +618,15 @@ class PCA_visualize(GenericBlock):
 class ExpressionSetDetails(GenericBlock):
     fsm = Fysom({
         'events': [
-            {'name': 'bind_variable', 'src': 'created', 'dst': 'variable_bound'},
-            {'name': 'bind_variable', 'src': 'variable_bound', 'dst': 'variable_bound'},
+            {'name': 'bind_variables', 'src': 'created', 'dst': 'variables_bound'},
+            {'name': 'bind_variables', 'src': 'variables_bound', 'dst': 'variables_bound'},
         ]
     })
 
     widget = "widgets/expression_set_view.html"
     block_base_name = "ES_VIEW"
     all_actions = [
-        ("bind_variable", "Select expression set", True)
+        ("bind_variables", "Select expression set", True)
     ]
 
     def __init__(self, *args, **kwargs):
@@ -559,7 +637,14 @@ class ExpressionSetDetails(GenericBlock):
 
         self.variable_options = []
 
-    def bind_variable(self, exp, request, *args, **kwargs):
+        self.ports = {
+            "input": {
+                "es": BlockPort(name="es", title="Choose expression set",
+                                data_type="ExpressionSet", scopes=[self.scope])
+            }
+        }
+
+    def bind_variables(self, exp, request, *args, **kwargs):
         self.clean_errors()
         split = request.POST['variable_name'].split(":")
         self.bound_variable_block = split[0]
@@ -569,7 +654,7 @@ class ExpressionSetDetails(GenericBlock):
         exp.store_block(self)
 
     def before_render(self, exp, *args, **kwargs):
-        context_add = {}
+        context_add = super(ExpressionSetDetails, self).before_render(exp, *args, **kwargs)
 
         #import ipdb; ipdb.set_trace()
         available = exp.get_visible_variables(scopes=[self.scope], data_types=["ExpressionSet"])
@@ -581,12 +666,11 @@ class ExpressionSetDetails(GenericBlock):
             self.errors.append(Exception("There is no blocks which provides Expression Set"))
         #return {"variable_options": available["ExpressionSet"]}
 
-        if self.state == "variable_bound":
+        if self.state == "variables_bound":
             bound_block = Experiment.get_block(self.bound_variable_block)
             #import ipdb; ipdb.set_trace()
             if not isinstance(getattr(bound_block, self.bound_variable_field), ExpressionSet):
                 self.errors.append(Exception("Bound variable isn't ready"))
-
 
         self.errors.append({
             "msg": "Not implemented !"
@@ -594,7 +678,7 @@ class ExpressionSetDetails(GenericBlock):
         return context_add
 
     def get_es_preview(self):
-        if self.state != "variable_bound":
+        if self.state != "variables_bound":
             return ""
         bound_block = Experiment.get_block(self.bound_variable_block)
         es = getattr(bound_block, self.bound_variable_field)
@@ -610,23 +694,6 @@ def get_block_class_by_name(name):
     else:
         raise KeyError("No such plugin: %s" % name)
 
-#TODO: move to DB
-block_classes_by_name = {}
-blocks_by_group = defaultdict(list)
-
-
-def register_block(code_name, human_title, group, cls):
-    block_classes_by_name[code_name] = cls
-    blocks_by_group[group].append({
-        "name": code_name,
-        "title": human_title,
-    })
-
-
-class GroupType(object):
-    INPUT_DATA = "Input data"
-    META_PLUGIN = "Meta plugins"
-    VISUALIZE = "Visualize"
 
 register_block("fetch_ncbi_gse", "Fetch NCBI GSE", GroupType.INPUT_DATA, FetchGSE)
 register_block("get_bi_gene_set", "Get MSigDB gene set", GroupType.INPUT_DATA, GetBroadInstituteGeneSet)
@@ -636,27 +703,29 @@ register_block("cross_validation", "Cross validation", GroupType.META_PLUGIN, Cr
 register_block("Pca_visualize", "2D PCA Plot", GroupType.VISUALIZE, PCA_visualize)
 
 
+
+
 old_blocks_by_group = [
-    ("Input data", dict([
+    ("Input data", [
         ("fetch_ncbi_gse", "Fetch NCBI GSE"),
         ("get_bi_gene_set", "Get MSigDB gene set"),
-    ])),
-    ("Conversion", dict([
+    ]),
+    ("Conversion", [
         ("pca_aggregation", "PCA aggregation"),
         ("mean_aggregation", "Mean aggregation"),
-    ])),
-    ("Classifiers", dict([
+    ]),
+    ("Classifiers", [
         ("t_test", "T-test"),
         ("svm", "SVM"),
         ("dtree", "Decision tree"),
-    ])),
-    ("Meta plugins", dict([
+    ]),
+    ("Meta plugins", [
         ("cross_validation", "Cross validation"),
-    ])),
-    ("Visualisation", dict([
+    ]),
+    ("Visualisation", [
         ("ES_details", "Detail view of Expression Set"),
         ("Pca_visualize", "2D PCA Plot"),
         ("boxplot", "Boxplot"),
         ("render_table", "Raw table")
-    ])),
+    ]),
 ]
