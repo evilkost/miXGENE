@@ -7,7 +7,7 @@ from collections import defaultdict
 
 import numpy as np
 
-from django.http import HttpResponse, HttpResponseNotAllowed, HttpRequest
+from django.http import HttpResponse, HttpResponseNotAllowed, HttpRequest, HttpResponseBadRequest
 from django.template import RequestContext, loader
 from django.shortcuts import redirect
 
@@ -21,7 +21,7 @@ from django.contrib.auth.decorators import login_required
 
 from webapp.models import Experiment, WorkflowLayout, UploadedData, delete_exp
 from webapp.forms import UploadForm
-from webapp.store import add_block_to_exp_from_request
+from webapp.store import add_block_to_exp_from_request, add_block_to_exp_from_dict
 from workflow.blocks import blocks_by_group, old_blocks_by_group
 
 from mixgene.util import dyn_import, get_redis_instance, mkdir
@@ -64,8 +64,6 @@ def constructor(request, exp_id):
     blocks = [(block_uuid, exp.get_block(block_uuid)) for
               block_uuid in blocks_uuids]
 
-    blocks_jsonified = dict([(block_uuid, exp.get_block(block_uuid).serialize(exp)) for
-                       block_uuid in blocks_uuids])
     context = {
         "next": "/",
         "scope": "root",
@@ -75,7 +73,8 @@ def constructor(request, exp_id):
         }),
         "ctx": ctx,
         "blocks": blocks,
-        "blocks_jsonified": json.dumps(blocks_jsonified),
+
+        "blocks_order": json.dumps(blocks_uuids),
         "blocks_by_group": old_blocks_by_group,  # TODO: NAMES <- block which can be added
         "blocks_by_group_json": json.dumps(blocks_by_group),  # TODO: NAMES <- block which can be added
         #"blocks_by_provided_data_type":
@@ -130,9 +129,37 @@ def update_block(request):
 
 
 @csrf_protect
-def block_resource_list(request, exp_id):
+def blocks_resource(request, exp_id):
     exp = Experiment.objects.get(e_id=exp_id)
-    pass
+    r = get_redis_instance()
+
+    if request.method == "GET":
+        blocks_uuids = exp.get_all_block_uuids(redis_instance=r)
+        blocks = exp.get_blocks(blocks_uuids, redis_instance=r)
+
+        root_blocks = [block.serialize(exp) for
+                    uuid, block in blocks if block.scope == "root"]
+
+        result = {
+            "blocks": root_blocks,
+        }
+        resp = HttpResponse(content_type="application/json")
+        json.dump(result, resp)
+        return resp
+    if request.method == "POST":
+        try:
+            received_block = json.loads(request.body)
+        except Exception, e:
+            # import ipdb; ipdb.set_trace()
+            return HttpResponseBadRequest()
+
+        block = add_block_to_exp_from_dict(exp, received_block)
+        block_dict = block.serialize(exp)
+        resp = HttpResponse(content_type="application/json")
+        json.dump(block_dict, resp)
+        return resp
+
+    return HttpResponseNotAllowed(["GET", "POST"])
 
 
 @csrf_protect
@@ -144,8 +171,7 @@ def block_resource(request, exp_id, block_uuid, action_code=None):
     exp = Experiment.objects.get(e_id=exp_id)
     block = exp.get_block(str(block_uuid))
 
-    #import time
-    #time.sleep(0.5)
+    #import time; time.sleep(0.1)
     if request.method == "POST":
         try:
             received_block = json.loads(request.body)
@@ -162,11 +188,11 @@ def block_resource(request, exp_id, block_uuid, action_code=None):
 
     return HttpResponseNotAllowed(["POST", "GET"])
 
+
 def block_sub_page(request, exp_id, block_uuid, sub_page):
     exp = Experiment.objects.get(e_id=exp_id)
     ctx = exp.get_ctx()
     block = exp.get_block(block_uuid)
-    print block.uuid
 
     template = loader.get_template(block.pages[sub_page])
     context = {
@@ -333,7 +359,6 @@ def alter_exp(request, exp_id, action):
     if action == 'save_gse_classes':
         factors = json.loads(request.POST['factors'])
         exp.update_ctx({"gse_factors": factors})
-        print factors
 
     return redirect(request.POST.get("next") or "/experiment/%s" % exp.e_id) # TODO use reverse
 
@@ -520,7 +545,6 @@ def get_csv_as_table(request, exp_id, filename):
                 break
             row_num += 1
 
-    print header
     context = RequestContext(request, {
         "rows": rows,
         "header": header,

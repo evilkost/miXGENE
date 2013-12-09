@@ -42,8 +42,9 @@
 <script type="text/javascript">
     {% autoescape off %}
     document.blocks_by_group = JSON.parse('{{ blocks_by_group_json}}');
-    document.blocks_jsonified = JSON.parse('{{ blocks_jsonified }}');
+
     document.exp = JSON.parse('{{ exp_json }}');
+    document.blocks_order = JSON.parse('{{ blocks_order }}');
     {% endautoescape %}
     {% include 'constructor.js' %}
 </script>
@@ -52,11 +53,9 @@
 <div class="row" >
   <div id="worktable" class="col-xs-12" ng-controller="WorktableCtrl">
 
-
-      <div ng-repeat="(uuid, block) in blocks">
-          <block />
+      <div ng-repeat="block in access.blocks">
+          <div block-dir />
       </div>
-
 
       <pallet />
   </div>

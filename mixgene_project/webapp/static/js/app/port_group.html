@@ -1,7 +1,16 @@
-<div >
-    {$ groupName $}
-<div ng-controller="PortGroupCtrl" ng-show="showPortGroup" >
-
+<div>                            <!--     ng-show="showPortGroup"  ng-controller="PortGroupCtrl" -->
+    <!--
+TODO:
+rework ports so that:
+port::=={
+    "port_group": "input", // or "collect_internal"
+    "data_type": ...,
+    "bound_key": ...,
+    "name": ... for machine,
+    "title": ... description for human,
+    "options": [] // as before
+}
+-->
     <div ng-repeat="(group_name, ports_group) in block.ports"> <!--  ng-controller='PortCtrl' class='row'> -->
         <!--{$ group_name $}-->
         <div ng-repeat="(port_name, port) in ports_group" ng-controller='PortCtrl' class='row'>
@@ -18,6 +27,5 @@
             </div>
         </div>
     </div>
-</div>
 </div>
 

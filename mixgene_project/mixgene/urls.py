@@ -19,6 +19,8 @@ urlpatterns = patterns('',
     url(r'^render_block', 'webapp.views.render_block', name='render_block'),
     url(r'^update_block', 'webapp.views.update_block', name='update_block'),
 
+
+    url(r'^experiments/(?P<exp_id>\d+)/blocks/?$', 'webapp.views.blocks_resource', name="blocks_resource"),
     url(r'^experiments/(?P<exp_id>\d+)/blocks/(?P<block_uuid>[\w|\d]+)(/actions/(?P<action_code>[\w|\d]+))?',
         'webapp.views.block_resource', name="block_resource"),
 

@@ -1,5 +1,6 @@
 from collections import defaultdict
 import json
+from pprint import pprint
 from uuid import uuid1
 
 from django import forms
@@ -62,6 +63,7 @@ class GenericBlock(object):
 
         self.scope = scope
         self.ports = {}  # {group_name -> [BlockPort1, BlockPort2]}
+        self.sub_blocks = []
 
     def clean_errors(self):
         self.errors = []
@@ -121,14 +123,12 @@ class GenericBlock(object):
         self.before_render(exp)
         if to == "dict":
             keys_to_snatch = set([
-                "uuid", "base_name", "name", "type",
+                "uuid", "base_name", "name", "type", "scope",
                 "errors", "warnings", "state"
             ])
             hash = {}
             for key in keys_to_snatch:
                 hash[key] = getattr(self, key)
-
-                pass
 
             hash['ports'] = {
                 group_name: {
@@ -146,14 +146,20 @@ class GenericBlock(object):
                 self.get_available_user_action()
             ]
 
+            if hasattr(self, 'sub_blocks'):
+                hash['sub_blocks'] = [
+                    block.serialize(exp)
+                    for uuid, block in self.sub_blocks
+                ]
+
             return hash
 
     def collect_port_options(self, exp):
         """
         @type exp: Experiment
         """
-        #import ipdb; ipdb.set_trace()
         variables = exp.get_registered_variables()
+
         aliases_map = exp.get_block_aliases_map()
         # structure: (scope, uuid, var_name, var_data_type)
         for group_name, port_group in self.ports.iteritems():
@@ -176,7 +182,7 @@ class GeneSetSelectionForm(forms.Form):
 
     def clean_gene_set_id(self):
         data = self.cleaned_data['gene_set_id']
-        if len(BroadInstituteGeneSet.objects.filter(id=data)) == 0 :
+        if len(BroadInstituteGeneSet.objects.filter(id=data)) == 0:
             raise forms.ValidationError("Got wrong gene set identifier, try again")
 
 
@@ -470,11 +476,13 @@ class CrossValidation(GenericBlock):
     @property
     def sub_blocks(self):
         uuids_blocks = Experiment.get_blocks(self.children_blocks)
-        exp = Experiment.objects.get(e_id = self.exp_id)
+        exp = Experiment.objects.get(e_id=self.exp_id)
+        result = []
         for uuid, block in uuids_blocks:
             block.before_render(exp)
+            result.append((uuid, block))
 
-        return uuids_blocks
+        return result
 
     @property
     def sub_scope(self):
@@ -519,6 +527,7 @@ class CrossValidation(GenericBlock):
     ### end inner variables
     def bind_variables(self, exp, request, received_block):
         # TODO: Rename to bound inner variables, or somehow detect only changed variables
+        #pprint(received_block)
         for port_group in ['input']:
             for port_name in self.ports[port_group].keys():
                 port = self.ports[port_group][port_name]

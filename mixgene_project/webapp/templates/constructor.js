@@ -50,15 +50,6 @@ function ajaxFormShowResponse(response_text, status_text, xhr, $form){
     restore_bindings_after_injection(block_uuid);
 }
 
-function add_spinner($obj){
-    var spinner = new Spinner(spin_opts).spin($obj);
-}
-
-function restore_bindings_after_injection(block_uuid){
-    $("#"+block_uuid).find(".form-ajax-submit").ajaxForm(ajaxFormShowResponse);
-
-    // /add_spinner($('#'+block_uuid+' .spin-placeholder')[0])
-}
 
 
 $(document).ready(function (){

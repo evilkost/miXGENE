@@ -336,7 +336,7 @@ class Experiment(models.Model):
                 )
         return self._blocks_grouped_by_provided_type
 
-    def get_all_block_uuids(self, included_inner_blocks=None, redis_instance=None):
+    def get_all_block_uuids(self, redis_instance=None):
         """
         @type included_inner_blocks: list of str
         @param included_inner_blocks: uuids of inner blocks to be included
