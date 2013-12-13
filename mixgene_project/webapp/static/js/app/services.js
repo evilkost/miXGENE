@@ -7,10 +7,33 @@ Constructor.factory("blockAccess", function($http){
     access.block_bodies = {};
     access.vars_by_bscope = {};
 
+    access.blocks_by_group_json = {};
+
     access.fetch_blocks = function(){
         $http({
             method: 'GET',
             url: '/experiments/' + access.exp_id + '/blocks/'
+        }).success(function(data, status, headers, config){
+            access.block_bodies = data.block_bodies;
+            access.blocks_by_bscope = data.blocks_by_bscope;
+            access.vars_by_bscope = data.vars_by_bscope;
+
+            access.blocks_by_group = data.blocks_by_group;
+            document.access = access;
+        })
+    }
+
+    access.add_block = function(bscope, block_name){
+        console.log("adding to "+ bscope + " block " + block_name);
+        var request_body = angular.toJson({
+            "block_name": block_name,
+            "scope": bscope
+        });
+        console.log(request_body)
+        $http({
+            method: 'POST',
+            url: '/experiments/' + access.exp_id + '/blocks/',
+            data: request_body
         }).success(function(data, status, headers, config){
             access.block_bodies = data.block_bodies;
             access.blocks_by_bscope = data.blocks_by_bscope;

@@ -10,9 +10,16 @@ Constructor.controller('MainCtrl', function($scope, blockAccess){
 
 Constructor.controller('WorktableCtrl', function WorktableCtrl($scope, blockAccess){
     $scope.access = blockAccess;
+    $scope.bscope = "root";  // change for sub blocks worktable
+    $scope.show_pallet = false;
 
-    $scope.available_blocks = document.blocks_by_group; // TODO: move to service
-    $scope.blocksOrder = document.blocks_order;
+    $scope.toggle_pallet = function(){
+        $scope.show_pallet = !$scope.show_pallet;
+    }
+    $scope.add_block = function(bscope, block_name){
+        $scope.access.add_block(bscope, block_name);
+        $scope.toggle_pallet();
+    }
 })
 
 Constructor.controller('BlockCtrl', function BlockCtrl($scope, blockAccess){
@@ -58,23 +65,6 @@ Constructor.controller('PortCtrl', function PortCtrl($scope, blockAccess){
 
 })
 
-Constructor.controller('ddCtrl', function($scope, blockAccess){
-//    $scope.block = $scope.access.block_dict[$scope.uuid];
-    $scope.access = blockAccess;
-
-    //$scope.block = $scope.access.blocks[$scope.data.num];
-})
-
-
-Constructor.controller('ttCtrl', function($scope, blockAccess){
-//    alert($scope.uuid);
-
-    $scope.access = blockAccess;
-    $scope.access.load_block($scope.uuid);
-//    document.access = blockAccess;
-//    $scope.block = $scope.access.block_dict[$scope.uuid];
-
-})
 
 
 

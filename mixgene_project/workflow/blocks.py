@@ -41,6 +41,8 @@ class GenericBlock(object):
     sub_scope = None
     is_base_name_visible = True
     params_prototype = {}
+
+    pages = {}
     is_sub_pages_visible = False
 
     def __init__(self, name, type, exp_id, scope):
@@ -169,7 +171,7 @@ class GenericBlock(object):
                     for uuid, block in self.sub_blocks
                 ]
 
-            if hasattr(self, 'form'):
+            if hasattr(self, 'form') and self.form is not None:
                 hash['form_errors'] = self.form.errors
 
             hash['errors'] = []

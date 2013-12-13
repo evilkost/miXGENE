@@ -130,63 +130,72 @@ def update_block(request):
 
 @csrf_protect
 def blocks_resource(request, exp_id):
+    allowed = ["GET", "POST"]
+    if request.method not in allowed:
+        return HttpResponseNotAllowed(["GET", "POST"])
+
     exp = Experiment.objects.get(e_id=exp_id)
     r = get_redis_instance()
 
-    if request.method == "GET":
-        # TODO: Move to model logic
-        blocks_uuids = exp.get_all_block_uuids(redis_instance=r)
-        blocks = exp.get_blocks(blocks_uuids, redis_instance=r)
-
-        block_bodies = {
-            block.uuid: block.serialize(exp)
-            for uuid, block in blocks
-        }
-        blocks_by_bscope = defaultdict(list)
-        for uuid, block in blocks:
-            blocks_by_bscope[block.scope].append(uuid)
-
-        aliases_map = exp.get_block_aliases_map(redis_instance=r)
-
-        vars = exp.get_registered_variables(redis_instance=r)
-        vars_by_bscope = defaultdict(lambda: defaultdict(list))
-        for scope, uuid, var_name, var_data_type in vars:
-            vars_by_bscope[scope][var_data_type].append(
-                {
-                    "block_uuid": uuid,
-                    "block_alias": aliases_map[uuid],
-                    "var_name": var_name
-                }
-            )
-
-        root_blocks = [block.serialize(exp) for
-                    uuid, block in blocks if block.scope == "root"]
-
-        result = {
-            "blocks": root_blocks,
-
-            "blocks_by_bscope": blocks_by_bscope,
-            "block_bodies": block_bodies,
-            "vars_by_bscope": vars_by_bscope,
-        }
-        resp = HttpResponse(content_type="application/json")
-        # import ipdb; ipdb.set_trace()
-        json.dump(result, resp)
-        return resp
     if request.method == "POST":
         try:
             received_block = json.loads(request.body)
         except Exception, e:
-            # import ipdb; ipdb.set_trace()
+            #import ipdb; ipdb.set_trace()
+            print "BODY: X%sX " % request.body
             return HttpResponseBadRequest()
 
+        print received_block
         block = add_block_to_exp_from_dict(exp, received_block)
-        block_dict = block.serialize(exp)
-        resp = HttpResponse(content_type="application/json")
-        json.dump(block_dict, resp)
-        return resp
+        #block_dict = block.serialize(exp)
+        #resp = HttpResponse(content_type="application/json")
+        #json.dump(block_dict, resp)
+        #return resp
 
-    return HttpResponseNotAllowed(["GET", "POST"])
+
+    # TODO: Move to model logic
+    blocks_uuids = exp.get_all_block_uuids(redis_instance=r)
+    blocks = exp.get_blocks(blocks_uuids, redis_instance=r)
+
+    block_bodies = {
+        block.uuid: block.serialize(exp)
+        for uuid, block in blocks
+    }
+    blocks_by_bscope = defaultdict(list)
+    for uuid, block in blocks:
+        blocks_by_bscope[block.scope].append(uuid)
+
+    aliases_map = exp.get_block_aliases_map(redis_instance=r)
+
+    vars = exp.get_registered_variables(redis_instance=r)
+    vars_by_bscope = defaultdict(lambda: defaultdict(list))
+    for scope, uuid, var_name, var_data_type in vars:
+        vars_by_bscope[scope][var_data_type].append(
+            {
+                "block_uuid": uuid,
+                "block_alias": aliases_map[uuid],
+                "var_name": var_name
+            }
+        )
+
+    root_blocks = [block.serialize(exp) for
+                uuid, block in blocks if block.scope == "root"]
+
+    result = {
+        "blocks": root_blocks,
+
+        "blocks_by_bscope": blocks_by_bscope,
+        "block_bodies": block_bodies,
+        "vars_by_bscope": vars_by_bscope,
+
+        "blocks_by_group": blocks_by_group,
+    }
+    resp = HttpResponse(content_type="application/json")
+    # import ipdb; ipdb.set_trace()
+    json.dump(result, resp)
+    return resp
+
+
 
 
 @csrf_protect

@@ -1,119 +1,28 @@
 {% extends "base.html" %}
 
 {% block inner %}
+
 <div ng-app="Constructor" ng-controller="MainCtrl">
 <input id="exp_id_storage" type="hidden" name="exp_id" value="{{ ctx.exp_id }}" />
 <input id="csrf_token_storage" type="hidden" name="exp_id" value="{{ csrf_token }}" />
 
-<button class="btn btn-block btn-primary" ng-click="toggle_show_old_worktable()">
-    <span ng-show="show_old_worktable">Hide old worktable</span>
-    <span ng-hide="show_old_worktable">Show old worktable</span>
-</button>
-
-<div class="div"  ng-show="show_old_worktable">
-    <div class="col-lg-12">
-        <div class="row">
-            <div class="col-lg-6">
-                <div class="alert alert-success">
-                    Welcome to the experiment constructor! <br />
-                    Start by choosing slot to add block.
-                </div>
-            </div>
-        </div>
-        <div id="worktable0" class="row well">
-            {% for uuid, exp_block in blocks %}
-                {% if exp_block.scope == "root" %}
-                    {% include exp_block.widget %}
-                {% endif %}
-            {% endfor %}
-            <button type="button" class="btn btn-lg btn-block btn-success btn-block-placeholder"
-                    data-scope="root">
-                Add block
-            </button>
-
-            {% include "widgets/blocks_pallet.html" %}
-
-        </div>
-    </div>
-</div>
-
-
-
 <script type="text/javascript">
     {% autoescape off %}
-    document.blocks_by_group = JSON.parse('{{ blocks_by_group_json}}');
-
     document.exp = JSON.parse('{{ exp_json }}');
-    document.blocks_order = JSON.parse('{{ blocks_order }}');
     {% endautoescape %}
-    {% include 'constructor.js' %}
-</script>
-
-<script type="text/ng-template"  id="tree_item_renderer">
-
-    {{block.uuid}}
-    <button ng-click="add(data)">Add node</button>
-    <button ng-click="delete(data)" ng-show="data.nodes.length > 0">Delete nodes</button>
-    <ul>
-        <!--<li ng-repeat="block in block.sub_blocks" ng-include="'tree_item_renderer.html'"></li>-->
-        <!--<li ng-repeat="block in block.sub_blocks" ng-include="/static/js/app/block_template.html"></li>-->
-    </ul>
 </script>
 
 
+<div id="worktable" class="col-xs-12" ng-controller="WorktableCtrl">
 
+  <div ng-repeat="uuid in access.blocks_by_bscope.root">
+      <div block-dir block="access.block_bodies[uuid]"> </div>
+  </div>
 
-    <hr />
-<div class="row" >
-  <div id="worktable" class="col-xs-12" ng-controller="WorktableCtrl">
-
-      <!--initial blocks load -->
-      <div ng-repeat="uuid in access.blocks_by_bscope.root">
-
-          <div block-dir block="access.block_bodies[uuid]"> </div>
-
-          <!--<div ng-controller="ttCtrl"></div>-->
-      </div>
-
-
-      <!--<div ng-controller="ddCtrl">-->
-          <!--X{$ data.num $}X-->
-          <!--<input type="text"  ng-model="data.num" />-->
-          <!--X{$ block.uuid $}X-->
-          <!--<div ng-repeat="f in [0, 1]">-->
-            <!--Y{$ access.blocks[f] $}Y-->
-          <!--</div>-->
-      <!--</div>-->
-
-
-
-
-      <!--
-      <div ng-repeat="block in access.blocks">
-          <div block-dir block="block" />
-      </div>
-      -->
-
-      <!--<div ng-repeat="block in access.blocks">-->
-            <!--{$ block.name $}-->
-            <!--&lt;!&ndash;<div ng-include="/static/js/app/block_template.html">&ndash;&gt;-->
-            <!--<div ng-include="'tree_item_renderer'">-->
-            <!--</div>-->
-      <!--</div>-->
-
-      <!--
-      <div ng-repeat="block in access.blocks">
-          <div block-dir block="block" />
-      </div>
-
-      <pallet />
-
-      -->
+  <div pallet>
   </div>
 
 </div>
-<hr />
-
 
 
 </div>

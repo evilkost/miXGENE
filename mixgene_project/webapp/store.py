@@ -20,7 +20,7 @@ def add_block_to_exp_from_request(request):
 
 def add_block_to_exp_from_dict(exp, block_dict):
 
-    block_cls = get_block_class_by_name(block_dict["block_cls_name"])
+    block_cls = get_block_class_by_name(block_dict["block_name"])
     block = block_cls(exp_id=exp.e_id, scope=block_dict["scope"])
 
     blocks_uuids = exp.get_all_block_uuids()

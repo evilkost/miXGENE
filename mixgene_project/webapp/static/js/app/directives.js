@@ -1,6 +1,6 @@
 Constructor.directive("pallet", function () {
     return {
-        restrict: 'E',
+        restrict: 'AE',
         templateUrl: "/static/js/app/pallet.html"
     }
 })
