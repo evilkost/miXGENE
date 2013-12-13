@@ -1,0 +1,26 @@
+<div class="form-group"   >
+    <!--ng-class="{'has-error': hasErrors }"-->
+
+    <label class="col-sm-3 control-label"
+           for="{$ block.uuid $}{$ param_proto.name $}" >
+        {$ param_proto.title $}
+
+    </label>
+    <div class="col-sm-9">
+        <input type="text" class="form-control" name="{{ param_proto.name }}"
+               id="{$ block.uuid $}{$ param_proto.name $}"
+               ng-model="block.params[param_proto.name]"  capitalize>
+        </input>
+    </div>
+
+
+    <div class="row">
+        <div ng-repeat="error in block.form_errors[param_proto.name]" class="col-sm-9 col-sm-offset-3">
+            <span class="label label-danger">
+                {$ error $}
+            </span>
+        </div>
+    </div>
+
+
+</div>

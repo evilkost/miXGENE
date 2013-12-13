@@ -12,7 +12,6 @@
             <a class="block-reload glyphicon glyphicon-pencil"></a>
             ]
             <i>State: {$ block.state $}</i>
-            <!--{$ access.blocks[1].ports.input.ann.bound_key $}-->
 
 
             <div class="pull-right">
@@ -43,7 +42,7 @@
             <div ng-if="has_errors" class="alert alert-danger">
                 <ul class="list-unsyled">
                     <li ng-repeat="error in block.errors">
-                        {$ error.msg $}
+                        {$ error $}
                     </li>
                 </ul>
             </div>
@@ -51,7 +50,19 @@
             <div class="row">
 
                 <div class="col-xs-8">
-                    <div ports-group block="block" group-name="input" >
+                    <div class="row">
+                        <div ports-group block="block" group-name="input" >
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <form class="form-horizontal" ng-repeat="param_proto in block.params_prototype"
+                             ng-controller="formFieldCtrl">
+
+                            <div ng-include="template">
+                            </div>
+
+                        </form>
                     </div>
                 </div>
 
@@ -65,8 +76,22 @@
                             {$ action.title $}
                         </button>
                     </div>
+
+                     <!-- TODO: remove hardcoded link
+                        use angular routing and ng-view
+                     -->
+                    <div class="list-group">
+                        <a ng-repeat="(res, page) in block.pages"
+                           href="/block_sub_page/{$ exp_id $}/{$ block.uuid$}/{$ page.resource$}"
+                           class="list-group-item"
+                        >
+                            {$ page.title $}
+                        </a>
+
+                    </div>
                 </div>
             </div>
+
             <div class="row">
                 <div class="col-xs-12 col-xs-offset-1">
                     <div ng-repeat="block in $parent.block.sub_blocks">

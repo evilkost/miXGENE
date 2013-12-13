@@ -1,5 +1,7 @@
-Constructor.controller('MainCtrl', function($scope){
+Constructor.controller('MainCtrl', function($scope, blockAccess){
     $scope.show_old_worktable = false;
+    $scope.access = blockAccess;
+    $scope.exp_id = $scope.access.exp_id;
 
     $scope.toggle_show_old_worktable = function(){
         $scope.show_old_worktable = !$scope.show_old_worktable;
@@ -7,9 +9,6 @@ Constructor.controller('MainCtrl', function($scope){
 })
 
 Constructor.controller('WorktableCtrl', function WorktableCtrl($scope, blockAccess){
-
-    $scope.exp_id = document.exp.exp_id;
-
     $scope.access = blockAccess;
 
     $scope.available_blocks = document.blocks_by_group; // TODO: move to service
@@ -18,6 +17,7 @@ Constructor.controller('WorktableCtrl', function WorktableCtrl($scope, blockAcce
 
 Constructor.controller('BlockCtrl', function BlockCtrl($scope, blockAccess){
     $scope.access = blockAccess;
+    $scope.exp_id = $scope.access.exp_id;
     $scope.has_errors = $scope.block.errors.length > 0;
 
     $scope.show_panel_body = true;
@@ -76,6 +76,14 @@ Constructor.controller('ttCtrl', function($scope, blockAccess){
 
 })
 
+
+
+Constructor.controller('formFieldCtrl', function($scope, $http, $cookies){
+    $scope.template = "/static/js/app/forms/field_" +
+        $scope.$parent.param_proto.input_type + ".html";
+})
+
 Constructor.controller('BlockActionCtrl', function($scope, $http, $cookies){
 
 })
+

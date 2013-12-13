@@ -170,6 +170,7 @@ def blocks_resource(request, exp_id):
             "vars_by_bscope": vars_by_bscope,
         }
         resp = HttpResponse(content_type="application/json")
+        # import ipdb; ipdb.set_trace()
         json.dump(result, resp)
         return resp
     if request.method == "POST":
@@ -221,7 +222,7 @@ def block_sub_page(request, exp_id, block_uuid, sub_page):
     ctx = exp.get_ctx()
     block = exp.get_block(block_uuid)
 
-    template = loader.get_template(block.pages[sub_page])
+    template = loader.get_template(block.pages[sub_page]['widget'])
     context = {
         "block_": block,
         "ctx": ctx,

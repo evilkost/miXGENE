@@ -40,6 +40,7 @@ class GenericBlock(object):
     create_new_scope = False
     sub_scope = None
     is_base_name_visible = True
+    params_prototype = {}
 
     def __init__(self, name, type, exp_id, scope):
         """
@@ -63,6 +64,7 @@ class GenericBlock(object):
 
         self.scope = scope
         self.ports = {}  # {group_name -> [BlockPort1, BlockPort2]}
+        self.params = {}
 
     @property
     def sub_blocks(self):
@@ -109,15 +111,23 @@ class GenericBlock(object):
         self.collect_port_options(exp)
         return {}
 
-    def save_form(self, exp, request, *args, **kwargs):
-        self.form = self.form_cls(request.POST)
-        self.validate_form()
+    def save_form(self, exp, request, received_block=None, *args, **kwargs):
+
+        if received_block is None:
+            self.form = self.form_cls(request.POST)
+            self.validate_form()
+        else:
+            #import ipdb; ipdb.set_trace()
+            self.params = received_block['params']
+            self.form = self.form_cls(received_block['params'])
+            self.validate_form()
         exp.store_block(self)
 
     def validate_form(self):
         if self.form.is_valid():
             #TODO: additional checks e.g. other blocks doesn't provide
             #      variables with the same names
+            self.errors = []
             self.do_action("on_form_is_valid")
         else:
             self.do_action("on_form_not_valid")
@@ -125,10 +135,13 @@ class GenericBlock(object):
     def serialize(self, exp, to="dict"):
         self.before_render(exp)
         if to == "dict":
-            keys_to_snatch = set([
-                "uuid", "base_name", "name", "type", "scope",
-                "errors", "warnings", "state"
-            ])
+            keys_to_snatch = {"uuid", "base_name", "name", "type",
+                              "scope", "warnings", "state",
+                              "params_prototype",  # TODO: make ParamProto class and genrate BlockForm
+                                                   #  and params_prototype with metaclass magic
+                              "params",
+                              "pages"
+                              }
             hash = {}
             for key in keys_to_snatch:
                 hash[key] = getattr(self, key)
@@ -154,6 +167,13 @@ class GenericBlock(object):
                     block.serialize(exp)
                     for uuid, block in self.sub_blocks
                 ]
+
+            if hasattr(self, 'form'):
+                hash['form_errors'] = self.form.errors
+
+            hash['errors'] = []
+            for err in self.errors:
+                hash['errors'].append(str(err))
 
             return hash
 
@@ -317,7 +337,13 @@ class FetchGSE(GenericBlock):
     ]
     widget = "widgets/fetch_ncbi_gse.html"
     pages = {
-        "assign_sample_classes": "widgets/fetch_gse/assign_sample_classes.html",
+        "assign_sample_classes": {
+            "title": "Assign sample classes",
+            "resource": "assign_sample_classes",
+            #"widget": "static/templates/fetch_gse/assign_sample_classes.html"
+            "widget": "widgets/fetch_gse/assign_sample_classes.html"
+
+        },
     }
     form_cls = FetchGseForm
     form_data = {
@@ -330,6 +356,15 @@ class FetchGSE(GenericBlock):
     provided_objects = {
         "expression_set": "ExpressionSet",
         "annotation": "PlatformAnnotation",
+    }
+    #TODO: param proto class
+    params_prototype = {
+        "geo_uid": {
+            "name": "geo_uid",
+            "title": "Geo accession id",
+            "input_type": "text",
+            "validation": None
+        }
     }
 
     def __init__(self, *args, **kwargs):
@@ -346,6 +381,8 @@ class FetchGSE(GenericBlock):
 
         self.expression_set = None
         self.gpl_annotation = None
+
+        self.params = {}
 
     def get_expression_set_name(self):
         return self.form["expression_set_name"].value()
