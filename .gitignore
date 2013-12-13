@@ -85,3 +85,8 @@ nosetests.xml
 *.vrb
 *.xdy
 *.tdo
+*.bak
+
+### Bower
+**/static/bower_components/*
+**/static/common/
