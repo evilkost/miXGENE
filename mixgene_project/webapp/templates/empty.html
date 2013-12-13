@@ -16,15 +16,16 @@
 
 
         <!-- jquery -->
-        <script type="text/javascript" src="//cdn.jsdelivr.net/jquery/2.0.3/jquery-2.0.3.min.js"></script>
-
+        <!--<script type="text/javascript" src="//cdn.jsdelivr.net/jquery/2.0.3/jquery-2.0.3.min.js"></script>-->
+        <script type="text/javascript" src="{% static 'common/jquery/jquery.js' %}"></script>
         <!-- jquery plugins -->
-        <script type="text/javascript" src="//cdn.jsdelivr.net/jquery.form/3.36/jquery.form.min.js"></script>
+        <!--<script type="text/javascript" src="//cdn.jsdelivr.net/jquery.form/3.36/jquery.form.min.js"></script>-->
+        <script type="text/javascript" src="{% static 'common/jquery-form/jquery.form.js' %}"></script>
 
         <!-- end jquery plugins -->
 
         <!-- spin.js -->
-        <script type="text/javascript" src="//cdn.jsdelivr.net/spinjs/1.3.0/spin.min.js"></script>
+        <!--<script type="text/javascript" src="//cdn.jsdelivr.net/spinjs/1.3.0/spin.min.js"></script>-->
 
         <!-- flot -->
         <!--<script type="text/javascript" src="//cdn.jsdelivr.net/jquery.flot/0.7/jquery.flot.crosshair.js"></script>-->
@@ -39,64 +40,37 @@
         <!--<script type="text/javascript" src="//cdn.jsdelivr.net/jquery.flot/0.7/jquery.flot.stack.js"></script>-->
         <!--<script type="text/javascript" src="//cdn.jsdelivr.net/jquery.flot/0.7/jquery.flot.symbol.js"></script>-->
         <!--<script type="text/javascript" src="//cdn.jsdelivr.net/jquery.flot/0.7/jquery.flot.threshold.js"></script>-->
+        <script type="text/javascript" src="{% static 'common/flot/jquery.flot.js' %}"></script>
+
         <!-- flot end -->
+
 
         <!-- bootstrap -->
         <!-- Latest compiled and minified CSS -->
-        <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css">
+        <!--<link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css">-->
+        <link rel="stylesheet" href="{% static 'common/bootstrap/dist/css/bootstrap.min.css' %}">
 
-        <!-- Optional theme -->
-        <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-theme.min.css">
+        <!--<link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-theme.min.css">-->
+        <link rel="stylesheet" href="{% static 'common/bootstrap/dist/css/bootstrap-theme.min.css' %}">
 
-        <!-- Latest compiled and minified JavaScript -->
-        <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
+        <!--<script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>-->
+        <script src="{% static 'common/bootstrap/dist/js/bootstrap.min.js' %}"></script>
         <!-- bootstrap end -->
 
         <!-- tablesorter -->
-        <link type="text/css" rel="stylesheet" href="//cdn.jsdelivr.net/tablesorter/2.11.1/addons/pager/jquery.tablesorter.pager.css" />
+        <script src="{% static 'common/jquery.tablesorter/js/jquery.tablesorter.min.js' %}"></script>
+        <script src="{% static 'common/jquery.tablesorter/js/jquery.tablesorter.widgets.min.js' %}"></script>
+        <link href="{% static 'common/jquery.tablesorter/css/theme.bootstrap.css' %}" rel="stylesheet">
 
-        <link type="text/css" rel="stylesheet" href="//cdn.jsdelivr.net/tablesorter/2.11.1/css/filter.formatter.css" />
-        <link type="text/css" rel="stylesheet" href="//cdn.jsdelivr.net/tablesorter/2.11.1/css/theme.black-ice.css" />
-        <link type="text/css" rel="stylesheet" href="//cdn.jsdelivr.net/tablesorter/2.11.1/css/theme.blue.css" />
-        <link type="text/css" rel="stylesheet" href="//cdn.jsdelivr.net/tablesorter/2.11.1/css/theme.bootstrap.css" />
-        <link type="text/css" rel="stylesheet" href="//cdn.jsdelivr.net/tablesorter/2.11.1/css/theme.dark.css" />
-        <link type="text/css" rel="stylesheet" href="//cdn.jsdelivr.net/tablesorter/2.11.1/css/theme.default.css" />
-        <link type="text/css" rel="stylesheet" href="//cdn.jsdelivr.net/tablesorter/2.11.1/css/theme.dropbox.css" />
-        <link type="text/css" rel="stylesheet" href="//cdn.jsdelivr.net/tablesorter/2.11.1/css/theme.green.css" />
-        <link type="text/css" rel="stylesheet" href="//cdn.jsdelivr.net/tablesorter/2.11.1/css/theme.grey.css" />
-        <link type="text/css" rel="stylesheet" href="//cdn.jsdelivr.net/tablesorter/2.11.1/css/theme.ice.css" />
-        <link type="text/css" rel="stylesheet" href="//cdn.jsdelivr.net/tablesorter/2.11.1/css/theme.jui.css" />
-
-        <script type="text/javascript" src="//cdn.jsdelivr.net/tablesorter/2.11.1/js/jquery.tablesorter.min.js"></script>
-        <script type="text/javascript" src="//cdn.jsdelivr.net/tablesorter/2.11.1/js/jquery.metadata.js"></script>
-        <script type="text/javascript" src="//cdn.jsdelivr.net/tablesorter/2.11.1/js/jquery.tablesorter.widgets-filter-formatter.min.js"></script>
-        <script type="text/javascript" src="//cdn.jsdelivr.net/tablesorter/2.11.1/js/jquery.tablesorter.widgets.min.js"></script>
-
-        <script type="text/javascript" src="//cdn.jsdelivr.net/tablesorter/2.11.1/addons/pager/jquery.tablesorter.pager.min.js"></script>
-
-        <script type="text/javascript" src="//cdn.jsdelivr.net/tablesorter/2.11.1/js/parsers/parser-date-iso8601.js"></script>
-        <script type="text/javascript" src="//cdn.jsdelivr.net/tablesorter/2.11.1/js/parsers/parser-date-month.js"></script>
-        <script type="text/javascript" src="//cdn.jsdelivr.net/tablesorter/2.11.1/js/parsers/parser-date-two-digit-year.js"></script>
-        <script type="text/javascript" src="//cdn.jsdelivr.net/tablesorter/2.11.1/js/parsers/parser-date-weekday.js"></script>
-        <script type="text/javascript" src="//cdn.jsdelivr.net/tablesorter/2.11.1/js/parsers/parser-date.js"></script>
-        <script type="text/javascript" src="//cdn.jsdelivr.net/tablesorter/2.11.1/js/parsers/parser-feet-inch-fraction.js"></script>
-        <script type="text/javascript" src="//cdn.jsdelivr.net/tablesorter/2.11.1/js/parsers/parser-ignore-articles.js"></script>
-        <script type="text/javascript" src="//cdn.jsdelivr.net/tablesorter/2.11.1/js/parsers/parser-input-select.js"></script>
-        <script type="text/javascript" src="//cdn.jsdelivr.net/tablesorter/2.11.1/js/parsers/parser-metric.js"></script>
-
-        <script type="text/javascript" src="//cdn.jsdelivr.net/tablesorter/2.11.1/js/widgets/widget-build-table.js"></script>
-        <script type="text/javascript" src="//cdn.jsdelivr.net/tablesorter/2.11.1/js/widgets/widget-editable.js"></script>
-        <script type="text/javascript" src="//cdn.jsdelivr.net/tablesorter/2.11.1/js/widgets/widget-grouping.js"></script>
-        <script type="text/javascript" src="//cdn.jsdelivr.net/tablesorter/2.11.1/js/widgets/widget-repeatheaders.js"></script>
-        <script type="text/javascript" src="//cdn.jsdelivr.net/tablesorter/2.11.1/js/widgets/widget-scroller.js"></script>
         <!-- tablesorter end -->
 
 
         <!-- datatable  -->
+        <script src="{% static 'common/datatables/media/js/jquery.dataTables.js' %}"></script>
         <!--<link type="text/css" rel="stylesheet" href="//cdn.jsdelivr.net/jquery.datatables/1.9.4/css/jquery.dataTables.css" />-->
         <!--<link type="text/css" rel="stylesheet" href="//cdn.jsdelivr.net/jquery.datatables/1.9.4/css/jquery.dataTables_themeroller.css" />-->
         <!--<script type="text/javascript" src="//cdn.jsdelivr.net/jquery.datatables/1.9.4/js/jquery.dataTables.js"></script>-->
-        <script type="text/javascript" src="//cdn.jsdelivr.net/jquery.datatables/1.9.4/js/jquery.dataTables.min.js"></script>
+        <!--<script type="text/javascript" src="//cdn.jsdelivr.net/jquery.datatables/1.9.4/js/jquery.dataTables.min.js"></script>-->
         <!--<link type="text/css" rel="stylesheet" href="//cdn.jsdelivr.net/jquery.datatables/1.9.4/plugins/DT_bootstrap.css" />-->
         <!--<script type="text/javascript" src="//cdn.jsdelivr.net/jquery.datatables/1.9.4/plugins/DT_bootstrap.js"></script>-->
         <!--<script type="text/javascript" src="//cdn.jsdelivr.net/jquery.datatables/1.9.4/plugins/jquery.dataTables.rowGrouping-1.2.9.js"></script>-->
@@ -116,11 +90,15 @@
             {% include "common_js.js" %} // TODO: pack js to static
         </script>
 
-        <!--<script src="{% static 'js/libs/angular.js'%}"></script>-->
-        <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.4/angular.js"></script>
-        <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.4/angular-cookies.js"></script>
+
+        <!-- Angular JS-->
+        <script src="{% static 'common/angular/angular.js'%}"></script>
+        <script src="{% static 'common/angular-cookies/angular-cookies.js'%}"></script>
+        <!--<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.4/angular.js"></script>-->
+        <!--<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.4/angular-cookies.js"></script>-->
 
 
+        <!-- Local scripts-->
         <script src="{% static 'js/app/app.js'%}"></script>
         <script src="{% static 'js/app/services.js'%}"></script>
         <script src="{% static 'js/app/controllers.js'%}"></script>
