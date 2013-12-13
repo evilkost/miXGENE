@@ -1,28 +1,15 @@
-<div>                            <!--     ng-show="showPortGroup"  ng-controller="PortGroupCtrl" -->
-    <!--
-TODO:
-rework ports so that:
-port::=={
-    "port_group": "input", // or "collect_internal"
-    "data_type": ...,
-    "bound_key": ...,
-    "name": ... for machine,
-    "title": ... description for human,
-    "options": [] // as before
-}
--->
-    <div ng-repeat="(group_name, ports_group) in block.ports"> <!--  ng-controller='PortCtrl' class='row'> -->
-        <!--{$ group_name $}-->
-        <div ng-repeat="(port_name, port) in ports_group" ng-controller='PortCtrl' class='row'>
+<div>
+    <div ng-repeat="port in block.ports[groupName]" ng-controller="PortCtrl">
+        <div class="row">
             <div class="form-group">
                 <label class="col-sm-3 control-label">Select variable for
                     {$ port.name $} of type <b> {$ port.data_type$}</b>
                 </label>
                 <div class="col-sm-9">
-                <select class="form-control"
-                        ng-model="port.bound_key"
-                        ng-options="option.key as render_option(option.obj) for option in port.options" >
-                </select>
+                    <select class="form-control"
+                            ng-model="port.bound_key"
+                            ng-options="get_option_key(option) as get_option_title(option) for option in options" >
+                    </select>
                 </div>
             </div>
         </div>

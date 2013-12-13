@@ -2,20 +2,20 @@ Constructor.factory("blockAccess", function($http){
     var access = {
         exp_id: document.exp.exp_id
     }
+
+    access.blocks_by_bscope = {};
+    access.block_bodies = {};
+    access.vars_by_bscope = {};
+
     access.fetch_blocks = function(){
         $http({
             method: 'GET',
             url: '/experiments/' + access.exp_id + '/blocks/'
         }).success(function(data, status, headers, config){
-            access.blocks = data.blocks;
-
-            access.uuid_to_idx = {}
-            angular.forEach(access.blocks, function(block, idx){
-                this[block.uuid] = idx
-            },
-                access.uuid_to_idx
-            );
-
+            access.block_bodies = data.block_bodies;
+            access.blocks_by_bscope = data.blocks_by_bscope;
+            access.vars_by_bscope = data.vars_by_bscope;
+            document.access = access;
         })
     }
 
@@ -23,16 +23,14 @@ Constructor.factory("blockAccess", function($http){
         block.is_block_updating = true;
         $http({
             method: 'GET',
-            url: '/experiments/' + access.exp_id + '/blocks/' + block.uuid,
-            body: angular.toJson(block)
+            url: '/experiments/' + access.exp_id + '/blocks/' + block.uuid
+            ,body: angular.toJson(block)
         }).success(function(data, status, headers, config){
-            var block_idx = access.uuid_to_idx[block.uuid];
-            access.blocks[block_idx] = data;
+            access.block_bodies[data.uuid] = data;
         })
     }
 
     access.send_action = function(block, action_code){
-
         block.is_block_updating = true;
         $http({
             method: 'POST',
@@ -40,9 +38,19 @@ Constructor.factory("blockAccess", function($http){
                 '/blocks/' + block.uuid + "/actions/" + action_code,
             data:  angular.toJson(block)
         }).success(function(data, status, headers, config){
-                var block_idx = access.uuid_to_idx[block.uuid];
-                access.blocks[block_idx] = data;
+            access.block_bodies[data.uuid] = data;
         })
+    }
+
+    access.get_port_input_options = function (port){
+        // TODO: split into another service with dependency to blockAccess
+        var result = []
+        angular.forEach(port.bscopes, function(bscope, idx){
+            angular.forEach(access.vars_by_bscope[bscope][port.data_type], function(option, idx){
+                result.push(option);
+            })
+        })
+        return result;
     }
 
     access.fetch_blocks();

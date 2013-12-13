@@ -49,15 +49,66 @@
     {% include 'constructor.js' %}
 </script>
 
-<hr />
+<script type="text/ng-template"  id="tree_item_renderer">
+
+    {{block.uuid}}
+    <button ng-click="add(data)">Add node</button>
+    <button ng-click="delete(data)" ng-show="data.nodes.length > 0">Delete nodes</button>
+    <ul>
+        <!--<li ng-repeat="block in block.sub_blocks" ng-include="'tree_item_renderer.html'"></li>-->
+        <!--<li ng-repeat="block in block.sub_blocks" ng-include="/static/js/app/block_template.html"></li>-->
+    </ul>
+</script>
+
+
+
+
+    <hr />
 <div class="row" >
   <div id="worktable" class="col-xs-12" ng-controller="WorktableCtrl">
 
+      <!--initial blocks load -->
+      <div ng-repeat="uuid in access.blocks_by_bscope.root">
+
+          <div block-dir block="access.block_bodies[uuid]"> </div>
+
+          <!--<div ng-controller="ttCtrl"></div>-->
+      </div>
+
+
+      <!--<div ng-controller="ddCtrl">-->
+          <!--X{$ data.num $}X-->
+          <!--<input type="text"  ng-model="data.num" />-->
+          <!--X{$ block.uuid $}X-->
+          <!--<div ng-repeat="f in [0, 1]">-->
+            <!--Y{$ access.blocks[f] $}Y-->
+          <!--</div>-->
+      <!--</div>-->
+
+
+
+
+      <!--
       <div ng-repeat="block in access.blocks">
-          <div block-dir />
+          <div block-dir block="block" />
+      </div>
+      -->
+
+      <!--<div ng-repeat="block in access.blocks">-->
+            <!--{$ block.name $}-->
+            <!--&lt;!&ndash;<div ng-include="/static/js/app/block_template.html">&ndash;&gt;-->
+            <!--<div ng-include="'tree_item_renderer'">-->
+            <!--</div>-->
+      <!--</div>-->
+
+      <!--
+      <div ng-repeat="block in access.blocks">
+          <div block-dir block="block" />
       </div>
 
       <pallet />
+
+      -->
   </div>
 
 </div>

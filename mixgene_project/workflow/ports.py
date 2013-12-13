@@ -29,7 +29,7 @@ class BlockPort(object):
         return {
             "name": self.name,
             "data_type": self.data_type,
-            "scopes": self.scopes,
+            "bscopes": self.scopes,
 
             "options": [
                 {

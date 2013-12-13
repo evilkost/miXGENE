@@ -63,7 +63,10 @@ class GenericBlock(object):
 
         self.scope = scope
         self.ports = {}  # {group_name -> [BlockPort1, BlockPort2]}
-        self.sub_blocks = []
+
+    @property
+    def sub_blocks(self):
+        return []
 
     def clean_errors(self):
         self.errors = []
@@ -165,16 +168,26 @@ class GenericBlock(object):
         for group_name, port_group in self.ports.iteritems():
             for port_name, port in port_group.iteritems():
                 port.options = {}
-                for scope, uuid, var_name, var_data_type in variables:
-                    if scope in port.scopes and var_data_type == port.data_type:
-                        var = BoundVar(
-                            block_uuid=uuid,
-                            block_alias=aliases_map[uuid],
-                            var_name=var_name
-                        )
-                        port.options[var.key] = var
-                if port.bound_key is not None and port.bound_key not in port.options.keys():
-                    port.bound_key = None
+                if port.bound_key is None:
+                    for scope, uuid, var_name, var_data_type in variables:
+                        if scope in port.scopes and var_data_type == port.data_type:
+                            port.bound_key = BoundVar(
+                                block_uuid=uuid,
+                                block_alias=aliases_map[uuid],
+                                var_name=var_name
+                            ).key
+                            break
+
+                # for scope, uuid, var_name, var_data_type in variables:
+                #     if scope in port.scopes and var_data_type == port.data_type:
+                #         var = BoundVar(
+                #             block_uuid=uuid,
+                #             block_alias=aliases_map[uuid],
+                #             var_name=var_name
+                #         )
+                #         port.options[var.key] = var
+                # if port.bound_key is not None and port.bound_key not in port.options.keys():
+                #     port.bound_key = None
 
 
 class GeneSetSelectionForm(forms.Form):
@@ -189,13 +202,13 @@ class GeneSetSelectionForm(forms.Form):
 class GetBroadInstituteGeneSet(GenericBlock):
     fsm = Fysom({
         'events': [
-        {'name': 'save_form', 'src': 'created', 'dst': 'form_modified'},
-        {'name': 'save_form', 'src': 'form_modified', 'dst': 'form_modified'},
-        {'name': 'save_form', 'src': 'form_valid', 'dst': 'form_modified'},
+            {'name': 'save_form', 'src': 'created', 'dst': 'form_modified'},
+            {'name': 'save_form', 'src': 'form_modified', 'dst': 'form_modified'},
+            {'name': 'save_form', 'src': 'form_valid', 'dst': 'form_modified'},
 
-        {'name': 'on_form_is_valid', 'src': 'form_modified', 'dst': 'form_valid'},
-        {'name': 'on_form_not_valid', 'src': 'form_modified', 'dst': 'form_modified'},
-    ]})
+            {'name': 'on_form_is_valid', 'src': 'form_modified', 'dst': 'form_valid'},
+            {'name': 'on_form_not_valid', 'src': 'form_modified', 'dst': 'form_modified'},
+        ]})
 
     all_actions = [
         # method name, human readable title, user visible
@@ -215,7 +228,7 @@ class GetBroadInstituteGeneSet(GenericBlock):
     }
 
     def __init__(self, *args, **kwargs):
-        super(GetBroadInstituteGeneSet, self).__init__("Get MSigDB gene set", "user_input",  *args, **kwargs)
+        super(GetBroadInstituteGeneSet, self).__init__("Get MSigDB gene set", "user_input", *args, **kwargs)
         self.gmt = None
         self.errors = []
         self.form = None
@@ -314,14 +327,13 @@ class FetchGSE(GenericBlock):
     block_base_name = "FETCH_GEO"
     is_base_name_visible = True
 
-    provided_objects =  {
+    provided_objects = {
         "expression_set": "ExpressionSet",
         "annotation": "PlatformAnnotation",
     }
 
     def __init__(self, *args, **kwargs):
-        super(FetchGSE, self).__init__("Fetch ncbi gse", "user_input",  *args, **kwargs)
-
+        super(FetchGSE, self).__init__("Fetch ncbi gse", "user_input", *args, **kwargs)
 
         self.form = self.form_cls(self.form_data)
 
@@ -505,7 +517,7 @@ class CrossValidation(GenericBlock):
                 "es": BlockPort(name="es", title="Choose expression set",
                                 data_type="ExpressionSet", scopes=[self.scope]),
                 "ann": BlockPort(name="ann", title="Choose annotation",
-                                data_type="PlatformAnnotation", scopes=[self.scope])
+                                 data_type="PlatformAnnotation", scopes=[self.scope])
 
             },
             # "collect_internal": {
@@ -582,6 +594,13 @@ class PCA_visualize(GenericBlock):
 
         self.pca_result = None
         self.celery_task = None
+
+        self.ports = {
+            "input": {
+                "es": BlockPort(name="es", title="Choose expression set",
+                                data_type="ExpressionSet", scopes=[self.scope]),
+            }
+        }
 
     @property
     def pca_result_in_json(self):
@@ -673,7 +692,7 @@ class ExpressionSetDetails(GenericBlock):
 
         if len(self.variable_options) == 0:
             self.errors.append(Exception("There is no blocks which provides Expression Set"))
-        #return {"variable_options": available["ExpressionSet"]}
+            #return {"variable_options": available["ExpressionSet"]}
 
         if self.state == "variables_bound":
             bound_block = Experiment.get_block(self.bound_variable_block)
@@ -710,9 +729,6 @@ register_block("get_bi_gene_set", "Get MSigDB gene set", GroupType.INPUT_DATA, G
 register_block("cross_validation", "Cross validation", GroupType.META_PLUGIN, CrossValidation)
 
 register_block("Pca_visualize", "2D PCA Plot", GroupType.VISUALIZE, PCA_visualize)
-
-
-
 
 old_blocks_by_group = [
     ("Input data", [

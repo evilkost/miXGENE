@@ -371,6 +371,14 @@ class Experiment(models.Model):
         ])
 
     def get_registered_variables(self, redis_instance=None):
+        """
+        @type  redis_instance: Redis
+        @param redis_instance: Redis
+
+        @return: All register to experiment variables
+        @rtype: list # of  [scope, uuid, var_name, var_data_type]
+        """
+
         if redis_instance is None:
             r = get_redis_instance()
         else:

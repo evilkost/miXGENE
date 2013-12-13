@@ -50,32 +50,39 @@
 
             <div class="row">
 
-            <div class="col-xs-8">
-                <div ports-group block="block" groupName="input" >
+                <div class="col-xs-8">
+                    <div ports-group block="block" group-name="input" >
+                    </div>
                 </div>
 
-            </div>
-
-            <div class="col-xs-4">
-                <div class="btn-group-vertical">
-                    <button type="button" class="btn btn-default"
-                        ng-repeat="action in block.actions"
-                        ng-controller="BlockActionCtrl"
-                        ng-click="access.send_action(block, action.code)"
-                         >
-                        {$ action.title $}
-                    </button>
+                <div class="col-xs-4">
+                    <div class="btn-group-vertical">
+                        <button type="button" class="btn btn-default"
+                            ng-repeat="action in block.actions"
+                            ng-controller="BlockActionCtrl"
+                            ng-click="access.send_action(block, action.code)"
+                             >
+                            {$ action.title $}
+                        </button>
+                    </div>
                 </div>
             </div>
+            <div class="row">
+                <div class="col-xs-12 col-xs-offset-1">
+                    <div ng-repeat="block in $parent.block.sub_blocks">
+                        <div sblock-dir/>
+                    </div>
+                </div>
 
-            <!--{$ block.sub_blocks $}-->
-            <!--<div class="col-xs-10 col-xs-offset-1">-->
+                <!--&lt;!&ndash;{$ block.sub_blocks $}&ndash;&gt;-->
+                <!--<div subblockcont block="block"> </div>-->
+                <!--<div class="col-xs-10 col-xs-offset-1">-->
 
-                <!--<div ng-repeat="block in block.sub_blocks">-->
-                    <!--&lt;!&ndash;<div block-dir />&ndash;&gt;-->
+                    <!--&lt;!&ndash;<div ng-repeat="block in block.sub_blocks">&ndash;&gt;-->
+                        <!--&lt;!&ndash;&lt;!&ndash;<div block-dir />&ndash;&gt;&ndash;&gt;-->
+                    <!--&lt;!&ndash;</div>&ndash;&gt;-->
+
                 <!--</div>-->
-
-            <!--</div>-->
 
             </div>
         </div>

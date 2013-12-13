@@ -134,14 +134,40 @@ def blocks_resource(request, exp_id):
     r = get_redis_instance()
 
     if request.method == "GET":
+        # TODO: Move to model logic
         blocks_uuids = exp.get_all_block_uuids(redis_instance=r)
         blocks = exp.get_blocks(blocks_uuids, redis_instance=r)
+
+        block_bodies = {
+            block.uuid: block.serialize(exp)
+            for uuid, block in blocks
+        }
+        blocks_by_bscope = defaultdict(list)
+        for uuid, block in blocks:
+            blocks_by_bscope[block.scope].append(uuid)
+
+        aliases_map = exp.get_block_aliases_map(redis_instance=r)
+
+        vars = exp.get_registered_variables(redis_instance=r)
+        vars_by_bscope = defaultdict(lambda: defaultdict(list))
+        for scope, uuid, var_name, var_data_type in vars:
+            vars_by_bscope[scope][var_data_type].append(
+                {
+                    "block_uuid": uuid,
+                    "block_alias": aliases_map[uuid],
+                    "var_name": var_name
+                }
+            )
 
         root_blocks = [block.serialize(exp) for
                     uuid, block in blocks if block.scope == "root"]
 
         result = {
             "blocks": root_blocks,
+
+            "blocks_by_bscope": blocks_by_bscope,
+            "block_bodies": block_bodies,
+            "vars_by_bscope": vars_by_bscope,
         }
         resp = HttpResponse(content_type="application/json")
         json.dump(result, resp)
@@ -171,7 +197,8 @@ def block_resource(request, exp_id, block_uuid, action_code=None):
     exp = Experiment.objects.get(e_id=exp_id)
     block = exp.get_block(str(block_uuid))
 
-    #import time; time.sleep(0.1)
+    import random
+    import time; time.sleep(random.uniform(0, 0.3))
     if request.method == "POST":
         try:
             received_block = json.loads(request.body)

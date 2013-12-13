@@ -16,7 +16,8 @@ Constructor.controller('WorktableCtrl', function WorktableCtrl($scope, blockAcce
     $scope.blocksOrder = document.blocks_order;
 })
 
-Constructor.controller('BlockCtrl', function BlockCtrl($scope){
+Constructor.controller('BlockCtrl', function BlockCtrl($scope, blockAccess){
+    $scope.access = blockAccess;
     $scope.has_errors = $scope.block.errors.length > 0;
 
     $scope.show_panel_body = true;
@@ -32,20 +33,46 @@ Constructor.controller('PortGroupCtrl', function PortGroupCtrl($scope){
 
 })
 
-Constructor.controller('PortCtrl', function PortCtrl($scope){
-    if( $scope.port.bound_key == undefined || $scope.port.bound_key == null){
-        if( $scope.port.options.length > 0){
-            $scope.port.bound_key = $scope.port.options[0].key;
-        }
+Constructor.controller('PortCtrl', function PortCtrl($scope, blockAccess){
+    $scope.access = blockAccess;
+    $scope.get_option_key = function( option ){
+        return option.block_uuid + "_" + option.var_name;
     }
-
-    $scope.render_option = function( option ){
+    $scope.get_option_title = function( option ){
         if( option != undefined && option != null){
             return option.block_alias + " -> " + option.var_name;
         } else {
             return "--error--"
         }
     }
+
+    $scope.options = blockAccess.get_port_input_options($scope.port);
+
+    if( $scope.port.bound_key == undefined || $scope.port.bound_key == null){
+        if( $scope.options.length > 0){
+            $scope.port.bound_key = $scope.get_option_key($scope.options[0]);
+        }
+    }
+
+
+
+})
+
+Constructor.controller('ddCtrl', function($scope, blockAccess){
+//    $scope.block = $scope.access.block_dict[$scope.uuid];
+    $scope.access = blockAccess;
+
+    //$scope.block = $scope.access.blocks[$scope.data.num];
+})
+
+
+Constructor.controller('ttCtrl', function($scope, blockAccess){
+//    alert($scope.uuid);
+
+    $scope.access = blockAccess;
+    $scope.access.load_block($scope.uuid);
+//    document.access = blockAccess;
+//    $scope.block = $scope.access.block_dict[$scope.uuid];
 
 })
 

@@ -22,7 +22,41 @@ Constructor.directive("blockDir", function(){
     return {
         restrict: 'AE',
         replace: true,
+        scope: {
+            block:"="
+        },
         templateUrl: "/static/js/app/block.html"
+    }
+})
+
+Constructor.directive("sblockDir", function(){
+    return {
+        restrict: 'AE',
+        replace: true,
+//        scope: {
+//            block:"="
+//        },
+        templateUrl: "/static/js/app/sblock.html"
+    }
+})
+
+Constructor.directive("subblockcont", function(){
+    // http://jsfiddle.net/brendanowen/uXbn6/8/
+    //
+    return {
+        restrict: 'AE',
+        scope: {
+            block: '='
+        },
+        template: "<div>" +
+            "   <div ng-repeat='sb in block.sub_blocks'> {$ sb $} " +
+            "       <div block-dir block='sb'></div>" +
+            "</div>" +
+            "</div>",
+        controller: function($scope){
+            document.tmp4 = $scope;
+
+        }
     }
 })
 
@@ -30,6 +64,15 @@ Constructor.directive("portsGroup", function(){
     return {
         restrict: 'A',
         replace: true,
-        templateUrl: "/static/js/app/port_group.html"
+        scope: {
+            "groupName": '@',
+            "block": '='
+        },
+        templateUrl: "/static/js/app/port_group.html",
+        controller: function($scope, blockAccess){
+
+            $scope.access = blockAccess;
+        }
+
     }
 })
