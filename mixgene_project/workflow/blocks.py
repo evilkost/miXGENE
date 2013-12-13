@@ -41,6 +41,7 @@ class GenericBlock(object):
     sub_scope = None
     is_base_name_visible = True
     params_prototype = {}
+    is_sub_pages_visible = False
 
     def __init__(self, name, type, exp_id, scope):
         """
@@ -140,7 +141,7 @@ class GenericBlock(object):
                               "params_prototype",  # TODO: make ParamProto class and genrate BlockForm
                                                    #  and params_prototype with metaclass magic
                               "params",
-                              "pages"
+                              "pages", "is_sub_pages_visible"
                               }
             hash = {}
             for key in keys_to_snatch:
@@ -401,6 +402,7 @@ class FetchGSE(GenericBlock):
             return True
         return False
 
+    @property
     def is_sub_pages_visible(self):
         if self.state in ['source_was_preprocessed', 'sample_classes_assigned']:
             return True

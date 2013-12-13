@@ -80,7 +80,7 @@
                      <!-- TODO: remove hardcoded link
                         use angular routing and ng-view
                      -->
-                    <div class="list-group">
+                    <div class="list-group" ng-if="block.is_sub_pages_visible">
                         <a ng-repeat="(res, page) in block.pages"
                            href="/block_sub_page/{$ exp_id $}/{$ block.uuid$}/{$ page.resource$}"
                            class="list-group-item"
