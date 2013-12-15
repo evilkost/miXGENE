@@ -333,7 +333,8 @@ class FetchGSE(GenericBlock):
 
         ("assign_sample_classes", "", False),
     ]
-    widget = "widgets/fetch_ncbi_gse.html"
+    # widget = "widgets/fetch_ncbi_gse.html"
+    widget = "widgets/fetch_gse/assign_sample_classes.html"
     pages = {
         "assign_sample_classes": {
             "title": "Assign sample classes",

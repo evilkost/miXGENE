@@ -15,40 +15,9 @@ Constructor.directive("blockDir", function (RecursionHelper) {
         scope: {
             block: "="
         },
-        templateUrl: "/static/js/app/block.html",
+        templateUrl: "/static/js/app/partials/block.html",
         compile: function(element) {
             return RecursionHelper.compile(element);
-        }
-    }
-})
-
-Constructor.directive("sblockDir", function () {
-    return {
-        restrict: 'AE',
-        replace: true,
-//        scope: {
-//            block:"="
-//        },
-        templateUrl: "/static/js/app/sblock.html"
-    }
-})
-
-Constructor.directive("subblockcont", function () {
-    // http://jsfiddle.net/brendanowen/uXbn6/8/
-    //
-    return {
-        restrict: 'AE',
-        scope: {
-            block: '='
-        },
-        template: "<div>" +
-            "   <div ng-repeat='sb in block.sub_blocks'> {$ sb $} " +
-            "       <div block-dir block='sb'></div>" +
-            "</div>" +
-            "</div>",
-        controller: function ($scope) {
-            document.tmp4 = $scope;
-
         }
     }
 })
