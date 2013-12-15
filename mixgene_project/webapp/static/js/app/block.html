@@ -1,106 +1,125 @@
 <div>
-<div id="{$ block.uuid $}" class="row constructor-block" ng-controller="BlockCtrl">
-    <div class="panel panel-default">
-        <div class="panel-heading">
-            <div class="pull-left">
+    <div id="{$ block.uuid $}" class="row constructor-block" ng-controller="BlockCtrl">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <div class="pull-left">
+                </div>
+                {$ block.name $}
+                <span class="label label-warning">Scope: {$ block.scope $}</span>
+
+
+                [ {$ block.base_name $}
+                <a class="block-reload glyphicon glyphicon-pencil"></a>
+                ]
+                <i>State: {$ block.state $}</i>
+
+
+                <div class="pull-right">
+                    <a class="block-reload glyphicon glyphicon-repeat"
+                       ng-click="access.reload_block(block)"></a>
+                    &nbsp;&nbsp;&nbsp;&nbsp;
+                    <a class="block-move-down glyphicon glyphicon-resize-small"
+                       ng-click='toggleBodyVisibility()'>
+                    </a>
+                    <a class="block-move-down hidden glyphicon glyphicon-resize-full"></a>
+                    &nbsp;&nbsp;&nbsp;&nbsp;
+                    <a class="block-move-down glyphicon glyphicon-arrow-down"></a>
+                    <a class="block-move-up glyphicon glyphicon-arrow-up"></a>
+                    &nbsp;&nbsp;&nbsp;&nbsp;
+                    <a class="block-remove text-danger glyphicon glyphicon-trash"></a>
+                </div>
+
+
             </div>
-            {$  block.name $}
-            <span class="label label-warning">Scope: {$ block.scope $}</span>
+            <div class="panel-body" ng-show="block.is_block_updating">
+                <div class="alert alert-success" style="text-align:center">
+                    <h2>Waiting for the server response!</h2>
+                </div>
 
-
-            [   {$ block.base_name $}
-            <a class="block-reload glyphicon glyphicon-pencil"></a>
-            ]
-            <i>State: {$ block.state $}</i>
-
-
-            <div class="pull-right">
-                <a class="block-reload glyphicon glyphicon-repeat"
-                    ng-click="access.reload_block(block)"></a>
-                &nbsp;&nbsp;&nbsp;&nbsp;
-                <a class="block-move-down glyphicon glyphicon-resize-small"
-                    ng-click='toggleBodyVisibility()'>
-                </a>
-                <a class="block-move-down hidden glyphicon glyphicon-resize-full"></a>
-                &nbsp;&nbsp;&nbsp;&nbsp;
-                <a class="block-move-down glyphicon glyphicon-arrow-down"></a>
-                <a class="block-move-up glyphicon glyphicon-arrow-up"></a>
-                &nbsp;&nbsp;&nbsp;&nbsp;
-                <a class="block-remove text-danger glyphicon glyphicon-trash"></a>
-            </div>
-
-
-        </div>
-        <div class="panel-body" ng-show="block.is_block_updating" >
-            <div class="alert alert-success" style="text-align:center">
-                <h2>Waiting for the server response!</h2>
-            </div>
-
-        </div>
-
-        <div class="panel-body" ng-show="show_panel_body" ng-hide="block.is_block_updating">
-            <div ng-if="has_errors" class="alert alert-danger">
-                <ul class="list-unsyled">
-                    <li ng-repeat="error in block.errors">
-                        {$ error $}
-                    </li>
-                </ul>
             </div>
 
-            <div class="row">
+            <div class="panel-body" ng-show="show_panel_body" ng-hide="block.is_block_updating">
+                <div ng-if="has_errors" class="alert alert-danger">
+                    <ul class="list-unsyled">
+                        <li ng-repeat="error in block.errors">
+                            {$ error $}
+                        </li>
+                    </ul>
+                </div>
 
-                <div class="col-xs-8">
-                    <div class="row">
-                        <div ports-group block="block" group-name="input" >
+                <div class="row">
+
+                    <div class="col-xs-8">
+                        <div class="row">
+                            <div ports-group block="block" group-name="input">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <form class="form-horizontal" ng-repeat="param_proto in block.params_prototype"
+                                  ng-controller="formFieldCtrl">
+
+                                <div ng-include="template">
+                                </div>
+
+                            </form>
                         </div>
                     </div>
 
-                    <div class="row">
-                        <form class="form-horizontal" ng-repeat="param_proto in block.params_prototype"
-                             ng-controller="formFieldCtrl">
+                    <div class="col-xs-4">
+                        <div class="btn-group-vertical">
+                            <button type="button" class="btn btn-default"
+                                    ng-repeat="action in block.actions"
+                                    ng-controller="BlockActionCtrl"
+                                    ng-click="access.send_action(block, action.code)"
+                                    >
+                                {$ action.title $}
+                            </button>
+                        </div>
 
-                            <div ng-include="template">
+                        <!-- TODO: remove hardcoded link
+                           use angular routing and ng-view
+                        -->
+                        <div class="list-group" ng-if="block.is_sub_pages_visible">
+                            <a ng-repeat="(res, page) in block.pages"
+                               href="/block_sub_page/{$ exp_id $}/{$ block.uuid$}/{$ page.resource$}"
+                               class="list-group-item"
+                                    >
+                                {$ page.title $}
+                            </a>
+
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel panel-primary" ng-if="block.create_new_scope">
+                    <div class="panel-heading">
+                        <span style="text-align: center"> Internal steps: </span>
+                    </div>
+                    <div class="panel-body">
+
+                        <div class="row">
+
+                                <!--<div ng-repeat="block in $parent.block.sub_blocks">-->
+                                    <!--<div block-dir block="block"/>-->
+                                <!--</div>-->
+
+                            <div ng-repeat="uuid in access.blocks_by_bscope[bscope]">
+                                {$ uuid $}
+                                <div block-dir block="access.block_bodies[uuid]"> </div>
                             </div>
 
-                        </form>
+                        </div>
+
+                        <div pallet bscope="bscope">
+                        </div>
+
                     </div>
+
                 </div>
 
-                <div class="col-xs-4">
-                    <div class="btn-group-vertical">
-                        <button type="button" class="btn btn-default"
-                            ng-repeat="action in block.actions"
-                            ng-controller="BlockActionCtrl"
-                            ng-click="access.send_action(block, action.code)"
-                             >
-                            {$ action.title $}
-                        </button>
-                    </div>
-
-                     <!-- TODO: remove hardcoded link
-                        use angular routing and ng-view
-                     -->
-                    <div class="list-group" ng-if="block.is_sub_pages_visible">
-                        <a ng-repeat="(res, page) in block.pages"
-                           href="/block_sub_page/{$ exp_id $}/{$ block.uuid$}/{$ page.resource$}"
-                           class="list-group-item"
-                        >
-                            {$ page.title $}
-                        </a>
-
-                    </div>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-xs-12 col-xs-offset-1">
-                    <div ng-repeat="block in $parent.block.sub_blocks">
-                        <div sblock-dir/>
-                    </div>
-                </div>
 
             </div>
         </div>
     </div>
-</div>
 </div>

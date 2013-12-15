@@ -1,18 +1,24 @@
 Constructor.directive("pallet", function () {
     return {
         restrict: 'AE',
-        templateUrl: "/static/js/app/pallet.html"
+        scope: {
+            bscope: "="
+        },
+        templateUrl: "/static/js/app/partials/pallet.html"
     }
 })
 
-Constructor.directive("blockDir", function () {
+Constructor.directive("blockDir", function (RecursionHelper) {
     return {
         restrict: 'AE',
         replace: true,
         scope: {
             block: "="
         },
-        templateUrl: "/static/js/app/block.html"
+        templateUrl: "/static/js/app/block.html",
+        compile: function(element) {
+            return RecursionHelper.compile(element);
+        }
     }
 })
 

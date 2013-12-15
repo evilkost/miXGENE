@@ -139,7 +139,8 @@ class GenericBlock(object):
         self.before_render(exp)
         if to == "dict":
             keys_to_snatch = {"uuid", "base_name", "name", "type",
-                              "scope", "warnings", "state",
+                              "scope", "sub_scope", "create_new_scope",
+                              "warnings", "state",
                               "params_prototype",  # TODO: make ParamProto class and genrate BlockForm
                                                    #  and params_prototype with metaclass magic
                               "params",
@@ -164,12 +165,6 @@ class GenericBlock(object):
                 for action_code, action_title, _ in
                 self.get_available_user_action()
             ]
-
-            if hasattr(self, 'sub_blocks'):
-                hash['sub_blocks'] = [
-                    block.serialize(exp)
-                    for uuid, block in self.sub_blocks
-                ]
 
             if hasattr(self, 'form') and self.form is not None:
                 hash['form_errors'] = self.form.errors

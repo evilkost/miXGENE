@@ -1,0 +1,27 @@
+<div id="blocks-pallet-{$ bscope $}"  ng-controller="PalletCtrl">
+
+        <button type="button" class="btn btn-lg btn-block btn-success" ng-click="toggle_pallet()"
+                ng-hide="show_pallet">
+            Click here to add block  <span class="label label-info">Scope: {$ bscope $} </span>
+        </button>
+        <div class="row" ng-show="show_pallet">
+            <div class="col-xs-4 col-md-3 col-lg-2" ng-repeat="(name, blocks) in access.blocks_by_group">
+                <div class="panel panel-default">
+                    <div class="panel-heading">{$ name $}</div>
+                    <div class="panel-body">
+
+                        <a ng-repeat="block in blocks"
+                           class="btn btn-default btn-block-provider btn-block"
+                           ng-click="add_block(bscope, block.name)"
+                                >
+                            {$ block.title $}
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <button class="btn btn-lg btn-block" ng-click="toggle_pallet()">Close pallet</button>
+            </div>
+        </div>
+    </div>
+</div>

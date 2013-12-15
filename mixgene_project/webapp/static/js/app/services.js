@@ -1,4 +1,4 @@
-Constructor.factory("blockAccess", function($http){
+Constructor.factory("blockAccess", function($http, $log){
     var access = {
         exp_id: document.exp.exp_id
     }
@@ -43,6 +43,7 @@ Constructor.factory("blockAccess", function($http){
     }
 
     access.reload_block = function(block){
+//        $log.debug(block)
         block.is_block_updating = true;
         $http({
             method: 'GET',
@@ -79,3 +80,23 @@ Constructor.factory("blockAccess", function($http){
     access.fetch_blocks();
     return access;
 });
+
+Constructor.factory('RecursionHelper', ['$compile', function($compile){
+    // http://stackoverflow.com/a/18609594
+    var RecursionHelper = {
+        compile: function(element){
+            var contents = element.contents().remove();
+            var compiledContents;
+            return function(scope, element){
+                if(!compiledContents){
+                    compiledContents = $compile(contents);
+                }
+                compiledContents(scope, function(clone){
+                    element.append(clone);
+                });
+            };
+        }
+    };
+
+    return RecursionHelper;
+}]);

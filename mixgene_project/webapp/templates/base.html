@@ -10,10 +10,10 @@
 
             <ul class="nav navbar-nav">
                 <li {% if exp_page_active %} class="active" {% endif %}>
-                    <a href="{% url 'webapp.views.experiments' %}">My experiments</a>
+                    <a href="{% url 'webapp.views.experiments' %}">Experiments</a>
                 </li>
                 <li {% if exp_add_page_active %} class="active" {% endif %}>
-                    <a href="{% url 'webapp.views.add_experiment' %}">Add experiment</a>
+                    <a href="{% url 'webapp.views.add_experiment' %}">New</a>
                 </li>
                 <li><a href="{% url 'webapp.views.about' %}">About</a></li>
                 <li><a href="{% url 'webapp.views.contact' %}">Contact</a></li>

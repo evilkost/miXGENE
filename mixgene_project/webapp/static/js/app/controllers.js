@@ -13,13 +13,7 @@ Constructor.controller('WorktableCtrl', function WorktableCtrl($scope, blockAcce
     $scope.bscope = "root";  // change for sub blocks worktable
     $scope.show_pallet = false;
 
-    $scope.toggle_pallet = function(){
-        $scope.show_pallet = !$scope.show_pallet;
-    }
-    $scope.add_block = function(bscope, block_name){
-        $scope.access.add_block(bscope, block_name);
-        $scope.toggle_pallet();
-    }
+
 })
 
 Constructor.controller('BlockCtrl', function BlockCtrl($scope, blockAccess){
@@ -28,6 +22,7 @@ Constructor.controller('BlockCtrl', function BlockCtrl($scope, blockAccess){
     $scope.has_errors = $scope.block.errors.length > 0;
 
     $scope.show_panel_body = true;
+    $scope.bscope = $scope.block.sub_scope;
     $scope.toggleBodyVisibility = function(){
         $scope.show_panel_body = !$scope.show_panel_body;
     };
@@ -60,12 +55,7 @@ Constructor.controller('PortCtrl', function PortCtrl($scope, blockAccess){
             $scope.port.bound_key = $scope.get_option_key($scope.options[0]);
         }
     }
-
-
-
 })
-
-
 
 
 Constructor.controller('formFieldCtrl', function($scope, $http, $cookies){
@@ -75,5 +65,16 @@ Constructor.controller('formFieldCtrl', function($scope, $http, $cookies){
 
 Constructor.controller('BlockActionCtrl', function($scope, $http, $cookies){
 
+})
+Constructor.controller('PalletCtrl', function($scope, blockAccess){
+    $scope.show_pallet = false;
+    $scope.access = blockAccess;
+    $scope.toggle_pallet = function(){
+        $scope.show_pallet = !$scope.show_pallet;
+    }
+    $scope.add_block = function(bscope, block_name){
+        $scope.access.add_block(bscope, block_name);
+        $scope.toggle_pallet();
+    }
 })
 
