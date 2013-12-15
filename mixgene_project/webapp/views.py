@@ -22,7 +22,7 @@ from django.contrib.auth.decorators import login_required
 from webapp.models import Experiment, WorkflowLayout, UploadedData, delete_exp
 from webapp.forms import UploadForm
 from webapp.store import add_block_to_exp_from_request, add_block_to_exp_from_dict
-from workflow.blocks import blocks_by_group, old_blocks_by_group
+from workflow.blocks import blocks_by_group
 
 from mixgene.util import dyn_import, get_redis_instance, mkdir
 
@@ -72,13 +72,6 @@ def constructor(request, exp_id):
             "exp_id": exp_id,
         }),
         "ctx": ctx,
-        "blocks": blocks,
-
-        "blocks_order": json.dumps(blocks_uuids),
-        "blocks_by_group": old_blocks_by_group,  # TODO: NAMES <- block which can be added
-        "blocks_by_group_json": json.dumps(blocks_by_group),  # TODO: NAMES <- block which can be added
-        #"blocks_by_provided_data_type":
-        #    exp.group_blocks_by_provided_type(redis_instance=r),
     }
     for _, block in blocks:
         context.update(block.before_render(exp))

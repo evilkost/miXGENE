@@ -30,7 +30,7 @@ Constructor.directive("portsGroup", function () {
             "groupName": '@',
             "block": '='
         },
-        templateUrl: "/static/js/app/port_group.html",
+        templateUrl: "/static/js/app/partials/port_group.html",
         controller: function ($scope, blockAccess) {
 
             $scope.access = blockAccess;

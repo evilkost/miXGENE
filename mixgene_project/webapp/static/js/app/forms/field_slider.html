@@ -1,0 +1,40 @@
+<div class="form-group" xmlns="http://www.w3.org/1999/html">
+    <label class="col-sm-3 control-label">
+        {$ field.title $}
+
+    </label>
+    <div class="col-sm-1">
+        <span> {$ block.params[field.name] * 100| number:0 $}% </span>
+
+    </div>
+    <div class="col-sm-8">
+            <input type="range" name="points"
+                   min="{$ field.min_value $}"
+                   max="{$ field.max_value $}"
+                   step="0.01"
+                   ng-model="block.params[field.name]"
+                    />
+            <!--<slider-->
+                 <!--floor="{$ field.min_value $}"-->
+                 <!--ceilling="{$ field.max_value $}"-->
+                 <!--step="{$ field.step $}"-->
+                 <!--precision="2"-->
+                 <!--ng-model="block.params[field.name]"-->
+
+            <!--</slider>-->
+
+        </div>
+    </div>
+
+
+    <div class="row">
+        <!--<input type="text" ng-model="block.params[field.name]"> </input>-->
+        <div ng-repeat="error in block.form_errors[param_proto.name]" class="col-sm-9 col-sm-offset-3">
+            <span class="label label-danger">
+                {$ error $}
+            </span>
+        </div>
+    </div>
+
+
+</div>

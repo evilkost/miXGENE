@@ -300,3 +300,35 @@ class PlatformAnnotation(object):
         mgs.do_slot_assign("units", R.StrVector([self.units]))
 
         return mgs
+
+
+class SequenceContainer(object):
+    def __init__(self, fields, sequence=None):
+        self.sequence = sequence or []
+        self.fields = fields
+        self.iterator = -1
+
+    def apply_next(self, block):
+        """
+            Set block properties from the current sequence element
+
+            @type block: workflow.Block
+
+            @return: None
+            @throws: StopIteration
+        """
+        self.iterator += 1
+        if self.iterator >= len(self.sequence):
+            raise StopIteration()
+
+        el = self.sequence[self.iterator]
+        for field in self.fields:
+            setattr(block, field, getattr(el, field))
+
+    def reset_iterator(self):
+        self.iterator = -1
+
+
+class IntegerValue(object):
+    def __init__(self, val):
+        self.val = val

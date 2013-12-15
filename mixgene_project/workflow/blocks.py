@@ -135,6 +135,12 @@ class GenericBlock(object):
         else:
             self.do_action("on_form_not_valid")
 
+    def on_form_is_valid(self):
+        self.errors = []
+
+    def on_form_not_valid(self):
+        pass
+
     def serialize(self, exp, to="dict"):
         self.before_render(exp)
         if to == "dict":
@@ -266,21 +272,12 @@ class GetBroadInstituteGeneSet(GenericBlock):
 
 
 class FetchGseForm(forms.Form):
-    # Add custom validator to check GSE prefix
-    #  If file is fetched or is being fetched don't allow to change geo_uid
     geo_uid = forms.CharField(min_length=4, max_length=31, required=True)
-    # expression_set_name = forms.CharField(label="Name for expression set",
-    #                                       max_length=255)
-    # gpl_annotation_name = forms.CharField(label="Name for GPL annotation",
-    #                                       max_length=255)
 
     def clean_geo_uid(self):
         data = self.cleaned_data['geo_uid']
         if data[:3].upper() != 'GSE' not in data:
             raise forms.ValidationError("Geo uid should have 'GSE' prefix")
-
-        # Always return the cleaned data, whether you have changed it or
-        # not.
         return data
 
 
@@ -362,7 +359,8 @@ class FetchGSE(GenericBlock):
             "name": "geo_uid",
             "title": "Geo accession id",
             "input_type": "text",
-            "validation": None
+            "validation": None,
+            "default": "",
         }
     }
 
@@ -380,8 +378,6 @@ class FetchGSE(GenericBlock):
 
         self.expression_set = None
         self.gpl_annotation = None
-
-        self.params = {}
 
     def get_expression_set_name(self):
         return self.form["expression_set_name"].value()
@@ -406,11 +402,7 @@ class FetchGSE(GenericBlock):
             return True
         return False
 
-    def on_form_is_valid(self):
-        self.errors = []
 
-    def on_form_not_valid(self):
-        pass
 
     def show_form(self, exp, *args, **kwargs):
         exp.store_block(self)
@@ -487,12 +479,30 @@ def prepare_bound_variable_select_input(available, block_aliases_map, block_name
     return marked
 
 
+class CrossValidationForm(forms.Form):
+    folds_num = forms.IntegerField(min_value=2, max_value=100)
+    split_ratio = forms.FloatField(min_value=0, max_value=1)
+
 class CrossValidation(GenericBlock):
     fsm = Fysom({
         'events': [
             {'name': 'bind_variables', 'src': 'created', 'dst': 'variable_bound'},
             {'name': 'bind_variables', 'src': 'finished', 'dst': 'variable_bound'},
             {'name': 'bind_variables', 'src': 'variable_bound', 'dst': 'variable_bound'},
+
+            {'name': 'bind_variables', 'src': 'form_modified', 'dst': 'variable_bound'},
+
+            {'name': 'save_form', 'src': 'variable_bound', 'dst': 'form_modified'},
+            {'name': 'save_form', 'src': 'form_modified', 'dst': 'form_modified'},
+
+            {'name': 'on_form_is_valid', 'src': 'form_modified', 'dst': 'form_valid'},
+            {'name': 'on_form_not_valid', 'src': 'form_modified', 'dst': 'form_modified'},
+
+            {'name': 'reset_form', 'src': 'form_modified', 'dst': 'variable_bound'},
+            {'name': 'reset_form', 'src': 'form_valid', 'dst': 'variable_bound'},
+
+            {'name': 'show_form', 'src': 'form_valid', 'dst': 'form_modified'},
+
 
             {'name': 'generate_fold', 'src': 'variable_bound', 'dst': 'generating_folds'},
 
@@ -502,9 +512,21 @@ class CrossValidation(GenericBlock):
         ]
     })
     widget = "widgets/cross_validation_base.html"
+    form_cls = CrossValidationForm
     block_base_name = "CROSS_VALID"
     all_actions = [
-        ("bind_variables", "Select variables", True),
+        ("bind_variables", "Select input ports", True),
+        ("bind_inner_variables", "Select inner ports", True),
+        ("save_form", "Save parameters", True),
+
+        ("on_form_is_valid", "", False),
+        ("on_form_not_valid", "", False),
+
+        ("reset_form", "Reset parameters", True),
+
+
+
+
         ("generate_folds", "Generate folds", True),
 
 
@@ -520,6 +542,26 @@ class CrossValidation(GenericBlock):
     provided_objects_inner = {
         "es_train_i": "ExpressionSet",
         "es_test_i": "ExpressionSet",
+    }
+
+    params_prototype = {
+        "folds_num": {
+            "name": "folds_num",
+            "title": "Number of folds",
+            "input_type": "text",
+            "validation": None,
+            "default": 10,
+        },
+        "split_ratio": {
+            "name": "split_ratio",
+            "title": "Train/Test ratio",
+            "input_type": "slider",
+            "min_value": 0,
+            "max_value": 1,
+            "step": 0.01,
+            "default": 0.7,
+            "validation": None
+        }
     }
 
     @property
@@ -557,12 +599,17 @@ class CrossValidation(GenericBlock):
                                  data_type="PlatformAnnotation", scopes=[self.scope])
 
             },
-            # "collect_internal": {
-            #     "es_fixed": BlockPort(name="es_fixed", title="Choose expression set",
-            #                     data_type="ExpressionSet", scopes=[self.scope, self.sub_scope]),
-            #
-            # }
+            "collect_internal": {
+                "es_fixed": BlockPort(name="es_fixed", title="Choose expression set",
+                                data_type="ExpressionSet", scopes=[self.scope, self.sub_scope]),
+
+            }
         }
+
+        #  TODO: fix by introducing register_var method to class
+        #   or at least method to look through params_prototype and popultions params with default values
+        self.params["split_ratio"] = self.params_prototype["split_ratio"]["default"]
+        self.params["folds_num"] = self.params_prototype["folds_num"]["default"]
 
     ### inner variables provider
     @property
@@ -597,6 +644,10 @@ class CrossValidation(GenericBlock):
             self.errors.append(Exception("There is no blocks which provides Expression Set"))
 
         return context_add
+
+    def reset_form(self, exp, *args, **kwargs):
+        self.clean_errors()
+        exp.store_block(self)
 
 
 class PCA_visualize(GenericBlock):
@@ -767,27 +818,27 @@ register_block("cross_validation", "Cross validation", GroupType.META_PLUGIN, Cr
 
 register_block("Pca_visualize", "2D PCA Plot", GroupType.VISUALIZE, PCA_visualize)
 
-old_blocks_by_group = [
-    ("Input data", [
-        ("fetch_ncbi_gse", "Fetch NCBI GSE"),
-        ("get_bi_gene_set", "Get MSigDB gene set"),
-    ]),
-    ("Conversion", [
-        ("pca_aggregation", "PCA aggregation"),
-        ("mean_aggregation", "Mean aggregation"),
-    ]),
-    ("Classifiers", [
-        ("t_test", "T-test"),
-        ("svm", "SVM"),
-        ("dtree", "Decision tree"),
-    ]),
-    ("Meta plugins", [
-        ("cross_validation", "Cross validation"),
-    ]),
-    ("Visualisation", [
-        ("ES_details", "Detail view of Expression Set"),
-        ("Pca_visualize", "2D PCA Plot"),
-        ("boxplot", "Boxplot"),
-        ("render_table", "Raw table")
-    ]),
-]
+# old_blocks_by_group = [
+#     ("Input data", [
+#         ("fetch_ncbi_gse", "Fetch NCBI GSE"),
+#         ("get_bi_gene_set", "Get MSigDB gene set"),
+#     ]),
+#     ("Conversion", [
+#         ("pca_aggregation", "PCA aggregation"),
+#         ("mean_aggregation", "Mean aggregation"),
+#     ]),
+#     ("Classifiers", [
+#         ("t_test", "T-test"),
+#         ("svm", "SVM"),
+#         ("dtree", "Decision tree"),
+#     ]),
+#     ("Meta plugins", [
+#         ("cross_validation", "Cross validation"),
+#     ]),
+#     ("Visualisation", [
+#         ("ES_details", "Detail view of Expression Set"),
+#         ("Pca_visualize", "2D PCA Plot"),
+#         ("boxplot", "Boxplot"),
+#         ("render_table", "Raw table")
+#     ]),
+# ]

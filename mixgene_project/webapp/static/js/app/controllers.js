@@ -58,12 +58,14 @@ Constructor.controller('PortCtrl', function PortCtrl($scope, blockAccess){
 })
 
 
-Constructor.controller('formFieldCtrl', function($scope, $http, $cookies){
+Constructor.controller('formFieldCtrl', function($scope, $log){
     $scope.template = "/static/js/app/forms/field_" +
         $scope.$parent.param_proto.input_type + ".html";
+
+    $scope.field = $scope.param_proto;
 })
 
-Constructor.controller('BlockActionCtrl', function($scope, $http, $cookies){
+Constructor.controller('BlockActionCtrl', function($scope){
 
 })
 Constructor.controller('PalletCtrl', function($scope, blockAccess){
@@ -77,4 +79,3 @@ Constructor.controller('PalletCtrl', function($scope, blockAccess){
         $scope.toggle_pallet();
     }
 })
-
