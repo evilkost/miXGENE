@@ -6,6 +6,13 @@ import gzip
 from celery import task
 from pandas import Series, DataFrame
 
+
+import numpy as np
+from sklearn import cross_validation
+from sklearn import datasets
+from sklearn import svm
+
+
 from Bio.Geo import parse as parse_geo
 
 from mixgene.util import prepare_GEO_ftp_url, fetch_file_from_url, clean_GEO_file, transpose_dict_list
@@ -15,7 +22,7 @@ from workflow.input import FileInputVar
 from workflow.parsers import GMT
 from workflow.structures import ExpressionSet, PlatformAnnotation, GeneSets
 from workflow.vars import MixData, MixPheno, GeneSetsOld
-
+import sys, traceback
 
 @task(name="workflow.common_tasks.append_error_to_block")
 def append_error_to_block(*args, **kwargs):
@@ -139,7 +146,7 @@ def preprocess_soft(exp, block):
 
         block.do_action("successful_preprocess", exp)
     except Exception, e:
-        import sys, traceback
+
         ex_type, ex, tb = sys.exc_info()
         traceback.print_tb(tb)
         print e
@@ -147,6 +154,58 @@ def preprocess_soft(exp, block):
         #import ipdb; ipdb.set_trace()
         block.errors.append(e)
         block.do_action("error_during_preprocess", exp)
+
+
+@task(name="workflow.common_tasks.generate_cv_folds")
+def generate_cv_folds(exp, block, folds_num, split_ratio, es, ann):
+    """
+        On success populate block.sequence with correct folds and
+         call action #on_generate_folds_done otherwise calls
+                     #on_generate_folds_error
+        @type es: ExpressionSet
+        @type ann: PlatformAnnotation
+    """
+    try:
+
+        #print folds_num
+        #print split_ratio
+
+        assay_df = es.get_assay_data_frame()
+        pheno_df = es.get_pheno_data_frame()
+        if "User_class" not in pheno_df.columns:
+            raise RuntimeError("Phenotype doesn't have user assigned classes")
+
+        classes_vector = pheno_df["User_class"].values
+        i = 0
+        for train_idx, test_idx in cross_validation.StratifiedShuffleSplit(
+                classes_vector,
+                n_iter=folds_num,
+                train_size=split_ratio, test_size=1-split_ratio):
+            train_es = es.clone(es.base_filename + "_train_%s" % i)
+            train_es.store_assay_data_frame(assay_df[train_idx])
+            train_es.store_pheno_data_frame(pheno_df.iloc[train_idx])
+
+            test_es = es.clone(es.base_filename + "_test_%s" % i)
+            test_es.store_assay_data_frame(assay_df[test_idx])
+            test_es.store_pheno_data_frame(pheno_df.iloc[test_idx])
+
+            block.sequence.append({
+                "es_train_i": train_es,
+                "es_test_i": test_es
+            })
+
+            i += 1
+
+        block.do_action("on_generate_folds_done", exp)
+    except Exception, e:
+
+        ex_type, ex, tb = sys.exc_info()
+        traceback.print_tb(tb)
+        print e
+        #TODO: LOG ERROR AND TRACEBACK OR WE LOSE IT!
+        #import ipdb; ipdb.set_trace()
+        block.errors.append(e)
+        block.do_action("on_generate_folds_error", exp)
 
 
 @task(name="workflow.common_tasks.split_train_test")

@@ -111,6 +111,22 @@ class ExpressionSet(GenericStoreStructure):
         self.experiment_data = None
         self.protocol_data = None
 
+    def clone(self, base_filename, clone_data_frames=False):
+        es = ExpressionSet(self.base_dir, base_filename)
+
+        es.annotation = self.annotation
+        es.feature_data = self.feature_data
+        es.experiment_data = self.experiment_data
+        es.protocol_data = self.protocol_data
+
+        es.assay_metadata = self.assay_metadata
+        es.pheno_metadata = self.pheno_metadata
+        if clone_data_frames:
+            es.store_assay_data_frame(self.get_assay_data_frame())
+            es.store_pheno_data_frame(self.get_pheno_data_frame())
+
+        return es
+
     def get_assay_data_frame(self):
         """
             @rtype: DataFrame
@@ -308,6 +324,9 @@ class SequenceContainer(object):
         self.fields = fields
         self.iterator = -1
 
+    def append(self, element):
+        self.sequence.append(element)
+
     def apply_next(self, block):
         """
             Set block properties from the current sequence element
@@ -321,9 +340,12 @@ class SequenceContainer(object):
         if self.iterator >= len(self.sequence):
             raise StopIteration()
 
-        el = self.sequence[self.iterator]
-        for field in self.fields:
-            setattr(block, field, getattr(el, field))
+        # el = self.sequence[self.iterator]
+        # for field in self.fields:
+        #     setattr(block, field, getattr(el, field))
+
+    def get_field(self, field):
+        return self.sequence[self.iterator][field]
 
     def reset_iterator(self):
         self.iterator = -1

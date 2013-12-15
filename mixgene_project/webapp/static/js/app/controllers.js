@@ -38,7 +38,7 @@ Constructor.controller('PortGroupCtrl', function PortGroupCtrl($scope){
 Constructor.controller('PortCtrl', function PortCtrl($scope, blockAccess){
     $scope.access = blockAccess;
     $scope.get_option_key = function( option ){
-        return option.block_uuid + "_" + option.var_name;
+        return option.block_uuid + ":" + option.var_name;
     }
     $scope.get_option_title = function( option ){
         if( option != undefined && option != null){

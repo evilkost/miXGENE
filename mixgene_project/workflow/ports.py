@@ -53,7 +53,7 @@ class BoundVar(object):
 
     @property
     def key(self):
-        return "%s_%s" % (self.block_uuid, self.var_name)
+        return "%s:%s" % (self.block_uuid, self.var_name)
 
     def serialize(self):
         return {

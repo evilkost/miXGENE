@@ -8,10 +8,10 @@ from fysom import Fysom
 import pandas as pd
 from webapp.models import Experiment, BroadInstituteGeneSet
 
-from workflow.common_tasks import fetch_geo_gse, preprocess_soft
+from workflow.common_tasks import fetch_geo_gse, preprocess_soft, generate_cv_folds
 from workflow.ports import BlockPort, BoundVar
 
-from workflow.structures import ExpressionSet
+from workflow.structures import ExpressionSet, SequenceContainer
 from workflow import wrappers
 
 #TODO: move to DB
@@ -181,6 +181,12 @@ class GenericBlock(object):
 
             return hash
 
+    @staticmethod
+    def get_var_by_bound_key_str(exp, bound_key_str):
+        uuid, field = bound_key_str.split(":")
+        block = exp.get_block(uuid)
+        return getattr(block, field)
+
     def collect_port_options(self, exp):
         """
         @type exp: Experiment
@@ -343,15 +349,15 @@ class FetchGSE(GenericBlock):
     }
     form_cls = FetchGseForm
     form_data = {
-        "expression_set_name": "expression",
-        "gpl_annotation_name": "annotation",
+        # "expression_set_name": "expression",
+        # "gpl_annotation_name": "annotation",
     }
     block_base_name = "FETCH_GEO"
     is_base_name_visible = True
 
     provided_objects = {
         "expression_set": "ExpressionSet",
-        "annotation": "PlatformAnnotation",
+        "gpl_annotation": "PlatformAnnotation",
     }
     #TODO: param proto class
     params_prototype = {
@@ -504,7 +510,10 @@ class CrossValidation(GenericBlock):
             {'name': 'show_form', 'src': 'form_valid', 'dst': 'form_modified'},
 
 
-            {'name': 'generate_fold', 'src': 'variable_bound', 'dst': 'generating_folds'},
+            {'name': 'generate_folds', 'src': 'form_valid', 'dst': 'generating_folds'},
+            {'name': 'on_generate_folds_done', 'src': 'generating_folds', 'dst': 'generated_folds'},
+            {'name': 'on_generate_folds_error', 'src': 'generating_folds', 'dst': 'form_valid'},
+
 
             {'name': 'run_sub_blocks', 'src': 'split_dataset', 'dst': 'split_dataset'},
             {'name': 'run_sub_blocks', 'src': 'split_dataset', 'dst': 'finished'},
@@ -525,9 +534,9 @@ class CrossValidation(GenericBlock):
         ("reset_form", "Reset parameters", True),
 
 
-
-
         ("generate_folds", "Generate folds", True),
+        ("on_generate_folds_done", "", False),
+        ("on_generate_folds_error", "", False),
 
 
         ("success", "", False),
@@ -587,10 +596,6 @@ class CrossValidation(GenericBlock):
 
         self.children_blocks = []
 
-        self.active_fold = -1
-        self.fold_number = 10
-        self.train_test_ratio = 0.7
-
         self.ports = {
             "input": {
                 "es": BlockPort(name="es", title="Choose expression set",
@@ -611,14 +616,16 @@ class CrossValidation(GenericBlock):
         self.params["split_ratio"] = self.params_prototype["split_ratio"]["default"]
         self.params["folds_num"] = self.params_prototype["folds_num"]["default"]
 
+        self.sequence = SequenceContainer(fields=self.provided_objects_inner)
+
     ### inner variables provider
     @property
     def es_train_i(self):
-        return None
+        return self.sequence.get_field("es_train_i")
 
     @property
     def es_test_i(self):
-        return None
+        return self.sequence.get_field("es_test_i")
 
     ### end inner variables
     def bind_variables(self, exp, request, received_block):
@@ -646,6 +653,25 @@ class CrossValidation(GenericBlock):
         return context_add
 
     def reset_form(self, exp, *args, **kwargs):
+        self.clean_errors()
+        exp.store_block(self)
+
+    def generate_folds(self, exp, request, *args, **kwargs):
+        self.clean_errors()
+
+        es = self.get_var_by_bound_key_str(exp, self.ports["input"]["es"].bound_key)
+        ann =self.get_var_by_bound_key_str(exp, self.ports["input"]["ann"].bound_key)
+        # TODO: keep actuall BoundVar object
+
+        generate_cv_folds(exp, self,
+                          self.params["folds_num"], self.params["split_ratio"],
+                          es, ann)
+        exp.store_block(self)
+
+    def on_generate_folds_error(self, exp, *args, **kwargs):
+        exp.store_block(self)
+
+    def on_generate_folds_done(self, exp, *args, **kwargs):
         self.clean_errors()
         exp.store_block(self)
 
@@ -689,6 +715,8 @@ class PCA_visualize(GenericBlock):
                                 data_type="ExpressionSet", scopes=[self.scope]),
             }
         }
+
+
 
     @property
     def pca_result_in_json(self):
