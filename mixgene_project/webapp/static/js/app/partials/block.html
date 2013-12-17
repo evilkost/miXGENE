@@ -5,7 +5,7 @@
                 <div class="pull-left">
                 </div>
                 {$ block.name $}
-                <span class="label label-warning">Scope: {$ block.scope $}</span>
+                <!--<span class="label label-warning">Scope: {$ block.scope $}</span>-->
 
 
                 [ {$ block.base_name $}
@@ -39,7 +39,7 @@
             </div>
 
             <div class="panel-body" ng-show="show_panel_body" ng-hide="block.is_block_updating">
-                <div ng-if="has_errors" class="alert alert-danger">
+                <div ng-if="block.errors.length > 0" class="alert alert-danger">
                     <ul class="list-unsyled">
                         <li ng-repeat="error in block.errors">
                             {$ error $}
@@ -70,7 +70,6 @@
                         <div class="btn-group-vertical">
                             <button type="button" class="btn btn-default"
                                     ng-repeat="action in block.actions"
-                                    ng-controller="BlockActionCtrl"
                                     ng-click="access.send_action(block, action.code)"
                                     >
                                 {$ action.title $}
@@ -92,6 +91,15 @@
                     </div>
                 </div>
 
+                <div class="row">
+                    <div ng-repeat="element in block.elements" ng-controller="blockElementCtrl">
+                        <div ng-include="template" >
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- Internal steps -->
                 <div class="panel panel-primary" ng-if="block.create_new_scope">
                     <div class="panel-heading">
                         <span style="text-align: center"> Internal steps: </span>
@@ -99,13 +107,7 @@
                     <div class="panel-body">
 
                         <div class="row">
-
-                                <!--<div ng-repeat="block in $parent.block.sub_blocks">-->
-                                    <!--<div block-dir block="block"/>-->
-                                <!--</div>-->
-
                             <div ng-repeat="uuid in access.blocks_by_bscope[bscope]">
-                                {$ uuid $}
                                 <div block-dir block="access.block_bodies[uuid]"> </div>
                             </div>
 
@@ -114,13 +116,19 @@
                         <div pallet bscope="bscope">
                         </div>
 
-
-
                     </div>
                     <div class="row">
-                        <div ports-group block="block" group-name="collect_internal">
+                        <div class="col-xs-8">
+                            <div ports-group block="block" group-name="collect_internal">
+                            </div>
+                        </div>
+                        <div class="col-xs-2">
+                            <button class="btn btn-default" ng-click="bind_internal_ports(block)">
+                                Bind internal ports
+                            </button>
                         </div>
                     </div>
+                    <br />
                 </div>
 
 

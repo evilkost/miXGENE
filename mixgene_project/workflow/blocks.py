@@ -15,6 +15,8 @@ from workflow.structures import ExpressionSet, SequenceContainer
 from workflow import wrappers
 
 #TODO: move to DB
+from workflow.wrappers import svm_test
+
 block_classes_by_name = {}
 blocks_by_group = defaultdict(list)
 
@@ -31,6 +33,7 @@ class GroupType(object):
     INPUT_DATA = "Input data"
     META_PLUGIN = "Meta plugins"
     VISUALIZE = "Visualize"
+    CLASSIFIER = "Classifier"
 
 
 class GenericBlock(object):
@@ -44,6 +47,8 @@ class GenericBlock(object):
 
     pages = {}
     is_sub_pages_visible = False
+
+    elements = []
 
     def __init__(self, name, type, exp_id, scope):
         """
@@ -100,7 +105,7 @@ class GenericBlock(object):
             self.fsm.current = self.state
             getattr(self.fsm, action_name)()
             self.state = self.fsm.current
-            print "change state to: " + self.state
+            print "change state to: %s" % self.state
             getattr(self, action_name)(*args, **kwargs)
         else:
             raise RuntimeError("Action %s isn't available" % action_name)
@@ -114,8 +119,19 @@ class GenericBlock(object):
         self.collect_port_options(exp)
         return {}
 
-    def save_form(self, exp, request, received_block=None, *args, **kwargs):
+    def bind_variables(self, exp, request, received_block):
+        # TODO: Rename to bound inner variables, or somehow detect only changed variables
+        #pprint(received_block)
+        for port_group in ['input', 'collect_internal']:
+            if port_group in self.ports:
+                for port_name in self.ports[port_group].keys():
+                    port = self.ports[port_group][port_name]
+                    received_port = received_block['ports'][port_group][port_name]
+                    port.bound_key = received_port.get('bound_key')
 
+        exp.store_block(self)
+
+    def save_form(self, exp, request, received_block=None, *args, **kwargs):
         if received_block is None:
             self.form = self.form_cls(request.POST)
             self.validate_form()
@@ -150,7 +166,7 @@ class GenericBlock(object):
                               "params_prototype",  # TODO: make ParamProto class and genrate BlockForm
                                                    #  and params_prototype with metaclass magic
                               "params",
-                              "pages", "is_sub_pages_visible"
+                              "pages", "is_sub_pages_visible", "elements",
                               }
             hash = {}
             for key in keys_to_snatch:
@@ -408,8 +424,6 @@ class FetchGSE(GenericBlock):
             return True
         return False
 
-
-
     def show_form(self, exp, *args, **kwargs):
         exp.store_block(self)
 
@@ -445,6 +459,7 @@ class FetchGSE(GenericBlock):
         exp.store_block(self)
 
     def assign_sample_classes(self, exp, request, *args, **kwargs):
+        # Shift to celery
         pheno_df = self.expression_set.get_pheno_data_frame()
         sample_classes = json.loads(request.POST['sample_classes'])
         pheno_df['User_class'] = pd.Series(sample_classes)
@@ -511,8 +526,17 @@ class CrossValidation(GenericBlock):
 
 
             {'name': 'generate_folds', 'src': 'form_valid', 'dst': 'generating_folds'},
+            {'name': 'generate_folds', 'src': 'generated_folds', 'dst': 'generating_folds'},
             {'name': 'on_generate_folds_done', 'src': 'generating_folds', 'dst': 'generated_folds'},
             {'name': 'on_generate_folds_error', 'src': 'generating_folds', 'dst': 'form_valid'},
+
+
+            {'name': 'push_next_fold', 'src': 'generated_folds', 'dst': 'processing_fold'},
+            {'name': 'push_next_fold', 'src': 'fold_result_collected', 'dst': 'processing_fold'},
+
+            {'name': 'collect_fold_result', 'src': 'processing_fold', 'dst': 'fold_result_collected'},
+
+            {'name': 'all_folds_processed', 'src': 'fold_result_collected', 'dst': 'cv_done'},
 
 
             {'name': 'run_sub_blocks', 'src': 'split_dataset', 'dst': 'split_dataset'},
@@ -521,6 +545,9 @@ class CrossValidation(GenericBlock):
         ]
     })
     widget = "widgets/cross_validation_base.html"
+    elements = [
+        "cv_info.html"
+    ]
     form_cls = CrossValidationForm
     block_base_name = "CROSS_VALID"
     all_actions = [
@@ -537,6 +564,10 @@ class CrossValidation(GenericBlock):
         ("generate_folds", "Generate folds", True),
         ("on_generate_folds_done", "", False),
         ("on_generate_folds_error", "", False),
+
+        ("push_next_fold", "Process next fold", True),
+        ("collect_fold_result", "Collect fold result", True),
+        ("all_folds_processed", "", False),
 
 
         ("success", "", False),
@@ -605,8 +636,8 @@ class CrossValidation(GenericBlock):
 
             },
             "collect_internal": {
-                "es_fixed": BlockPort(name="es_fixed", title="Choose expression set",
-                                data_type="ExpressionSet", scopes=[self.scope, self.sub_scope]),
+                "result": BlockPort(name="result", title="Choose classifier result",
+                                data_type="mixML", scopes=[self.scope, self.sub_scope]),
 
             }
         }
@@ -617,6 +648,7 @@ class CrossValidation(GenericBlock):
         self.params["folds_num"] = self.params_prototype["folds_num"]["default"]
 
         self.sequence = SequenceContainer(fields=self.provided_objects_inner)
+        self.results = []
 
     ### inner variables provider
     @property
@@ -628,16 +660,20 @@ class CrossValidation(GenericBlock):
         return self.sequence.get_field("es_test_i")
 
     ### end inner variables
-    def bind_variables(self, exp, request, received_block):
-        # TODO: Rename to bound inner variables, or somehow detect only changed variables
-        #pprint(received_block)
-        for port_group in ['input']:
-            for port_name in self.ports[port_group].keys():
-                port = self.ports[port_group][port_name]
-                received_port = received_block['ports'][port_group][port_name]
-                port.bound_key = received_port.get('bound_key')
 
-        exp.store_block(self)
+
+    #TODO: debug
+    @property
+    def current_fold_idx(self):
+        return self.sequence.iterator
+
+    def serialize(self, exp, to="dict"):
+        hash = super(CrossValidation, self).serialize(exp, to)
+        hash["current_fold_idx"] = self.current_fold_idx
+        hash["results"] = self.results
+
+        return hash
+
 
     def before_render(self, exp, *args, **kwargs):
         context_add = super(CrossValidation, self).before_render(exp, *args, **kwargs)
@@ -660,18 +696,111 @@ class CrossValidation(GenericBlock):
         self.clean_errors()
 
         es = self.get_var_by_bound_key_str(exp, self.ports["input"]["es"].bound_key)
-        ann =self.get_var_by_bound_key_str(exp, self.ports["input"]["ann"].bound_key)
-        # TODO: keep actuall BoundVar object
+        ann = self.get_var_by_bound_key_str(exp, self.ports["input"]["ann"].bound_key)
+        # TODO: keep actual BoundVar object
 
-        generate_cv_folds(exp, self,
+        self.celery_task = generate_cv_folds.s(exp, self,
                           self.params["folds_num"], self.params["split_ratio"],
                           es, ann)
         exp.store_block(self)
+        self.celery_task.apply_async()
+
+    def push_next_fold(self, exp, *args, **kwargs):
+        self.sequence.apply_next()
+        exp.store_block(self)
+
+    def collect_fold_result(self, exp, *args, **kwargs):
+        ml_res = self.get_var_by_bound_key_str(exp,
+           self.ports["collect_internal"]["result"].bound_key
+        )
+        self.results.append(ml_res.acc)
+        exp.store_block(self)
+        if self.sequence.is_end():
+            self.do_action("all_folds_processed", exp)
+        else:
+            self.do_action("push_next_fold", exp)
 
     def on_generate_folds_error(self, exp, *args, **kwargs):
         exp.store_block(self)
 
     def on_generate_folds_done(self, exp, *args, **kwargs):
+        self.clean_errors()
+        exp.store_block(self)
+
+    def all_folds_processed(self, exp, *args, **kwargs):
+        exp.store_block(self)
+
+
+class SvmClassifier(GenericBlock):
+    fsm = Fysom({
+        'events': [
+            {'name': 'bind_variables', 'src': 'created', 'dst': 'variable_bound'},
+            {'name': 'bind_variables', 'src': 'finished', 'dst': 'variable_bound'},
+            {'name': 'bind_variables', 'src': 'variable_bound', 'dst': 'variable_bound'},
+
+            {'name': 'run_svm', 'src': 'variable_bound', 'dst': 'running_svm'},
+            {'name': 'run_svm', 'src': 'running_svm', 'dst': 'running_svm'},
+            {'name': 'run_svm', 'src': 'svm_done', 'dst': 'running_svm'},
+
+            {'name': 'on_svm_done', 'src': 'running_svm', 'dst': 'svm_done'},
+            {'name': 'on_svm_error', 'src': 'running_svm', 'dst': 'variable_bound'},
+
+        ]
+    })
+    block_base_name = "SVM_CLASSIFY"
+    all_actions = [
+        ("bind_variables", "Select variable", True),
+        ("run_svm", "Run SVM", True),
+
+        ("on_svm_done", "", False),
+        ("on_svm_error", "", False),
+
+
+        ("success", "", False),
+        ("error", "", False)
+    ]
+    provided_objects = {
+        "mixMlResult": "mixML",
+    }
+    elements = [
+        "svm_result.html"
+    ]
+
+    def __init__(self, *args, **kwargs):
+        super(SvmClassifier, self).__init__("SvmClassifier", GroupType.CLASSIFIER, *args, **kwargs)
+
+        self.ports = {
+            "input": {
+                "train": BlockPort(name="train", title="Choose expression set",
+                                   data_type="ExpressionSet", scopes=[self.scope]),
+                "test": BlockPort(name="test", title="Choose expression set",
+                                  data_type="ExpressionSet", scopes=[self.scope]),
+            }
+        }
+
+        self.mixMlResult = None
+        self.celery_task = None
+
+
+    def serialize(self, exp, to="dict"):
+        hash = super(SvmClassifier, self).serialize(exp, to)
+        hash["accuracy"] = ""
+        if self.state == "svm_done":
+            hash["accuracy"] = self.mixMlResult.acc
+
+        return hash
+
+    def run_svm(self, exp, *args, **kwargs):
+        train = self.get_var_by_bound_key_str(exp, self.ports["input"]["train"].bound_key)
+        test = self.get_var_by_bound_key_str(exp, self.ports["input"]["test"].bound_key)
+        self.celery_task = svm_test.s(exp, self, train, test)
+        exp.store_block(self)
+        self.celery_task.apply_async()
+
+    def on_svm_error(self, exp, *args, **kwargs):
+        exp.store_block(self)
+
+    def on_svm_done(self, exp, *args, **kwargs):
         self.clean_errors()
         exp.store_block(self)
 
@@ -715,8 +844,6 @@ class PCA_visualize(GenericBlock):
                                 data_type="ExpressionSet", scopes=[self.scope]),
             }
         }
-
-
 
     @property
     def pca_result_in_json(self):
@@ -845,6 +972,8 @@ register_block("get_bi_gene_set", "Get MSigDB gene set", GroupType.INPUT_DATA, G
 register_block("cross_validation", "Cross validation", GroupType.META_PLUGIN, CrossValidation)
 
 register_block("Pca_visualize", "2D PCA Plot", GroupType.VISUALIZE, PCA_visualize)
+
+register_block("svm_classifier", "SVM Classifier", GroupType.CLASSIFIER, SvmClassifier)
 
 # old_blocks_by_group = [
 #     ("Input data", [

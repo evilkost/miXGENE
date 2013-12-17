@@ -110,7 +110,7 @@ def preprocess_soft(exp, block):
 
         platform_annotation = PlatformAnnotation("TODO:GET NAME FROM SOFT",
             base_dir=exp.get_data_folder(),
-            base_filename=block.uuid + "_annotation"
+            base_filename= "%s_annotation" % block.uuid
         )
 
         platform_annotation.gene_units = Units.ENTREZ_GENE_ID
@@ -128,7 +128,7 @@ def preprocess_soft(exp, block):
             for i in range(3, len(soft))
         ]))
 
-        expression_set = ExpressionSet(exp.get_data_folder(), block.uuid + "_es")
+        expression_set = ExpressionSet(exp.get_data_folder(), "%s_es" % block.uuid)
         expression_set.store_assay_data_frame(assay_df)
 
         factors = [soft[i].entity_attributes
@@ -172,6 +172,11 @@ def generate_cv_folds(exp, block, folds_num, split_ratio, es, ann):
 
         assay_df = es.get_assay_data_frame()
         pheno_df = es.get_pheno_data_frame()
+
+        #TODO: fix in block parser
+        split_ratio = float(split_ratio)
+        folds_num = int(folds_num)
+
         if "User_class" not in pheno_df.columns:
             raise RuntimeError("Phenotype doesn't have user assigned classes")
 
@@ -180,12 +185,12 @@ def generate_cv_folds(exp, block, folds_num, split_ratio, es, ann):
         for train_idx, test_idx in cross_validation.StratifiedShuffleSplit(
                 classes_vector,
                 n_iter=folds_num,
-                train_size=split_ratio, test_size=1-split_ratio):
-            train_es = es.clone(es.base_filename + "_train_%s" % i)
+                train_size=split_ratio, test_size= 1- split_ratio):
+            train_es = es.clone( "%s_train_%s" % (es.base_filename ,i))
             train_es.store_assay_data_frame(assay_df[train_idx])
             train_es.store_pheno_data_frame(pheno_df.iloc[train_idx])
 
-            test_es = es.clone(es.base_filename + "_test_%s" % i)
+            test_es = es.clone("%s_test_%s" % (es.base_filename, i))
             test_es.store_assay_data_frame(assay_df[test_idx])
             test_es.store_pheno_data_frame(pheno_df.iloc[test_idx])
 
@@ -245,8 +250,8 @@ def split_train_test(ctx):
     expression_train.copy_meta_from(expression)
     expression_test.copy_meta_from(expression)
 
-    expression_train.filename = expression.filename + "_train"
-    expression_test.filename = expression.filename + "_test"
+    expression_train.filename = "%s_train" % expression.filename
+    expression_test.filename = "%s_test" % expression.filename
     expression_train.filepath = exp.get_data_file_path(expression_train.filename)
     expression_test.filepath = exp.get_data_file_path(expression_test.filename)
     #FIXME: this should be done inside MixData objects
@@ -258,8 +263,8 @@ def split_train_test(ctx):
     phenotype_train.copy_meta_from(phenotype)
     phenotype_test.copy_meta_from(phenotype)
 
-    phenotype_train.filename = phenotype.filename + "_train"
-    phenotype_test.filename = phenotype.filename + "_test"
+    phenotype_train.filename = "%s_train" % phenotype.filename
+    phenotype_test.filename = "%s_test" % phenotype.filename
     phenotype_train.filepath = exp.get_data_file_path(phenotype_train.filename)
     phenotype_test.filepath = exp.get_data_file_path(phenotype_test.filename)
 

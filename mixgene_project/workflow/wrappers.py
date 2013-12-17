@@ -1,3 +1,4 @@
+import traceback
 from celery import task
 
 import rpy2.rinterface
@@ -6,6 +7,7 @@ from rpy2.robjects.packages import importr
 import pandas as pd
 import pandas.rpy.common as com
 import rpy2.robjects.numpy2ri as rpyn
+import sys
 
 from mixgene.settings import R_LIB_CUSTOM_PATH
 from webapp.models import Experiment
@@ -105,7 +107,7 @@ def pca_test(exp, block, es):
         df_points.index = pheno_df.index
         res = PcaResult(
             base_dir=exp.get_data_folder(),
-            base_filename=block.uuid + "_pca"
+            base_filename= "%s_pca" % block.uuid
         )
         res.store_pca(df_points)
 
@@ -117,21 +119,59 @@ def pca_test(exp, block, es):
 
 
 @task(name='worflow.wrappers.svm_test')
-def svm_test(ctx):
-    importr("miXGENE", lib_loc=R_LIB_CUSTOM_PATH)
-    exp = Experiment.objects.get(e_id=ctx['exp_id'])
+def svm_test(exp, block, train, test):
+    """
+        @type train: ExpressionSet
+        @type  test: ExpressionSet
+    """
+    try:
+        importr("miXGENE", lib_loc=R_LIB_CUSTOM_PATH)
 
-    svm = R.r['mixSvmLin'](
-        dataset=ctx["expression_train"].to_r_obj(),
-        dataset_factor=ctx["phenotype_train"].to_r_obj(),
-        new_dataset=ctx["expression_test"].to_r_obj(),
-        new_dataset_factor=ctx["phenotype_test"].to_r_obj(),
-    )
+        assay_train_df = train.get_assay_data_frame()
+        pheno_train_df = train.get_pheno_data_frame()
 
-    result = mixML(exp, svm, ctx['filename'])
-    result.title = "SVM result"
-    ctx.update({"result": result})
-    return ctx
+        assay_test_df = test.get_assay_data_frame()
+        pheno_test_df = test.get_pheno_data_frame()
+
+        rnew = R.r["new"]
+        dataset_train = rnew("mixData")
+        dataset_test = rnew("mixData")
+
+        dataset_train.do_slot_assign("data", com.convert_to_r_dataframe(assay_train_df))
+        dataset_test.do_slot_assign("data", com.convert_to_r_dataframe(assay_test_df))
+
+        pheno_train = rnew("mixPheno")
+        pheno_test = rnew("mixPheno")
+
+        pheno_train.do_slot_assign("phenotype",
+           R.r.factor(R.StrVector(pheno_train_df['User_class'].tolist()))
+        )
+        pheno_test.do_slot_assign("phenotype",
+           R.r.factor(R.StrVector(pheno_test_df['User_class'].tolist()))
+        )
+
+        svm = R.r['mixSvmLin'](
+            dataset=dataset_train,
+            dataset_factor=pheno_train,
+
+            new_dataset=dataset_test,
+            new_dataset_factor=pheno_test,
+        )
+
+        result = mixML(exp, svm, "%s_ML" % block.uuid)
+        result.title = "SVM result"
+
+        block.mixMlResult = result
+
+        block.do_action("on_svm_done", exp)
+    except Exception, e:
+        ex_type, ex, tb = sys.exc_info()
+        traceback.print_tb(tb)
+        print e
+        #TODO: LOG ERROR AND TRACEBACK OR WE LOSE IT!
+        #import ipdb; ipdb.set_trace()
+        block.errors.append(e)
+        block.do_action("on_svm_error", exp)
 
 
 @task(name='worflow.wrappers.tt_test')

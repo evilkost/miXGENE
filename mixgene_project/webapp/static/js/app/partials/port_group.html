@@ -2,8 +2,8 @@
     <div ng-repeat="port in block.ports[groupName]" ng-controller="PortCtrl">
         <div class="row">
             <div class="form-group">
-                <label class="col-sm-3 control-label">Select variable for
-                    {$ port.name $} of type <b> {$ port.data_type$}</b>
+                <label class="col-sm-3 control-label">
+                    {$ port.name $} <small>[{$ port.data_type$}]</small>
                 </label>
                 <div class="col-sm-9">
                     <select class="form-control"

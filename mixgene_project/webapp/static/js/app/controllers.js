@@ -65,7 +65,8 @@ Constructor.controller('formFieldCtrl', function($scope, $log){
     $scope.field = $scope.param_proto;
 })
 
-Constructor.controller('BlockActionCtrl', function($scope){
+Constructor.controller('blockElementCtrl', function($scope){
+    $scope.template = "/static/js/app/elements/" + $scope.element;
 
 })
 Constructor.controller('PalletCtrl', function($scope, blockAccess){

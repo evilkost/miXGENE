@@ -324,10 +324,15 @@ class SequenceContainer(object):
         self.fields = fields
         self.iterator = -1
 
+    def is_end(self):
+        if self.iterator == len(self.sequence) - 1:
+            return True
+        return False
+
     def append(self, element):
         self.sequence.append(element)
 
-    def apply_next(self, block):
+    def apply_next(self):
         """
             Set block properties from the current sequence element
 
