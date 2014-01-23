@@ -274,6 +274,18 @@ class GetBroadInstituteGeneSet(GenericBlock):
         "gene_sets": "GeneSets",
     }
 
+    params_prototype = {
+        "msigdb_id": {
+            "name": "msigdb_id",
+            "title": "Gene set",
+            "input_type": "select",
+            "validation": None,
+            "default": "",
+            "data_source": "all_gene_sets",
+            "required": True,
+        }
+    }
+
     def __init__(self, *args, **kwargs):
         super(GetBroadInstituteGeneSet, self).__init__("Get MSigDB gene set", "user_input", *args, **kwargs)
         self.gmt = None
@@ -282,7 +294,7 @@ class GetBroadInstituteGeneSet(GenericBlock):
         self.selected_gs_id = None
 
     def before_render(self, exp, *args, **kwargs):
-        self.all_gene_sets = BroadInstituteGeneSet.objects.order_by("section", "name", "unit")
+        #self.all_gene_sets = BroadInstituteGeneSet.objects.order_by("section", "name", "unit")
         return {}
 
     def on_form_is_valid(self):
@@ -292,6 +304,11 @@ class GetBroadInstituteGeneSet(GenericBlock):
 
     def on_form_not_valid(self):
         pass
+
+    def serialize(self, exp, to="dict"):
+        hash = super(GetBroadInstituteGeneSet, self).serialize(exp, to)
+        hash["all_gene_sets"] = BroadInstituteGeneSet.get_all_meta()
+        return hash
 
 
 class FetchGseForm(forms.Form):
@@ -674,7 +691,6 @@ class CrossValidation(GenericBlock):
         hash["results"] = self.results
 
         return hash
-
 
     def before_render(self, exp, *args, **kwargs):
         context_add = super(CrossValidation, self).before_render(exp, *args, **kwargs)

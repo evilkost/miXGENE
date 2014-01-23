@@ -1,0 +1,26 @@
+<div class="form-group" ng-controller="fieldSelectCtrl">
+
+    <label class="col-sm-3 control-label">
+        {$ field.title $}
+
+    </label>
+    <div class="col-sm-9">
+        <select class="form-control"
+                name="{{ field.name }}"
+                ng-model="block.params[field.name]"
+                ng-options="o.pk as o.str for o in select_options"
+
+        >
+        </select>
+    </div>
+
+    <div class="row">
+        <div ng-repeat="error in block.form_errors[field.name]" class="col-sm-9 col-sm-offset-3">
+            <span class="label label-danger">
+                {$ error $}
+            </span>
+        </div>
+    </div>
+
+
+</div>

@@ -505,3 +505,17 @@ class BroadInstituteGeneSet(models.Model):
         gene_sets = gene_sets_s.load()
         gene_sets.units = self.unit
         return gene_sets
+
+    @staticmethod
+    def get_all_meta():
+        res = []
+        raw = BroadInstituteGeneSet.objects.order_by("section", "name", "unit").all()
+        for record in raw:
+            res.append({
+                "pk": record.pk,
+                "section": record.section,
+                "name": record.name,
+                "unit": record.unit,
+                "str": str(record),
+            })
+        return res
