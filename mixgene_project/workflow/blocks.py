@@ -848,10 +848,6 @@ class PCA_visualize(GenericBlock):
 
     def __init__(self, *args, **kwargs):
         super(PCA_visualize, self).__init__("PCA Analysis", "Visualisation", *args, **kwargs)
-        self.bound_variable_field = None
-        self.bound_variable_block = None
-        self.bound_variable_block_alias = None
-
         self.pca_result = None
         self.celery_task = None
 
@@ -869,8 +865,7 @@ class PCA_visualize(GenericBlock):
 
     def run_pca(self, exp, request, *args, **kwargs):
         self.clean_errors()
-        bound_block = Experiment.get_block(self.bound_variable_block)
-        es = getattr(bound_block, self.bound_variable_field)
+        es = self.get_var_by_bound_key_str(exp, self.ports["input"]["es"].bound_key)
         self.celery_task = wrappers.pca_test.s(exp, self, es)
         exp.store_block(self)
         self.celery_task.apply_async()
@@ -880,27 +875,6 @@ class PCA_visualize(GenericBlock):
 
     def error(self, exp):
         exp.store_block(self)
-
-    def bind_variables(self, exp, request, received_block=None, *args, **kwargs):
-        split = request.POST['variable_name'].split(":")
-        self.bound_variable_block = split[0]
-        bound_block = exp.get_block(self.bound_variable_block)
-        self.bound_variable_block_alias = bound_block.base_name
-        self.bound_variable_field = ''.join(split[1:])
-        exp.store_block(self)
-
-    def before_render(self, exp, *args, **kwargs):
-        context_add = {}
-        available = exp.get_visible_variables(scopes=[self.scope], data_types=["ExpressionSet"])
-
-        self.variable_options = prepare_bound_variable_select_input(
-            available, exp.get_block_aliases_map(),
-            self.bound_variable_block_alias, self.bound_variable_field)
-
-        if len(self.variable_options) == 0:
-            self.errors.append(Exception("There is no blocks which provides Expression Set"))
-
-        return context_add
 
 
 class ExpressionSetDetails(GenericBlock):
