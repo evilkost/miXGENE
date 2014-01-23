@@ -10,9 +10,11 @@ import rpy2.robjects.numpy2ri as rpyn
 import sys
 
 from mixgene.settings import R_LIB_CUSTOM_PATH
+
+from environment.structures import ExpressionSet, PcaResult
+
 from webapp.models import Experiment
 from workflow.result import mixPlot, mixML, mixTable
-from workflow.structures import ExpressionSet, PcaResult
 from workflow.vars import MixData, MixPheno
 
 

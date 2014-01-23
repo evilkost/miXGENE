@@ -2,6 +2,8 @@ import gzip
 
 __author__ = 'kost'
 
+import copy
+
 import pandas as pd
 import rpy2.robjects as R
 from rpy2.robjects.packages import importr
@@ -129,7 +131,7 @@ class ExpressionSet(GenericStoreStructure):
 
     def get_assay_data_frame(self):
         """
-            @rtype: DataFrame
+            @rtype: pd.DataFrame
         """
         if self.assay_data_storage is None:
             raise RuntimeError("Assay data wasn't setup prior")
@@ -137,7 +139,7 @@ class ExpressionSet(GenericStoreStructure):
 
     def store_assay_data_frame(self, df):
         """
-            @type  df: DataFrame
+            @type  df: pd.DataFrame
             @param df: Table with expression data
         """
         if self.assay_data_storage is None:
@@ -147,7 +149,7 @@ class ExpressionSet(GenericStoreStructure):
 
     def get_pheno_data_frame(self):
         """
-            @rtype: DataFrame
+            @rtype: pd.DataFrame
         """
         if self.pheno_data_storage is None:
             raise RuntimeError("Phenotype data wasn't setup prior")
@@ -155,7 +157,7 @@ class ExpressionSet(GenericStoreStructure):
 
     def store_pheno_data_frame(self, df):
         """
-            @type df: DataFrame
+            @type df: pd.DataFrame
         """
         if self.pheno_data_storage is None:
             self.pheno_data_storage = DataFrameStorage(
@@ -164,6 +166,11 @@ class ExpressionSet(GenericStoreStructure):
 
     def to_r_obj(self):
         pass
+
+    def get_pheno_column_as_r_obj(self, column_name):
+        pheno_df = self.get_pheno_data_frame()
+        column = pheno_df[column_name].tolist()
+        return R.r['factor'](R.StrVector(column))
 
     def to_json_preview(self, row_number=20):
         assay_df = self.assay_data_storage.load(row_number)
@@ -193,6 +200,20 @@ class GeneSets(object):
         self.org = ""
         self.units = ""
 
+    def to_r_obj(self):
+        gene_sets = R.ListVector(dict([
+            (k, R.StrVector(list(v)))
+            for k, v in self.genes.iteritems()
+            if len(v)
+        ]))
+        return gene_sets
+
+
+        # mgs = R.r['new']('mixGeneSets')
+        # mgs.do_slot_assign("gene.sets", gene_sets)
+        # mgs.do_slot_assign("org", R.StrVector([self.org]))
+        # mgs.do_slot_assign("units", R.StrVector([self.units]))
+        # return mgs
 
 class GmtStorage(object):
     def __init__(self, filepath, compression=None, sep=None):
@@ -286,6 +307,9 @@ class PlatformAnnotation(object):
         self.set_units = None
 
     def get_gmt(self):
+        """
+            @rtype: GmtStorage
+        """
         if self.gmt_storage is None:
             raise RuntimeError("Gmt wasn't setup prior")
         return self.gmt_storage.load()

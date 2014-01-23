@@ -20,7 +20,7 @@ from webapp.models import CachedFile, Experiment
 from workflow.constants import Units
 from workflow.input import FileInputVar
 from workflow.parsers import GMT
-from workflow.structures import ExpressionSet, PlatformAnnotation, GeneSets
+from environment.structures import ExpressionSet, PlatformAnnotation, GeneSets
 from workflow.vars import MixData, MixPheno, GeneSetsOld
 import sys, traceback
 

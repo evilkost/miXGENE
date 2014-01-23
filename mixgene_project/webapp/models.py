@@ -13,7 +13,7 @@ from mixgene.settings import MEDIA_ROOT
 from mixgene.util import get_redis_instance
 from mixgene.redis_helper import ExpKeys
 from mixgene.util import dyn_import
-from workflow.structures import GmtStorage
+from environment.structures import GmtStorage
 
 
 class CachedFile(models.Model):

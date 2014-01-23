@@ -10,9 +10,10 @@ from webapp.models import Experiment, BroadInstituteGeneSet
 
 from workflow.common_tasks import fetch_geo_gse, preprocess_soft, generate_cv_folds
 from workflow.ports import BlockPort, BoundVar
-
-from workflow.structures import ExpressionSet, SequenceContainer
 from workflow import wrappers
+
+from environment.structures import ExpressionSet, SequenceContainer
+
 
 #TODO: move to DB
 from workflow.wrappers import svm_test
@@ -739,7 +740,7 @@ class SvmClassifier(GenericBlock):
             {'name': 'bind_variables', 'src': 'variable_bound', 'dst': 'variable_bound'},
 
             {'name': 'run_svm', 'src': 'variable_bound', 'dst': 'running_svm'},
-            {'name': 'run_svm', 'src': 'running_svm', 'dst': 'running_svm'},
+            #{'name': 'run_svm', 'src': 'running_svm', 'dst': 'running_svm'},
             {'name': 'run_svm', 'src': 'svm_done', 'dst': 'running_svm'},
 
             {'name': 'on_svm_done', 'src': 'running_svm', 'dst': 'svm_done'},
