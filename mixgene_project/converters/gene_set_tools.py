@@ -1,4 +1,5 @@
-from environment.structures import GeneSets
+from celery import task
+from environment.structures import GeneSets, GmtStorage
 from environment.units import GeneUnits
 
 from mixgene.util import transpose_dict_list
@@ -49,3 +50,30 @@ def filter_gs_by_genes(src, allowed_genes):
             gs.genes[k] = list(to_preserve)
             gs.description[k] = src.description
     return gs
+
+@task(name="converters.gene_set_tools.merge_gs_with_platform_annotation")
+def merge_gs_with_platform_annotation(
+        exp, block, store_field,
+        gmt_storage_gs,
+        annotation,
+        filepath,
+        success_action="success", error_action="error",
+    ):
+    """
+        @type gmt_storage_gs: GmtStorage
+        @type annotation: PlatformAnnotation
+    """
+    try:
+        gs = gmt_storage_gs.load()
+        gs_merged = map_gene_sets_to_probes(annotation, gs)
+
+        gmts = GmtStorage(filepath)
+        gmts.store(gs_merged)
+
+        setattr(block, store_field, gmts)
+        block.do_action(success_action, exp)
+    except Exception, e:
+        block.errors.append(e)
+        block.do_action(error_action, exp)
+
+

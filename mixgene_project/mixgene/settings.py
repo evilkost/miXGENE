@@ -47,6 +47,9 @@ CELERY_IMPORTS = (
     "workflow.layout",
     "workflow.common_tasks",
     "workflow.wrappers",
+
+    "converters.gene_set_tools",
+    "wrappers.gt",
 )
 
 ## End celery settings

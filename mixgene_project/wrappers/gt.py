@@ -56,11 +56,14 @@ class GlobalTest(object):
         return result_df
 
 
-@task("wrappers.gt.global_test_task")
-def global_test_task(es, gs,
-                     filepath,
-                     cb_on_success, cb_on_error,
-                     pheno_class_column="User_class"):
+@task(name="wrappers.gt.global_test_task")
+def global_test_task(
+        exp, block, store_field,
+        es, gs,
+        filepath,
+        pheno_class_column="User_class",
+        success_action="success", error_action="error"
+    ):
     """
     @param es: Expression set with defined user class in pheno
     @type es: ExpressionSet
@@ -70,11 +73,6 @@ def global_test_task(es, gs,
     @param filepath: Fully qualified filepath to store result dataframe
     @type filepath: str
 
-    @param cb_on_success: Callback to store result
-    @type cb_on_success: Function(result)
-
-    @param cb_on_error: Callback to handle any error
-    @type cb_on_error: Function(error)
 
     @param pheno_class_column: Column name of target classes in phenotype table
     @type pheno_class_column: str or None
@@ -83,6 +81,9 @@ def global_test_task(es, gs,
         result_df = GlobalTest(es, gs, pheno_class_column)
         result_storage = DataFrameStorage(filepath)
         result_storage.store(result_df)
-        cb_on_success(result_storage)
+
+        setattr(block, store_field, result_storage)
+        block.do_action(success_action, exp)
     except Exception, e:
-        cb_on_error(e)
+        block.errors.append(e)
+        block.do_action(error_action, exp)

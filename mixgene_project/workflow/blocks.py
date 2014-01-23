@@ -13,6 +13,7 @@ from workflow.ports import BlockPort, BoundVar
 from workflow import wrappers
 
 from environment.structures import ExpressionSet, SequenceContainer
+from converters.gene_set_tools import merge_gs_with_platform_annotation
 
 
 #TODO: move to DB
@@ -29,12 +30,12 @@ def register_block(code_name, human_title, group, cls):
         "title": human_title,
     })
 
-
 class GroupType(object):
     INPUT_DATA = "Input data"
     META_PLUGIN = "Meta plugins"
     VISUALIZE = "Visualize"
     CLASSIFIER = "Classifier"
+    PROCESSING = "Data processing"
 
 
 class GenericBlock(object):
@@ -216,6 +217,8 @@ class GenericBlock(object):
                 port.options = {}
                 if port.bound_key is None:
                     for scope, uuid, var_name, var_data_type in variables:
+                        if uuid == self.uuid:
+                            continue
                         if scope in port.scopes and var_data_type == port.data_type:
                             port.bound_key = BoundVar(
                                 block_uuid=uuid,
@@ -295,7 +298,7 @@ class GetBroadInstituteGeneSet(GenericBlock):
     def on_form_is_valid(self):
         self.errors = []
         self.selected_gs_id = int(self.params["msigdb_id"])
-        self.gmt = BroadInstituteGeneSet.objects.get(pk=self.selected_gs_id)
+        self.gmt = BroadInstituteGeneSet.objects.get(pk=self.selected_gs_id).get_gmt_storage()
         #print self.selected_gs_id
 
     def on_form_not_valid(self):
@@ -818,6 +821,72 @@ class SvmClassifier(GenericBlock):
         exp.store_block(self)
 
 
+class MergeGeneSetWithPlatformAnnotation(GenericBlock):
+    fsm = Fysom({
+        'events': [
+            {'name': 'bind_variables', 'src': 'created', 'dst': 'variable_bound'},
+            {'name': 'bind_variables', 'src': 'merge_done', 'dst': 'variable_bound'},
+            {'name': 'bind_variables', 'src': 'variable_bound', 'dst': 'variable_bound'},
+
+            {'name': 'run_merge', 'src': 'variable_bound', 'dst': 'in_merge'},
+
+            {'name': 'success', 'src': 'in_merge', 'dst': 'done'},
+            {'name': 'error', 'src': 'in_merge', 'dst': 'done'},
+
+        ]
+    })
+    widget = "widgets/pca_view.html"
+    block_base_name = "MERGE_GS_GPL_ANN"
+    all_actions = [
+        ("bind_variables", "Select variables", True),
+        ("run_merge", "Run merge", True),
+
+        ("success", "", False),
+        ("error", "", False)
+    ]
+    provided_objects = {
+        "gs_merged": "GmtStorage",
+    }
+
+    def __init__(self, *args, **kwargs):
+        super(MergeGeneSetWithPlatformAnnotation, self).__init__(
+            "Merge GeneSet with platform annotation", *args, **kwargs)
+
+        self.celery_task = None
+        self.gmt = None
+
+        self.ports = {
+            "input": {
+                "ann": BlockPort(name="ann", title="Choose annotation",
+                                 data_type="PlatformAnnotation", scopes=[self.scope]),
+                "gs": BlockPort(name="gs", title="Choose gene set",
+                                data_type="GmtStorage", scopes=[self.scope])
+            }
+        }
+
+    def run_merge(self, exp, request, *args, **kwargs):
+        self.clean_errors()
+
+        gmt_storage = self.get_var_by_bound_key_str(exp, self.ports["input"]["gs"].bound_key)
+        ann = self.get_var_by_bound_key_str(exp, self.ports["input"]["ann"].bound_key)
+
+        result_filepath = exp.get_data_file_path("%s_gs_merged" % self.uuid, "gmt.gz")
+
+        self.celery_task = merge_gs_with_platform_annotation.s(
+            exp, self, "gmt",
+            gmt_storage, ann, result_filepath,
+        )
+        exp.store_block(self)
+        self.celery_task.apply_async()
+
+    def success(self, exp):
+        exp.store_block(self)
+
+    def error(self, exp):
+        exp.store_block(self)
+
+
+
 class PCA_visualize(GenericBlock):
     fsm = Fysom({
         'events': [
@@ -965,3 +1034,6 @@ register_block("cross_validation", "Cross validation", GroupType.META_PLUGIN, Cr
 register_block("Pca_visualize", "2D PCA Plot", GroupType.VISUALIZE, PCA_visualize)
 
 register_block("svm_classifier", "SVM Classifier", GroupType.CLASSIFIER, SvmClassifier)
+
+register_block("merge_gs_platform_annotation", "Merge Gene Set with platform annotation",
+               GroupType.PROCESSING, MergeGeneSetWithPlatformAnnotation)

@@ -500,6 +500,9 @@ class BroadInstituteGeneSet(models.Model):
     def __unicode__(self):
         return u"%s: %s. Units: %s" % (self.section, self.name, self.get_unit_display())
 
+    def get_gmt_storage(self):
+        return GmtStorage(self.gmt_file.path)
+
     def get_gene_sets(self):
         gene_sets_s = GmtStorage(self.gmt_file.path)
         gene_sets = gene_sets_s.load()
