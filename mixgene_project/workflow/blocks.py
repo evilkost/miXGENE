@@ -51,14 +51,13 @@ class GenericBlock(object):
 
     elements = []
 
-    def __init__(self, name, type, exp_id, scope):
+    def __init__(self, name, exp_id, scope):
         """
             Building block for workflow
             @type can be: "user_input", "computation"
         """
         self.uuid = uuid1().hex
         self.name = name
-        self.type = type
         self.exp_id = exp_id
 
         # pairs of (var name, data type, default name in context)
@@ -161,7 +160,7 @@ class GenericBlock(object):
     def serialize(self, exp, to="dict"):
         self.before_render(exp)
         if to == "dict":
-            keys_to_snatch = {"uuid", "base_name", "name", "type",
+            keys_to_snatch = {"uuid", "base_name", "name",
                               "scope", "sub_scope", "create_new_scope",
                               "warnings", "state",
                               "params_prototype",  # TODO: make ParamProto class and genrate BlockForm
@@ -287,7 +286,7 @@ class GetBroadInstituteGeneSet(GenericBlock):
     }
 
     def __init__(self, *args, **kwargs):
-        super(GetBroadInstituteGeneSet, self).__init__("Get MSigDB gene set", "user_input", *args, **kwargs)
+        super(GetBroadInstituteGeneSet, self).__init__("Get MSigDB gene set", *args, **kwargs)
         self.gmt = None
         self.errors = []
         self.form = None
@@ -405,7 +404,7 @@ class FetchGSE(GenericBlock):
     }
 
     def __init__(self, *args, **kwargs):
-        super(FetchGSE, self).__init__("Fetch ncbi gse", "user_input", *args, **kwargs)
+        super(FetchGSE, self).__init__("Fetch ncbi gse", *args, **kwargs)
 
         self.form = self.form_cls(self.form_data)
 
@@ -638,7 +637,7 @@ class CrossValidation(GenericBlock):
         return "%s_%s" % (self.scope, self.uuid)
 
     def __init__(self, *args, **kwargs):
-        super(CrossValidation, self).__init__("Cross Validation", "Meta", *args, **kwargs)
+        super(CrossValidation, self).__init__("Cross Validation", *args, **kwargs)
         self.bound_variable_field = None
         self.bound_variable_block = None
         self.bound_variable_block_alias = None
@@ -784,7 +783,7 @@ class SvmClassifier(GenericBlock):
     ]
 
     def __init__(self, *args, **kwargs):
-        super(SvmClassifier, self).__init__("SvmClassifier", GroupType.CLASSIFIER, *args, **kwargs)
+        super(SvmClassifier, self).__init__("SvmClassifier", *args, **kwargs)
 
         self.ports = {
             "input": {
@@ -846,8 +845,12 @@ class PCA_visualize(GenericBlock):
         ("error", "", False)
     ]
 
+    elements = [
+        "pca_result.html"
+    ]
+
     def __init__(self, *args, **kwargs):
-        super(PCA_visualize, self).__init__("PCA Analysis", "Visualisation", *args, **kwargs)
+        super(PCA_visualize, self).__init__("PCA Analysis", *args, **kwargs)
         self.pca_result = None
         self.celery_task = None
 
