@@ -8,6 +8,7 @@ from fysom import Fysom
 import pandas as pd
 
 from workflow.common_tasks import fetch_geo_gse, preprocess_soft
+from workflow.execution import ExecStatus
 
 from generic import GenericBlock
 
@@ -70,7 +71,20 @@ class FetchGSE(GenericBlock):
         ("successful_preprocess", "", False),
 
         ("assign_sample_classes", "", False),
-        ]
+    ]
+
+    exec_status_map = {
+        'created': ExecStatus.USER_REQUIRED,
+        'form_modified': ExecStatus.USER_REQUIRED,
+        'form_valid': ExecStatus.USER_REQUIRED,
+        'source_is_being_fetched': ExecStatus.WORKING,
+        'source_was_fetched': ExecStatus.USER_REQUIRED,
+        'source_is_being_preprocessed': ExecStatus.WORKING,
+        'source_was_preprocessed': ExecStatus.USER_REQUIRED,
+        'sample_classes_assigned': ExecStatus.DONE,
+    }
+
+
     # widget = "widgets/fetch_ncbi_gse.html"
     widget = "widgets/fetch_gse/assign_sample_classes.html"
     pages = {

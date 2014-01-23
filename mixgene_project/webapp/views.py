@@ -24,6 +24,8 @@ from webapp.forms import UploadForm
 from webapp.store import add_block_to_exp_from_request, add_block_to_exp_from_dict
 from workflow.blocks import blocks_by_group
 
+from workflow.execution import ScopeState
+
 from mixgene.util import dyn_import, get_redis_instance, mkdir
 
 
@@ -369,7 +371,7 @@ def exp_details(request, exp_id):
 @csrf_protect
 @never_cache
 def alter_exp(request, exp_id, action):
-    exp = Experiment.objects.get(e_id = exp_id)
+    exp = Experiment.objects.get(e_id=exp_id)
     if exp.author != request.user:
         return redirect("/") # TODO: show alert about wrong experiment
 
@@ -410,6 +412,9 @@ def add_experiment(request):
 
         "input_vars": wf.input_vars,
         "result_vars": wf.result_vars,
+        "scope_state": {
+            "root": ScopeState.HALT,
+        }
     })
     exp.init_ctx(ctx)
 

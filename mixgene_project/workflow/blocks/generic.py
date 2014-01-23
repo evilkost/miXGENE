@@ -1,3 +1,5 @@
+from workflow.execution import ExecStatus
+
 __author__ = 'kost'
 
 from uuid import uuid1
@@ -24,6 +26,8 @@ class GenericBlock(object):
     is_sub_pages_visible = False
 
     elements = []
+
+    exec_status_map = {}
 
     def __init__(self, name, exp_id, scope):
         """
@@ -57,6 +61,9 @@ class GenericBlock(object):
 
     def get_available_user_action(self):
         return self.get_allowed_actions(True)
+
+    def get_exec_status(self):
+        return self.exec_status_map.get(self.state, ExecStatus.USER_REQUIRED)
 
     def get_allowed_actions(self, only_user_actions=False):
         # TODO: REFACTOR!!!!!

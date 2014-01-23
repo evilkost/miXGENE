@@ -14,6 +14,7 @@ from mixgene.util import get_redis_instance
 from mixgene.redis_helper import ExpKeys
 from mixgene.util import dyn_import
 from environment.structures import GmtStorage
+from workflow.execution import ScopeState
 
 
 class CachedFile(models.Model):
@@ -72,16 +73,7 @@ class Experiment(models.Model):
     workflow = models.ForeignKey(WorkflowLayout)
     author = models.ForeignKey(User)
 
-    """
-        TODO: use enumeration
-        status evolution:
-        1. created
-        2. initiated [ not implemented yet, currently 1-> 3 ]
-        3. configured
-        3. running
-        4. done OR
-        5. failed
-    """
+    # Obsolete
     status = models.TextField(default="created")
 
     dt_created = models.DateTimeField(auto_now_add=True)
@@ -233,7 +225,15 @@ class Experiment(models.Model):
                 pipe.hset(ExpKeys.get_scope_creating_block_uuid_keys(self.e_id),
                           block.sub_scope, block.uuid)
 
+                # TODO: move scope states to dedicated key
+                ctx = self.get_ctx()
+                ctx['scope_state'][block.sub_scope] = ScopeState.HALT
+                self.update_ctx(ctx)
+
             if block.scope != "root":
+
+
+
                 # need to register in parent block
                 parent_uuid = r.hget(ExpKeys.get_scope_creating_block_uuid_keys(self.e_id),
                                      block.scope)
@@ -463,8 +463,6 @@ def delete_exp(exp):
 
     # deleting an experiment
     exp.delete()
-
-
 
 def content_file_name(instance, filename):
     return '/'.join(map(str, ['data', instance.exp.author.id, instance.exp.e_id, filename]))
