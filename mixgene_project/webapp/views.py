@@ -189,8 +189,6 @@ def blocks_resource(request, exp_id):
     return resp
 
 
-
-
 @csrf_protect
 def block_resource(request, exp_id, block_uuid, action_code=None):
     """

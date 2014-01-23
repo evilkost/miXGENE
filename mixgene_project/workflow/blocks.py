@@ -237,10 +237,10 @@ class GenericBlock(object):
 
 
 class GeneSetSelectionForm(forms.Form):
-    gene_set_id = forms.IntegerField()
+    msigdb_id = forms.IntegerField()
 
-    def clean_gene_set_id(self):
-        data = self.cleaned_data['gene_set_id']
+    def clean_msigdb_id(self):
+        data = self.cleaned_data["msigdb_id"]
         if len(BroadInstituteGeneSet.objects.filter(id=data)) == 0:
             raise forms.ValidationError("Got wrong gene set identifier, try again")
 
@@ -270,7 +270,7 @@ class GetBroadInstituteGeneSet(GenericBlock):
     is_base_name_visible = True
 
     provided_objects = {
-        "gene_sets": "GeneSets",
+        "gmt": "GmtStorage",
     }
 
     params_prototype = {
@@ -292,14 +292,11 @@ class GetBroadInstituteGeneSet(GenericBlock):
         self.form = None
         self.selected_gs_id = None
 
-    def before_render(self, exp, *args, **kwargs):
-        #self.all_gene_sets = BroadInstituteGeneSet.objects.order_by("section", "name", "unit")
-        return {}
-
     def on_form_is_valid(self):
         self.errors = []
-        self.selected_gs_id = int(self.form["gene_set_id"].value())
-        print self.selected_gs_id
+        self.selected_gs_id = int(self.params["msigdb_id"])
+        self.gmt = BroadInstituteGeneSet.objects.get(pk=self.selected_gs_id)
+        #print self.selected_gs_id
 
     def on_form_not_valid(self):
         pass
