@@ -1,25 +1,10 @@
 import rpy2.robjects as R
 from rpy2.robjects.packages import importr
-from workflow.parsers import parse_gmt
 from pandas import DataFrame
 
 from mixgene.settings import R_LIB_CUSTOM_PATH
 
 R.r['options'](warn=-1)
-
-#TODO: maybe this approach is better ?
-"""
-
-class FileVar(object):
-    def __init__(self, name, filename, file_type, obj_type=None, *args, **kwargs):
-        #
-        #    @file_type: Format of physical file
-        #    @obj_type:  Type of represented object
-        self.name = name
-        self.filename = filename
-        self.file_type = file_type
-
-"""
 
 rnew = R.r["new"]
 rtable = R.r["read.table"]
@@ -104,25 +89,3 @@ class MixPheno(MetaMixin, SetNameMixin):
 
     def to_data_frame(self):
         return DataFrame.from_csv(self.filepath, sep=self.delimiter)
-
-
-class GeneSetsOld(MetaMixin, SetNameMixin):
-    def __init__(self):
-        """
-            Stores in .gmt file format
-        """
-        self.r_class = "mixGeneSets"
-
-        self.gene_units = None
-        self.set_units = None
-
-        self.filename = None
-        self.filepath = None
-
-    def get_gmt(self):
-        return parse_gmt(self.filepath)
-
-    def to_r_obj(self):
-        gmt = parse_gmt(self.filepath)
-        gmt.units = self.gene_units
-        return gmt.to_r_obj()

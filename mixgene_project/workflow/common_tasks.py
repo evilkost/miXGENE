@@ -17,11 +17,10 @@ from Bio.Geo import parse as parse_geo
 
 from mixgene.util import prepare_GEO_ftp_url, fetch_file_from_url, clean_GEO_file, transpose_dict_list
 from webapp.models import CachedFile, Experiment
-from workflow.constants import Units
+from environment.units import GeneUnits
 from workflow.input import FileInputVar
-from workflow.parsers import GMT
 from environment.structures import ExpressionSet, PlatformAnnotation, GeneSets
-from workflow.vars import MixData, MixPheno, GeneSetsOld
+from workflow.vars import MixData, MixPheno
 import sys, traceback
 
 @task(name="workflow.common_tasks.append_error_to_block")
@@ -113,8 +112,8 @@ def preprocess_soft(exp, block):
             base_filename= "%s_annotation" % block.uuid
         )
 
-        platform_annotation.gene_units = Units.ENTREZ_GENE_ID
-        platform_annotation.set_units = Units.PROBE_ID
+        platform_annotation.gene_units = GeneUnits.ENTREZ_ID
+        platform_annotation.set_units = GeneUnits.PROBE_ID
         platform_annotation.store_gmt(probe_to_genes_GS)
         block.gpl_annotation = platform_annotation
 
@@ -311,71 +310,6 @@ def converse_probes_to_genes(ctx):
     res.to_csv(expression_var_trans.filepath, sep=" ", index_label=False)
     #ctx[expression_trans_var_name] = expression_var_trans
     ctx["expression_transformed"] = expression_var_trans
-    return ctx
-
-@task(name="workflow.common")
-def fetch_msigdb(ctx):
-    exp = Experiment.objects.get(e_id=ctx["exp_id"])
-
-    msigdb_gs = GeneSetsOld()
-    msigdb_gs.gene_units = "ENTREZ_GENE_ID"
-    msigdb_gs.set_units = "gene_sets"
-
-    msigdb_gs.filename = "msigdb.v4.0.entrez.gmt"
-    msigdb_gs.filepath = exp.get_data_file_path(msigdb_gs.filename)
-
-    # TODO: be able to choose different db
-    # FIXME: now this is a fake url sine broadinsitute require auth
-    url = "http://www.broadinstitute.org/gsea/msigdb/download_file.jsp?filePath=/resources/msigdb/4.0/msigdb.v4.0.entrez.gmt"
-
-    mb_cached = CachedFile.look_up(url)
-    if mb_cached is None:
-        fetch_file_from_url(url, msigdb_gs.filepath, do_unpuck=False)
-        CachedFile.update_cache(url, msigdb_gs.filepath)
-    else:
-        shutil.copy(mb_cached.get_file_path(), msigdb_gs.filepath)
-        print "copied file from cache"
-
-    ctx["gene_sets"] = msigdb_gs
-    return ctx
-
-
-@task(name="workflow.common_tasks.map_gene_sets_to_probes")
-def map_gene_sets_to_probes(ctx):
-    exp = Experiment.objects.get(e_id=ctx["exp_id"])
-    msigdb_gs = ctx["msigdb"]
-    assert msigdb_gs.gene_units == "ENTREZ_GENE_ID"
-
-    soft_var_name = ctx["dataset_var"]
-    soft_file_input = ctx["input_vars"][soft_var_name]
-    soft = list(parse_geo(gzip.open(soft_file_input.filepath)))
-    pl = soft[2].table_rows
-    id_idx = pl[0].index('ID')
-    entrez_idx = pl[0].index('ENTREZ_GENE_ID')
-    probe_to_genes_mapping = dict([(row[id_idx], row[entrez_idx].split(" /// ")) for row in pl[1:]])
-
-    genes_to_probes = transpose_dict_list(probe_to_genes_mapping)
-    genes_to_probes.pop("")
-    gs_to_probes = defaultdict(list)
-
-    msigdb_gmt = msigdb_gs.get_gmt()
-    for gs, gene_ids in msigdb_gmt.gene_sets.iteritems():
-        for gene_id in gene_ids:
-            gs_to_probes[gs].extend(genes_to_probes.get(gene_id, []))
-
-    new_gmt = GMT()
-    new_gmt.gene_sets = gs_to_probes
-    new_gmt.description = msigdb_gmt.description
-    new_gmt.units = ["PROBE_ID",]
-
-    new_gs = GeneSetsOld()
-    new_gs.filename = "%s_gs.gmt" % "gs_probes_merged"
-    new_gs.filepath = exp.get_data_file_path(new_gs.filename)
-    new_gs.gene_units = "PROBE_ID"
-    new_gs.set_units = "gene_sets"
-    new_gmt.write_file(new_gs.filepath)
-
-    ctx["gs_probes_merged"] = new_gs
     return ctx
 
 

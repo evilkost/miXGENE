@@ -975,28 +975,3 @@ register_block("cross_validation", "Cross validation", GroupType.META_PLUGIN, Cr
 register_block("Pca_visualize", "2D PCA Plot", GroupType.VISUALIZE, PCA_visualize)
 
 register_block("svm_classifier", "SVM Classifier", GroupType.CLASSIFIER, SvmClassifier)
-
-# old_blocks_by_group = [
-#     ("Input data", [
-#         ("fetch_ncbi_gse", "Fetch NCBI GSE"),
-#         ("get_bi_gene_set", "Get MSigDB gene set"),
-#     ]),
-#     ("Conversion", [
-#         ("pca_aggregation", "PCA aggregation"),
-#         ("mean_aggregation", "Mean aggregation"),
-#     ]),
-#     ("Classifiers", [
-#         ("t_test", "T-test"),
-#         ("svm", "SVM"),
-#         ("dtree", "Decision tree"),
-#     ]),
-#     ("Meta plugins", [
-#         ("cross_validation", "Cross validation"),
-#     ]),
-#     ("Visualisation", [
-#         ("ES_details", "Detail view of Expression Set"),
-#         ("Pca_visualize", "2D PCA Plot"),
-#         ("boxplot", "Boxplot"),
-#         ("render_table", "Raw table")
-#     ]),
-# ]

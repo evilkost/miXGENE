@@ -5,7 +5,7 @@ from celery import task
 
 from workflow.actions import AtomicAction, SeqActions, ParActions, exc_action, set_exp_status, collect_results
 from webapp.models import UploadedData, Experiment
-from workflow.common_tasks import preprocess_soft, converse_probes_to_genes, fetch_msigdb, map_gene_sets_to_probes, gt_pval_cut
+from workflow.common_tasks import preprocess_soft, converse_probes_to_genes, gt_pval_cut
 from workflow.common_tasks import split_train_test
 from workflow.input import CheckBoxInputVar, FileInputVar, InputGroup, NumericInputVar
 from workflow.result import mixTable
