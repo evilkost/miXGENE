@@ -7,6 +7,7 @@ from crossvalidation import CrossValidation
 from merge_gene_set_annotation import MergeGeneSetWithPlatformAnnotation
 from pca_visualise import PCA_visualize
 from svm_classifier import SvmClassifier
+from globaltest import GlobalTest
 
 
 block_classes_by_name = {}
@@ -68,3 +69,4 @@ register_block("svm_classifier", "SVM Classifier", GroupType.CLASSIFIER, SvmClas
 
 register_block("merge_gs_platform_annotation", "Merge Gene Set with platform annotation",
                GroupType.PROCESSING, MergeGeneSetWithPlatformAnnotation)
+register_block("globaltest", "Global test", GroupType.PROCESSING, GlobalTest)

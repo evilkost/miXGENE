@@ -1,6 +1,3 @@
-__author__ = 'kost'
-
-from collections import defaultdict
 import json
 
 from django import forms

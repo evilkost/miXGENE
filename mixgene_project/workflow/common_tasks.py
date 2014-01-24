@@ -21,7 +21,8 @@ from environment.units import GeneUnits
 from workflow.input import FileInputVar
 from environment.structures import ExpressionSet, PlatformAnnotation, GeneSets
 from workflow.vars import MixData, MixPheno
-import sys, traceback
+import sys
+import traceback
 
 @task(name="workflow.common_tasks.append_error_to_block")
 def append_error_to_block(*args, **kwargs):

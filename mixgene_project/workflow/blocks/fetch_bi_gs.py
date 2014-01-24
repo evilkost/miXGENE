@@ -1,11 +1,5 @@
-
-
-from collections import defaultdict
-import json
-
 from django import forms
 from fysom import Fysom
-import pandas as pd
 
 from webapp.models import BroadInstituteGeneSet
 

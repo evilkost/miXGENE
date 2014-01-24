@@ -1,9 +1,7 @@
 from workflow.execution import ExecStatus
 
-__author__ = 'kost'
-
 from uuid import uuid1
-from workflow.ports import BlockPort, BoundVar
+from workflow.ports import BoundVar
 
 class GroupType(object):
     INPUT_DATA = "Input data"

@@ -11,6 +11,9 @@ from converters.gene_set_tools import filter_gs_by_genes
 from environment.structures import DataFrameStorage
 from mixgene.settings import R_LIB_CUSTOM_PATH
 
+import sys
+import traceback
+
 
 class GlobalTest(object):
     gt = None
@@ -19,7 +22,7 @@ class GlobalTest(object):
     def gt_init():
         if GlobalTest.gt is None:
             #importr("globaltest", lib_loc=R_LIB_CUSTOM_PATH)
-            R.r['library']("globaltest", lib_loc=R_LIB_CUSTOM_PATH)
+            R.r['library']("globaltest") #, lib_loc=R_LIB_CUSTOM_PATH)
             GlobalTest.gt = R.r['gt']
 
     @staticmethod
@@ -59,7 +62,7 @@ class GlobalTest(object):
 @task(name="wrappers.gt.global_test_task")
 def global_test_task(
         exp, block, store_field,
-        es, gs,
+        es, gs_storage,
         filepath,
         pheno_class_column="User_class",
         success_action="success", error_action="error"
@@ -68,7 +71,7 @@ def global_test_task(
     @param es: Expression set with defined user class in pheno
     @type es: ExpressionSet
 
-    @type gs: environment.structures.GeneSets
+    @type gs: environment.structures.GmtStorage
 
     @param filepath: Fully qualified filepath to store result dataframe
     @type filepath: str
@@ -78,12 +81,15 @@ def global_test_task(
     @type pheno_class_column: str or None
     """
     try:
-        result_df = GlobalTest(es, gs, pheno_class_column)
+        gs = gs_storage.load()
+        result_df = GlobalTest.gt_basic(es, gs, pheno_class_column)
         result_storage = DataFrameStorage(filepath)
         result_storage.store(result_df)
 
         setattr(block, store_field, result_storage)
         block.do_action(success_action, exp)
     except Exception, e:
+        ex_type, ex, tb = sys.exc_info()
+        traceback.print_tb(tb)
         block.errors.append(e)
         block.do_action(error_action, exp)

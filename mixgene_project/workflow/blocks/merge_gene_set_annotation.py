@@ -31,14 +31,14 @@ class MergeGeneSetWithPlatformAnnotation(GenericBlock):
     ]
     provided_objects = {
         "gs_merged": "GmtStorage",
-        }
+    }
 
     def __init__(self, *args, **kwargs):
         super(MergeGeneSetWithPlatformAnnotation, self).__init__(
             "Merge GeneSet with platform annotation", *args, **kwargs)
 
         self.celery_task = None
-        self.gmt = None
+        self.gs_merged = None
 
         self.ports = {
             "input": {
@@ -58,9 +58,9 @@ class MergeGeneSetWithPlatformAnnotation(GenericBlock):
         result_filepath = exp.get_data_file_path("%s_gs_merged" % self.uuid, "gmt.gz")
 
         self.celery_task = merge_gs_with_platform_annotation.s(
-            exp, self, "gmt",
+            exp, self, "gs_merged",
             gmt_storage, ann, result_filepath,
-            )
+        )
         exp.store_block(self)
         self.celery_task.apply_async()
 

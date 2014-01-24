@@ -17,7 +17,7 @@ class PCA_visualize(GenericBlock):
 
             {'name': 'success', 'src': 'pca_computing', 'dst': 'pca_computed'},
             {'name': 'error', 'src': 'pca_computing', 'dst': 'variable_bound'},
-            ]
+        ]
     })
 
     widget = "widgets/pca_view.html"
