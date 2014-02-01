@@ -1,7 +1,6 @@
 from fysom import Fysom
 
 from workflow.ports import BlockPort
-from workflow.wrappers import pca_test
 
 from wrappers.gt import global_test_task
 

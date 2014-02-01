@@ -1,8 +1,5 @@
-import cPickle as pickle
 import csv
 import json
-import gzip
-from pprint import pprint
 from collections import defaultdict
 
 import numpy as np
@@ -19,7 +16,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 
-from webapp.models import Experiment, WorkflowLayout, UploadedData, delete_exp
+from webapp.models import Experiment, UploadedData, delete_exp
 from webapp.forms import UploadForm
 from webapp.store import add_block_to_exp_from_request, add_block_to_exp_from_dict
 from workflow.blocks import blocks_by_group
@@ -95,20 +92,7 @@ def _render_block(request, exp, block):
     context = RequestContext(request, context)
     return HttpResponse(template.render(context))
 
-
-@csrf_protect
-def add_block(request):
-    exp = Experiment.get_exp_from_request(request)
-    block = add_block_to_exp_from_request(request)
-    return _render_block(request, exp, block)
-
-
-def render_block(request):
-    exp = Experiment.get_exp_from_request(request)
-    block = exp.get_block(request.POST["block_uuid"])
-    return _render_block(request, exp, block)
-
-
+#TODO: remove used only by "assign gse sample classes"
 @csrf_protect
 def update_block(request):
     if request.method == "POST":
@@ -140,12 +124,8 @@ def blocks_resource(request, exp_id):
             print "BODY: X%sX " % request.body
             return HttpResponseBadRequest()
 
-        print received_block
+        #print received_block
         block = add_block_to_exp_from_dict(exp, received_block)
-        #block_dict = block.serialize(exp)
-        #resp = HttpResponse(content_type="application/json")
-        #json.dump(block_dict, resp)
-        #return resp
 
 
     # TODO: Move to model logic
@@ -395,76 +375,22 @@ def alter_exp(request, exp_id, action):
 
 @login_required(login_url='/auth/login/')
 def add_experiment(request):
-    #TODO: remove this temporary solution
-    layout = WorkflowLayout.objects.get(wfl_class="workflow.layout.DummyWfl")
-    wfl_class = dyn_import(layout.wfl_class)
-    wf = wfl_class()
-
     exp = Experiment(
         author=request.user,
-        workflow=layout,
         status='initiated',  # TODO: until layout configuration will be implemented
     )
     exp.save()
-    ctx = wf.init_ctx
-    ctx.update({
+    ctx = {
         "exp_id": exp.e_id,
-
-        "input_vars": wf.input_vars,
-        "result_vars": wf.result_vars,
         "scope_state": {
             "root": ScopeState.HALT,
         }
-    })
+    }
     exp.init_ctx(ctx)
 
     mkdir(exp.get_data_folder())
 
     return redirect("/constructor/%s" % exp.e_id) # TODO use reverse
-
-
-
-# @login_required(login_url='/auth/login/')
-# def add_experiment(request):
-#     template = loader.get_template('add_experiment.html')
-#     context = RequestContext(request, {
-#         "next": "/add_experiment",
-#         "exp_add_page_active": True,
-#         "all_layouts": WorkflowLayout.objects.all()
-#     })
-#     return HttpResponse(template.render(context))
-#
-# @login_required(login_url='auth/login/')
-# def create_experiment(request, layout_id):
-#     layout = WorkflowLayout.objects.get(w_id=layout_id)
-#     wfl_class = dyn_import(layout.wfl_class)
-#     wf = wfl_class()
-#
-#     exp = Experiment(
-#         author=request.user,
-#         workflow=layout,
-#         status='initiated',  # TODO: until layout configuration will be implemented
-#     )
-#     exp.save()
-#     ctx = wf.init_ctx
-#     ctx.update({
-#         "exp_id": exp.e_id,
-#
-#         "input_vars": wf.input_vars,
-#         "result_vars": wf.result_vars,
-#     })
-#     exp.init_ctx(ctx)
-#
-#     mkdir(exp.get_data_folder())
-#
-#     template = loader.get_template(wf.template)
-#     context = RequestContext(request, {
-#         "exp_add_page_active": True,
-#         "layout": layout,
-#         "wf": wf,
-#         "exp": exp,
-#     })
-#     return redirect("/experiment/%s" % exp.e_id) # TODO use reverse
 
 #@login_required(login_url='/auth/login/')
 def get_flot_2d_scatter(request, exp_id, filename):

@@ -43,13 +43,11 @@ CELERY_RESULT_BACKEND = BROKER_URL
 CELERY_ENABLE_UTC = True
 CELERY_TIMEZONE = 'Europe/Moscow'
 CELERY_IMPORTS = (
-    "workflow.actions",
-    "workflow.layout",
     "workflow.common_tasks",
-    "workflow.wrappers",
-
     "converters.gene_set_tools",
     "wrappers.gt",
+    "wrappers.pca",
+    "wrappers.svm",
 )
 
 ## End celery settings

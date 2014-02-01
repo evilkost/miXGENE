@@ -7,16 +7,12 @@ from django.conf.urls.static import static
 
 admin.autodiscover()
 
-from webapp import views
-
 urlpatterns = patterns('',
     url(r'^$', 'webapp.views.index', name='index'),
     url(r'^about$', 'webapp.views.about', name='about'),
     url(r'^contact$', 'webapp.views.contact', name='contact'),
 
     url(r'^constructor/(?P<exp_id>\d+)', 'webapp.views.constructor', name='constructor'),
-    url(r'^add_block', 'webapp.views.add_block', name='add_block'),
-    url(r'^render_block', 'webapp.views.render_block', name='render_block'),
     url(r'^update_block', 'webapp.views.update_block', name='update_block'),
 
 
@@ -33,10 +29,9 @@ urlpatterns = patterns('',
 
     url(r'^add_experiment$', 'webapp.views.add_experiment', name='add_experiment'),
 
-    #url(r'^create_experiment/(?P<layout_id>\d+)', 'webapp.views.create_experiment', name='create_experiment'),
+
 
     url(r'^upload_data/', 'webapp.views.upload_data', name='upload_data'),
-    #url(r'^geo_fetch_data/', 'webapp.views.geo_fetch_data', name='geo_fetch_data'),
 
     url(r'^auth/login/$', 'django.contrib.auth.views.login', {'template_name': 'auth/login.html'}),
     url(r'^auth/logout/$', 'django.contrib.auth.views.logout', {}),

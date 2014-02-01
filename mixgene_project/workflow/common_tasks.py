@@ -1,35 +1,19 @@
-from collections import defaultdict
-from pprint import pprint
 import shutil
-import random
 import gzip
 from celery import task
 from pandas import Series, DataFrame
 
-
-import numpy as np
 from sklearn import cross_validation
-from sklearn import datasets
-from sklearn import svm
-
 
 from Bio.Geo import parse as parse_geo
 
-from mixgene.util import prepare_GEO_ftp_url, fetch_file_from_url, clean_GEO_file, transpose_dict_list
+from mixgene.util import prepare_GEO_ftp_url, fetch_file_from_url
 from webapp.models import CachedFile, Experiment
 from environment.units import GeneUnits
 from workflow.input import FileInputVar
 from environment.structures import ExpressionSet, PlatformAnnotation, GeneSets
-from workflow.vars import MixData, MixPheno
 import sys
 import traceback
-
-@task(name="workflow.common_tasks.append_error_to_block")
-def append_error_to_block(*args, **kwargs):
-    #block.errors.appen
-    pprint(args)
-    pprint(kwargs)
-    print("==" * 25)
 
 
 @task(name="workflow.common_tasks.fetch_GEO_gse_matrix")
@@ -85,6 +69,7 @@ def fetch_geo_gse(exp, block, ignore_cache=False):
         #print e
         block.errors.append(e)
         block.do_action("error_during_fetch", exp)
+
 
 @task(name="workflow.common_tasks.preprocess_soft")
 def preprocess_soft(exp, block):
@@ -217,110 +202,8 @@ def generate_cv_folds(exp, block,
         traceback.print_tb(tb)
         print e
         #TODO: LOG ERROR AND TRACEBACK OR WE LOSE IT!
-        #import ipdb; ipdb.set_trace()
         block.errors.append(e)
         block.do_action("on_generate_folds_error", exp)
-
-
-@task(name="workflow.common_tasks.split_train_test")
-def split_train_test(ctx):
-    exp = Experiment.objects.get(e_id=ctx["exp_id"])
-
-    expression = ctx["expression"]
-    phenotype = ctx["phenotype"]
-    #FIXME:!!!!!!!!!!!!!
-    test_split_ratio = ctx["input_vars"]["common_settings"].inputs["test_split_ratio"].value
-
-    pheno_df = phenotype.to_data_frame()
-    train_set_names = set(pheno_df.index)
-    test_set_names = set()
-    for sample_class, rows in pheno_df.groupby('x'):
-        num = len(rows)
-        idxs = range(num)
-        random.shuffle(idxs)
-
-        selected_idxs = idxs[:max(1, int(num*test_split_ratio))]
-
-        for i in selected_idxs:
-            test_set_names.add(rows.iloc[i].name)
-
-    train_set_names.difference_update(test_set_names)
-
-    exp_df = expression.to_data_frame()
-
-    df_train = exp_df.loc[:, train_set_names]
-    df_test = exp_df.loc[:, test_set_names]
-
-    pheno_train = pheno_df.loc[train_set_names]
-    pheno_test = pheno_df.loc[test_set_names]
-
-    expression_train = MixData()
-    expression_test = MixData()
-    expression_train.copy_meta_from(expression)
-    expression_test.copy_meta_from(expression)
-
-    expression_train.filename = "%s_train" % expression.filename
-    expression_test.filename = "%s_test" % expression.filename
-    expression_train.filepath = exp.get_data_file_path(expression_train.filename)
-    expression_test.filepath = exp.get_data_file_path(expression_test.filename)
-    #FIXME: this should be done inside MixData objects
-    df_train.to_csv(expression_train.filepath, sep=expression_train.delimiter, index_label=False)
-    df_test.to_csv(expression_test.filepath, sep=expression_train.delimiter, index_label=False)
-
-    phenotype_train = MixPheno()
-    phenotype_test = MixPheno()
-    phenotype_train.copy_meta_from(phenotype)
-    phenotype_test.copy_meta_from(phenotype)
-
-    phenotype_train.filename = "%s_train" % phenotype.filename
-    phenotype_test.filename = "%s_test" % phenotype.filename
-    phenotype_train.filepath = exp.get_data_file_path(phenotype_train.filename)
-    phenotype_test.filepath = exp.get_data_file_path(phenotype_test.filename)
-
-    pheno_train.to_csv(phenotype_train.filepath, sep=phenotype_train.delimiter, index_label=False)
-    pheno_test.to_csv(phenotype_test.filepath, sep=phenotype_test.delimiter, index_label=False)
-
-    ctx['expression_train'] = expression_train
-    ctx['expression_test'] = expression_test
-    ctx['phenotype_train'] = phenotype_train
-    ctx['phenotype_test'] = phenotype_test
-    return ctx
-
-
-
-
-@task(name="workflow.common_tasks.converse_probes_to_genes")
-def converse_probes_to_genes(ctx):
-    exp = Experiment.objects.get(e_id=ctx["exp_id"])
-
-    #expression_var_name = ctx["expression_var"]
-    #expression_trans_var_name = ctx["expression_trans_var"]
-    #genesets_var_name = ctx["gene_sets_var"]
-
-    gmt = ctx["gene_sets"].get_gmt()
-    set_by_gene = transpose_dict_list(gmt.gene_sets)
-
-    #expression_var = ctx[expression_var_name]
-    expression_var = ctx["expression"]
-    src = DataFrame.from_csv(expression_var.filepath, sep=" ")
-
-    res = DataFrame(index=set_by_gene.keys(), columns=src.columns)
-    for gen, set_ids in set_by_gene.iteritems():
-        cut = src.loc[set_ids]
-        res.loc[gen] = cut.mean()
-
-    res = res.dropna()
-
-    expression_var_trans = MixData()
-    expression_var_trans.org = expression_var.org
-    expression_var_trans.units = ["gene_ids"]
-    expression_var_trans.filename = "%s_expression_trans.csv" % ctx["dataset_var"]
-    expression_var_trans.filepath = exp.get_data_file_path(expression_var_trans.filename)
-
-    res.to_csv(expression_var_trans.filepath, sep=" ", index_label=False)
-    #ctx[expression_trans_var_name] = expression_var_trans
-    ctx["expression_transformed"] = expression_var_trans
-    return ctx
 
 
 @task(name="workflow.common_tasks.gt_pval_cut")
@@ -344,4 +227,3 @@ def gt_pval_cut(ctx):
     test_df.to_csv(expression_test.filepath, sep=expression_test.delimiter, index_label=False)
 
     return ctx
-

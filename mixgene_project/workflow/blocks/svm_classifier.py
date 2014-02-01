@@ -1,7 +1,7 @@
 from fysom import Fysom
 
 from workflow.ports import BlockPort
-from workflow.wrappers import svm_test
+from wrappers.svm import svm_test
 
 from generic import GenericBlock
 
@@ -20,7 +20,7 @@ class SvmClassifier(GenericBlock):
             {'name': 'on_svm_done', 'src': 'running_svm', 'dst': 'svm_done'},
             {'name': 'on_svm_error', 'src': 'running_svm', 'dst': 'variable_bound'},
 
-            ]
+        ]
     })
     block_base_name = "LIN_SVM"
     all_actions = [
@@ -36,7 +36,7 @@ class SvmClassifier(GenericBlock):
     ]
     provided_objects = {
         "mixMlResult": "mixML",
-        }
+    }
     elements = [
         "svm_result.html"
     ]

@@ -1,9 +1,6 @@
 import gzip
-
-__author__ = 'kost'
-
 import copy
-
+from uuid import uuid1
 import pandas as pd
 import rpy2.robjects as R
 from rpy2.robjects.packages import importr
@@ -383,3 +380,26 @@ class SequenceContainer(object):
 class IntegerValue(object):
     def __init__(self, val):
         self.val = val
+
+
+### R Legacy
+class mixML(object):
+    def __init__(self, exp, rMixML, csv_filename):
+        self.uuid = str(uuid1())
+        self.template = "workflow/result/mixML.html"
+        self.title = "mixML"
+
+        self.model = str(rMixML.do_slot('model')[0])
+        self.acc = int(rMixML.do_slot('acc')[0])
+        self.working_units = list(rMixML.do_slot('working.units'))
+
+        predicted = rMixML.do_slot('predicted')
+
+        self.filename = csv_filename
+        self.filepath = exp.get_data_file_path(csv_filename)
+
+        R.r['write.table'](predicted, self.filepath, row_names=True, col_names=True)
+
+        self.has_col_names = True
+        self.has_row_names = True
+        self.csv_delimiter = " "

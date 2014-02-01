@@ -52,25 +52,8 @@ class CachedFile(models.Model):
         else:
             return res[0]
 
-
-class WorkflowLayout(models.Model):
-    w_id = models.AutoField(primary_key=True)
-    wfl_class = models.TextField(null=True)  ## i.e.: 'workflow.layout.SampleWfL'
-
-    title = models.TextField(default="")
-    description = models.TextField(default="")
-
-    def __unicode__(self):
-        return u"%s" % self.title
-
-    def get_class_instance(self):
-        wfl_class = dyn_import(self.wfl_class)
-        return wfl_class()
-
-
 class Experiment(models.Model):
     e_id = models.AutoField(primary_key=True)
-    workflow = models.ForeignKey(WorkflowLayout)
     author = models.ForeignKey(User)
 
     # Obsolete
@@ -79,8 +62,6 @@ class Experiment(models.Model):
     dt_created = models.DateTimeField(auto_now_add=True)
     dt_updated = models.DateTimeField(auto_now=True)
 
-    # currently not used
-    wfl_setup = models.TextField(default="")  ## json encoded setup for WorkflowLayout
 
     def __unicode__(self):
         return u"%s" % self.e_id
@@ -190,12 +171,7 @@ class Experiment(models.Model):
             return self.get_data_folder() + "/" + filename
 
     def validate(self, request):
-        new_ctx, errors = self.workflow.get_class_instance().validate_exp(self, request)
-        if errors is None:
-            self.status = "configured"
-        else:
-            self.status = "initiated"
-        self.update_ctx(new_ctx)
+        self.update_ctx({})
         self.save()
 
     def store_block(self, block, new_block=False, redis_instance=None, dont_execute_pipe=False):
@@ -455,11 +431,6 @@ def delete_exp(exp):
         shutil.rmtree(exp.get_data_folder())
     except:
         pass
-
-    # workflow specific operations
-    wfl_class = dyn_import(exp.workflow.wfl_class)
-    wf = wfl_class()
-    wf.on_delete(exp)
 
     # deleting an experiment
     exp.delete()

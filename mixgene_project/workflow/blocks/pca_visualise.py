@@ -1,7 +1,7 @@
 from fysom import Fysom
 
 from workflow.ports import BlockPort
-from workflow.wrappers import pca_test
+from wrappers.pca import pca_test
 
 from generic import GenericBlock
 
