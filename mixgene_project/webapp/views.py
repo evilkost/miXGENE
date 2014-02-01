@@ -51,7 +51,7 @@ def contact(request):
 
 
 def constructor(request, exp_id):
-    exp = Experiment.objects.get(e_id=exp_id)
+    exp = Experiment.objects.get(pk=exp_id)
     r = get_redis_instance()
 
     ctx = exp.get_ctx()
@@ -113,7 +113,7 @@ def blocks_resource(request, exp_id):
     if request.method not in allowed:
         return HttpResponseNotAllowed(["GET", "POST"])
 
-    exp = Experiment.objects.get(e_id=exp_id)
+    exp = Experiment.objects.get(pk=exp_id)
     r = get_redis_instance()
 
     if request.method == "POST":
@@ -177,7 +177,7 @@ def block_resource(request, exp_id, block_uuid, action_code=None):
 
     @type request: HttpRequest
     """
-    exp = Experiment.objects.get(e_id=exp_id)
+    exp = Experiment.objects.get(pk=exp_id)
     block = exp.get_block(str(block_uuid))
 
     import random
@@ -200,7 +200,7 @@ def block_resource(request, exp_id, block_uuid, action_code=None):
 
 
 def block_sub_page(request, exp_id, block_uuid, sub_page):
-    exp = Experiment.objects.get(e_id=exp_id)
+    exp = Experiment.objects.get(pk=exp_id)
     ctx = exp.get_ctx()
     block = exp.get_block(block_uuid)
 
@@ -221,7 +221,7 @@ def upload_data(request):
         form = UploadForm(request.POST, request.FILES)
         if form.is_valid():
             exp_id = form.cleaned_data['exp_id']
-            exp = Experiment.objects.get(e_id=exp_id)
+            exp = Experiment.objects.get(pk=exp_id)
             ctx = exp.get_ctx()
             var_name = form.cleaned_data['var_name']
             inp_var = ctx["input_vars"][var_name]
@@ -249,7 +249,7 @@ def upload_data(request):
 def geo_fetch_data(request):
     if request.method == "POST":
         exp_id = int(request.POST['exp_id'])
-        exp = Experiment.objects.get(e_id=exp_id)
+        exp = Experiment.objects.get(pk=exp_id)
 
         var_name = request.POST['var_name']
         geo_uid = request.POST['geo_uid']
@@ -316,7 +316,7 @@ def experiments(request):
 
 @never_cache
 def exp_details(request, exp_id):
-    exp = Experiment.objects.get(e_id = exp_id)
+    exp = Experiment.objects.get(pk = exp_id)
     layout = exp.workflow
     wf = layout.get_class_instance()
 
@@ -335,12 +335,12 @@ def exp_details(request, exp_id):
     context = RequestContext(request, {
         "exp_page_active": True,
 
-        "data_files_url_prefix": "/media/data/%s/%s/" % (exp.author.id, exp.e_id),
+        "data_files_url_prefix": "/media/data/%s/%s/" % (exp.author.id, exp.pk),
         "exp": exp,
         "layout": layout,
         "wf": wf,
         "ctx": ctx,
-        "next": "/experiment/%s" % exp.e_id,
+        "next": "/experiment/%s" % exp.pk,
         "runnable": exp.status == "configured",
         "configurable": exp.status in ["initiated", "configured"],
     })
@@ -351,17 +351,12 @@ def exp_details(request, exp_id):
 @csrf_protect
 @never_cache
 def alter_exp(request, exp_id, action):
-    exp = Experiment.objects.get(e_id=exp_id)
+    exp = Experiment.objects.get(pk=exp_id)
     if exp.author != request.user:
         return redirect("/") # TODO: show alert about wrong experiment
 
     if action == 'delete': # TODO: check that exp state allows deletion
         delete_exp(exp)
-
-    wf = exp.workflow.get_class_instance()
-    if action == 'run':
-        # check status & if all right run experiment
-        wf.run_experiment(exp)
 
     if action == 'update':
         exp.validate(request)
@@ -370,18 +365,19 @@ def alter_exp(request, exp_id, action):
         factors = json.loads(request.POST['factors'])
         exp.update_ctx({"gse_factors": factors})
 
-    return redirect(request.POST.get("next") or "/experiment/%s" % exp.e_id) # TODO use reverse
+    return redirect(request.POST.get("next") or "/experiment/%s" % exp.pk) # TODO use reverse
 
 
 @login_required(login_url='/auth/login/')
 def add_experiment(request):
-    exp = Experiment(
+    exp = Experiment.objects.create(
         author=request.user,
         status='initiated',  # TODO: until layout configuration will be implemented
     )
+
     exp.save()
     ctx = {
-        "exp_id": exp.e_id,
+        "exp_id": exp.pk,
         "scope_state": {
             "root": ScopeState.HALT,
         }
@@ -390,11 +386,11 @@ def add_experiment(request):
 
     mkdir(exp.get_data_folder())
 
-    return redirect("/constructor/%s" % exp.e_id) # TODO use reverse
+    return redirect("/constructor/%s" % exp.pk) # TODO use reverse
 
 #@login_required(login_url='/auth/login/')
 def get_flot_2d_scatter(request, exp_id, filename):
-    exp = Experiment.objects.get(e_id = exp_id)
+    exp = Experiment.objects.get(pk = exp_id)
     filepath = exp.get_data_file_path(filename)
 
     points_by_class = defaultdict(list)
@@ -425,7 +421,7 @@ def get_flot_2d_scatter(request, exp_id, filename):
 
 #@cache_page(60 * 15)
 def get_gse_samples_info(request, exp_id, block_uuid):
-    exp = Experiment.objects.get(e_id=exp_id)
+    exp = Experiment.objects.get(pk=exp_id)
     block = exp.get_block(block_uuid)
     #assert isinstance(block, FetchGSE)
 
@@ -469,7 +465,7 @@ def get_gse_samples_info(request, exp_id, block_uuid):
 
 
 def get_csv_as_table(request, exp_id, filename):
-    exp = Experiment.objects.get(e_id = exp_id)
+    exp = Experiment.objects.get(pk = exp_id)
     ctx = exp.get_ctx()
     filepath = exp.get_data_file_path(filename)
     template = loader.get_template('elements/table.html')

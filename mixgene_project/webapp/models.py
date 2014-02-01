@@ -53,7 +53,6 @@ class CachedFile(models.Model):
             return res[0]
 
 class Experiment(models.Model):
-    e_id = models.AutoField(primary_key=True)
     author = models.ForeignKey(User)
 
     # Obsolete
@@ -64,7 +63,7 @@ class Experiment(models.Model):
 
 
     def __unicode__(self):
-        return u"%s" % self.e_id
+        return u"%s" % self.pk
 
     def __init__(self, *args, **kwargs):
         super(Experiment, self).__init__(*args, **kwargs)
@@ -72,7 +71,7 @@ class Experiment(models.Model):
 
     @staticmethod
     def get_exp_by_ctx(ctx):
-        return Experiment.objects.get(e_id=ctx["exp_id"])
+        return Experiment.objects.get(pk=ctx["exp_id"])
 
     def init_ctx(self, ctx, redis_instance=None):
         if redis_instance is None:
@@ -80,8 +79,8 @@ class Experiment(models.Model):
         else:
             r = redis_instance
 
-        key_context = ExpKeys.get_context_store_key(self.e_id)
-        key_context_version = ExpKeys.get_context_version_key(self.e_id)
+        key_context = ExpKeys.get_context_store_key(self.pk)
+        key_context_version = ExpKeys.get_context_version_key(self.pk)
 
         pipe = r.pipeline()
 
@@ -89,13 +88,13 @@ class Experiment(models.Model):
         pipe.set(key_context, pickle.dumps(ctx))
         pipe.set(key_context_version, 0)
 
-        pipe.sadd(ExpKeys.get_all_exp_keys_key(self.e_id),
+        pipe.sadd(ExpKeys.get_all_exp_keys_key(self.pk),
                   [key_context,
                    key_context_version,
-                   ExpKeys.get_exp_blocks_list_key(self.e_id),
-                   ExpKeys.get_blocks_uuid_by_alias(self.e_id),
-                   ExpKeys.get_scope_vars_keys(self.e_id),
-                   ExpKeys.get_scope_creating_block_uuid_keys(self.e_id),
+                   ExpKeys.get_exp_blocks_list_key(self.pk),
+                   ExpKeys.get_blocks_uuid_by_alias(self.pk),
+                   ExpKeys.get_scope_vars_keys(self.pk),
+                   ExpKeys.get_scope_creating_block_uuid_keys(self.pk),
                   ])
 
         pipe.execute()
@@ -106,12 +105,12 @@ class Experiment(models.Model):
         else:
             r = redis_instance
 
-        key_context = ExpKeys.get_context_store_key(self.e_id)
+        key_context = ExpKeys.get_context_store_key(self.pk)
         pickled_ctx = r.get(key_context)
         if pickled_ctx is not None:
             ctx = pickle.loads(pickled_ctx)
         else:
-            raise KeyError("Context wasn't found for exp_id: %s" % self.e_id)
+            raise KeyError("Context wasn't found for exp_id: %s" % self.pk)
         return ctx
 
     def update_ctx(self, new_ctx, redis_instance=None):
@@ -120,8 +119,8 @@ class Experiment(models.Model):
         else:
             r = redis_instance
 
-        key_context = ExpKeys.get_context_store_key(self.e_id)
-        key_context_version = ExpKeys.get_context_version_key(self.e_id)
+        key_context = ExpKeys.get_context_store_key(self.pk)
+        key_context_version = ExpKeys.get_context_version_key(self.pk)
 
         result = None
         lua = """
@@ -147,7 +146,7 @@ class Experiment(models.Model):
             if pickled_ctx is not None:
                 ctx = pickle.loads(pickled_ctx)
             else:
-                raise KeyError("Context wasn't found for exp_id: %s" % self.e_id)
+                raise KeyError("Context wasn't found for exp_id: %s" % self.pk)
 
             ctx.update(new_ctx)
             # TODO: move lua to dedicated module or singletone load in redis helper
@@ -162,7 +161,7 @@ class Experiment(models.Model):
             raise Exception("Failed to update context")
 
     def get_data_folder(self):
-        return '/'.join(map(str, [MEDIA_ROOT, 'data', self.author.id, self.e_id]))
+        return '/'.join(map(str, [MEDIA_ROOT, 'data', self.author.id, self.pk]))
 
     def get_data_file_path(self, filename, file_extension="csv"):
         if file_extension is not None:
@@ -187,8 +186,8 @@ class Experiment(models.Model):
 
         block_key = ExpKeys.get_block_key(block.uuid)
         if new_block:
-            pipe.rpush(ExpKeys.get_exp_blocks_list_key(self.e_id), block.uuid)
-            pipe.sadd(ExpKeys.get_all_exp_keys_key(self.e_id), block_key)
+            pipe.rpush(ExpKeys.get_exp_blocks_list_key(self.pk), block.uuid)
+            pipe.sadd(ExpKeys.get_all_exp_keys_key(self.pk), block_key)
 
             for var_name, data_type in block.provided_objects.iteritems():
                 self.register_variable(block.scope, block.uuid, var_name, data_type, pipe)
@@ -198,7 +197,7 @@ class Experiment(models.Model):
                 for var_name, data_type in block.provided_objects_inner.iteritems():
                     self.register_variable(block.sub_scope, block.uuid, var_name, data_type, pipe)
 
-                pipe.hset(ExpKeys.get_scope_creating_block_uuid_keys(self.e_id),
+                pipe.hset(ExpKeys.get_scope_creating_block_uuid_keys(self.pk),
                           block.sub_scope, block.uuid)
 
                 # TODO: move scope states to dedicated key
@@ -211,7 +210,7 @@ class Experiment(models.Model):
 
 
                 # need to register in parent block
-                parent_uuid = r.hget(ExpKeys.get_scope_creating_block_uuid_keys(self.e_id),
+                parent_uuid = r.hget(ExpKeys.get_scope_creating_block_uuid_keys(self.pk),
                                      block.scope)
                 parent = self.get_block(parent_uuid, r)
                 #import ipdb; ipdb.set_trace()
@@ -222,7 +221,7 @@ class Experiment(models.Model):
                                  dont_execute_pipe=True)
 
         pipe.set(block_key, pickle.dumps(block))
-        pipe.hset(ExpKeys.get_blocks_uuid_by_alias(self.e_id), block.base_name, block.uuid)
+        pipe.hset(ExpKeys.get_blocks_uuid_by_alias(self.pk), block.base_name, block.uuid)
 
         if not dont_execute_pipe:
             pipe.execute()
@@ -232,7 +231,7 @@ class Experiment(models.Model):
     @staticmethod
     def get_exp_from_request(request):
         exp_id = int(request.POST['exp_id'])
-        return Experiment.objects.get(e_id=exp_id)
+        return Experiment.objects.get(pk=exp_id)
 
     def get_block_by_alias(self, alias, redis_instance=None):
         """
@@ -250,7 +249,7 @@ class Experiment(models.Model):
         else:
             r = redis_instance
 
-        uuid = r.hget(ExpKeys.get_blocks_uuid_by_alias(self.e_id), alias)
+        uuid = r.hget(ExpKeys.get_blocks_uuid_by_alias(self.pk), alias)
         return self.get_block(uuid, r)
 
     @staticmethod
@@ -326,7 +325,7 @@ class Experiment(models.Model):
         else:
             r = redis_instance
 
-        return r.lrange(ExpKeys.get_exp_blocks_list_key(self.e_id), 0, -1) or []
+        return r.lrange(ExpKeys.get_exp_blocks_list_key(self.pk), 0, -1) or []
 
     def get_block_aliases_map(self, redis_instance=None):
         """
@@ -340,7 +339,7 @@ class Experiment(models.Model):
         else:
             r = redis_instance
 
-        orig_map = r.hgetall(ExpKeys.get_blocks_uuid_by_alias(self.e_id))
+        orig_map = r.hgetall(ExpKeys.get_blocks_uuid_by_alias(self.pk))
         return dict([
             (uuid, alias)
             for alias, uuid in orig_map.iteritems()
@@ -361,7 +360,7 @@ class Experiment(models.Model):
             r = redis_instance
 
         variables = []
-        for key, val in r.hgetall(ExpKeys.get_scope_vars_keys(self.e_id)).iteritems():
+        for key, val in r.hgetall(ExpKeys.get_scope_vars_keys(self.pk)).iteritems():
             #scope, uuid, var_name, var_data_type = pickle.loads(val)
             variables.append(pickle.loads(val))
 
@@ -379,7 +378,7 @@ class Experiment(models.Model):
         else:
             r = redis_instance
 
-        all_variables = r.hgetall(ExpKeys.get_scope_vars_keys(self.e_id))
+        all_variables = r.hgetall(ExpKeys.get_scope_vars_keys(self.pk))
         visible = []
         for key, val in all_variables.iteritems():
             scope, uuid, var_name, var_data_type = pickle.loads(val)
@@ -398,7 +397,7 @@ class Experiment(models.Model):
             r = redis_instance
 
         record = pickle.dumps((scope, block_uuid, var_name, data_type))
-        r.hset(ExpKeys.get_scope_vars_keys(self.e_id), "%s:%s" % (block_uuid, var_name), record)
+        r.hset(ExpKeys.get_scope_vars_keys(self.pk), "%s:%s" % (block_uuid, var_name), record)
 
 
 def delete_exp(exp):
@@ -414,7 +413,7 @@ def delete_exp(exp):
     """
     # redis
     r = get_redis_instance()
-    all_exp_keys = ExpKeys.get_all_exp_keys_key(exp.e_id)
+    all_exp_keys = ExpKeys.get_all_exp_keys_key(exp.pk)
     keys_to_delete = r.smembers(all_exp_keys)
     keys_to_delete.update(all_exp_keys)
     r.delete(keys_to_delete)
@@ -436,7 +435,7 @@ def delete_exp(exp):
     exp.delete()
 
 def content_file_name(instance, filename):
-    return '/'.join(map(str, ['data', instance.exp.author.id, instance.exp.e_id, filename]))
+    return '/'.join(map(str, ['data', instance.exp.author.id, instance.exp.pk, filename]))
 
 
 class UploadedData(models.Model):
@@ -446,7 +445,7 @@ class UploadedData(models.Model):
     data = models.FileField(null=True, upload_to=content_file_name)
 
     def __unicode__(self):
-        return u"%s:%s" % (self.exp.e_id, self.var_name)
+        return u"%s:%s" % (self.exp.pk, self.var_name)
 
 
 def gene_sets_file_name(instance, filename):

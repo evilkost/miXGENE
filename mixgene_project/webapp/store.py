@@ -7,7 +7,7 @@ from workflow.blocks import get_block_class_by_name
 def add_block_to_exp_from_request(request):
     exp = Experiment.get_exp_from_request(request)
     block_cls = get_block_class_by_name(request.POST['block'])
-    block = block_cls(exp_id=exp.e_id, scope=request.POST['scope'])
+    block = block_cls(exp_id=exp.pk, scope=request.POST['scope'])
 
     blocks_uuids = exp.get_all_block_uuids()
     block.base_name = "%s:%s" % (block.block_base_name, len(blocks_uuids) + 1)
@@ -21,7 +21,7 @@ def add_block_to_exp_from_request(request):
 def add_block_to_exp_from_dict(exp, block_dict):
 
     block_cls = get_block_class_by_name(block_dict["block_name"])
-    block = block_cls(exp_id=exp.e_id, scope=block_dict["scope"])
+    block = block_cls(exp_id=exp.pk, scope=block_dict["scope"])
 
     blocks_uuids = exp.get_all_block_uuids()
     block.base_name = "%s:%s" % (block.block_base_name, len(blocks_uuids) + 1)

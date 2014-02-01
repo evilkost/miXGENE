@@ -28,7 +28,7 @@
         <script type="text/javascript">
             $(function() {
                 $(document).ready(function () {
-                    var dataurl = '{% url 'get_csv_as_table' exp.e_id result.filename %}';
+                    var dataurl = '{% url 'get_csv_as_table' exp.pk result.filename %}';
                     function onDataReceived(response) {
                         $("#factor_table").html(response); // TODO: parameterise id & classes
                     }

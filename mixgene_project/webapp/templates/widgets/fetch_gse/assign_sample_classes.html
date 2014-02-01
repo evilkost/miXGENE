@@ -66,7 +66,7 @@ $(function() {
     var $exp_id = $("#exp_id_storage").attr("value");
     var $csrf_token = $("#csrf_token_storage").attr("value");
 
-    var dataurl = "{% url 'get_gse_samples_info' exp.e_id  block_.uuid %}";
+    var dataurl = "{% url 'get_gse_samples_info' exp.pk  block_.uuid %}";
     var headers = {
         'Sample_title': 'Title',
         'Sample_geo_accession': '#',

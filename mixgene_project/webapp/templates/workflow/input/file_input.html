@@ -51,8 +51,8 @@
                             <h2> TODO: Setting to define file format, cvs delimiters and so on ...  </h2>
                             <!-- input type="submit" value="Upload" class="btn btn-warning" / -->
                             <input type="hidden" name="var_name" value="{{ input_var.name }}" />
-                            <input type="hidden" name="exp_id" value="{{ exp.e_id }}">
-                            <input type="hidden" name="next" value="{% url 'webapp.views.alter_exp' exp.e_id 'update' %}">
+                            <input type="hidden" name="exp_id" value="{{ exp.pk }}">
+                            <input type="hidden" name="next" value="{% url 'webapp.views.alter_exp' exp.pk 'update' %}">
 
                             <div class="form-actions">
                                 <button type="submit" name="Upload" class="btn btn-primary btn-lg btn-block">Upload</button>
@@ -81,7 +81,7 @@
                         <form class="form form-vertical" method=post action="{% url 'webapp.views.geo_fetch_data' %}"/>
                             {% csrf_token %}
                             <input type="hidden" name="var_name" value="{{ input_var.name }}" />
-                            <input type="hidden" name="exp_id" value="{{ exp.e_id }}" />
+                            <input type="hidden" name="exp_id" value="{{ exp.pk }}" />
                             <input type="hidden" name="next" value="{{ next }}" />
 
 

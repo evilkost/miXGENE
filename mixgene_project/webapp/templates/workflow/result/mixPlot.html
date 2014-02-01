@@ -7,7 +7,7 @@
 <div class="panel panel-default">
     <div class="panel-heading"><h3>{{ result.title }}</h3></div>
     <div class="panel-body demo-container">
-        <!-- a id="flot_source" class="hidden" href="{% url 'get_flot_2d_scatter'  exp.e_id result.filename %}" >points</a -->
+        <!-- a id="flot_source" class="hidden" href="{% url 'get_flot_2d_scatter'  exp.pk result.filename %}" >points</a -->
         <div id="{{ result.uuid }}_plot" class="demo-placeholder">
 
         </div>
@@ -33,7 +33,7 @@
                 var button = $(this);
                 // Find the URL in the link right next to us, then fetch the data
 
-                var dataurl = '{% url 'get_flot_2d_scatter'  exp.e_id result.filename %}';
+                var dataurl = '{% url 'get_flot_2d_scatter'  exp.pk result.filename %}';
 
                 function onDataReceived(response) {
                     // Extract the first coordinate pair; jQuery has parsed it, so

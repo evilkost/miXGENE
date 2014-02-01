@@ -4,7 +4,7 @@
 <div class="span15 offset1" >
     <h5>Status: {{ exp.status }}
     {% if runnable %}
-        <a href="{% url 'webapp.views.alter_exp' exp.e_id 'run' %}" class="btn btn-warning" > Run experiment</a>
+        <a href="{% url 'webapp.views.alter_exp' exp.pk 'run' %}" class="btn btn-warning" > Run experiment</a>
     {% endif %}
     </h5>
 
@@ -12,13 +12,13 @@
     </p>
 
     {% if configurable %}
-    <form class="form-vertical" method=post action="{% url 'webapp.views.alter_exp' exp.e_id 'update' %}"/>
+    <form class="form-vertical" method=post action="{% url 'webapp.views.alter_exp' exp.pk 'update' %}"/>
         {% csrf_token %}
         <input type="text" placeholder="Sleep time one" name="t1" value="{{ ctx.t1 }}" /> <br />
         <input type="text" placeholder="Sleep time two" name="t2" value="{{ ctx.t2 }}" /> <br />
         <input type="text" placeholder="Sleep time three" name="t3" value="{{ ctx.t3 }}" /> <br />
 
-        <input type="hidden" name="exp_id" value="{{ exp.e_id }}" />
+        <input type="hidden" name="exp_id" value="{{ exp.pk }}" />
         <div class="form-actions">
             <button type="submit" name="update_configuration" class="btn btn-primary">Save configuration</button>
 

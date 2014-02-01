@@ -14,7 +14,6 @@
             <thead>
                 <tr>
                     <th>Experiment</th>
-                    <th>Workflow</th>
                     <th>Created</th>
                     <th>Updated</th>
                     <th>Status</th>
@@ -26,18 +25,17 @@
                 {% for exp in exps %}
                 <tr>
                     <th>
-                        <a href="{% url 'webapp.views.constructor' exp.e_id %}">
-                            {% url 'webapp.views.constructor' exp.e_id %}
+                        <a href="{% url 'webapp.views.constructor' exp.pk %}">
+                            {% url 'webapp.views.constructor' exp.pk %}
                         </a>
                     </th>
-                    <!-- <th> {{ exp.e_id }}</th> -->
-                    <th> {{ exp.workflow }}</th>
+                    <!-- <th> {{ exp.pk }}</th> -->
                     <th> {{ exp.dt_created }}</th>
                     <th> {{ exp.dt_updated }}</th>
                     <th> {{ exp.status }}</th>
 
                     <th>
-                        <form class="navbar-form" action="{% url 'webapp.views.alter_exp'  exp.e_id 'delete' %}" method="post">
+                        <form class="navbar-form" action="{% url 'webapp.views.alter_exp'  exp.pk 'delete' %}" method="post">
                             {% csrf_token %}
                             <button class="btn btn-danger" type="submit" >Delete </button>
                             <input type="hidden" name="next" value="{{ next }}" />

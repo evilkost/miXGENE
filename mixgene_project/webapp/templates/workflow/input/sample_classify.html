@@ -52,7 +52,7 @@
         //  }
         //}
         $(function() {
-            var dataurl = '{% url 'get_gse_samples_info' exp.e_id input_var.name %}';
+            var dataurl = '{% url 'get_gse_samples_info' exp.pk input_var.name %}';
             var headers = {
                 'Sample_title': 'Title',
                 'Sample_geo_accession': '#',
@@ -92,7 +92,7 @@
                 $table.trigger("update");
 
                 $.ajax({
-                    url: "{% url 'webapp.views.alter_exp' exp.e_id 'save_gse_classes' %}",
+                    url: "{% url 'webapp.views.alter_exp' exp.pk 'save_gse_classes' %}",
                     type: "POST",
                     data: {
                         'factors': JSON.stringify(factors),

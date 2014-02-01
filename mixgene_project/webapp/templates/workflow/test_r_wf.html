@@ -5,7 +5,7 @@
 <div class="container" >
     <h5>Status: {{ exp.status }}
         {% if runnable %}
-            <a href="{% url 'webapp.views.alter_exp' exp.e_id 'run' %}" class="btn btn-warning" > Run experiment</a>
+            <a href="{% url 'webapp.views.alter_exp' exp.pk 'run' %}" class="btn btn-warning" > Run experiment</a>
         {% endif %}
     </h5>
     <p>This workflow consists of single task which apply test R algo.
@@ -43,8 +43,8 @@
                     {% csrf_token %}
                     <label>File:</label><input type="file" name="data" />
                     <label>As &nbsp;</label><input  class="disabled" type="text" name="var_name" value="{{ var_name }}" />
-                    <input type="hidden" name="exp_id" value="{{ exp.e_id }}">
-                    <input type="hidden" name="next" value="{% url 'webapp.views.alter_exp' exp.e_id 'update' %}">
+                    <input type="hidden" name="exp_id" value="{{ exp.pk }}">
+                    <input type="hidden" name="next" value="{% url 'webapp.views.alter_exp' exp.pk 'update' %}">
                     <input type="submit" value="Upload" class="btn btn-warning" />
                 </form>
             {% endif %}
