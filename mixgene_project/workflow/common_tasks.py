@@ -157,13 +157,15 @@ def preprocess_soft(exp, block):
 
 
 @task(name="workflow.common_tasks.generate_cv_folds")
-def generate_cv_folds(exp, block, folds_num, split_ratio, es, ann):
+def generate_cv_folds(exp, block,
+                      folds_num,
+                      # split_ratio,
+                      es):
     """
         On success populate block.sequence with correct folds and
          call action #on_generate_folds_done otherwise calls
                      #on_generate_folds_error
         @type es: ExpressionSet
-        @type ann: PlatformAnnotation
     """
     try:
 
@@ -174,7 +176,7 @@ def generate_cv_folds(exp, block, folds_num, split_ratio, es, ann):
         pheno_df = es.get_pheno_data_frame()
 
         #TODO: fix in block parser
-        split_ratio = float(split_ratio)
+        # split_ratio = float(split_ratio)
         folds_num = int(folds_num)
 
         if "User_class" not in pheno_df.columns:
@@ -182,10 +184,17 @@ def generate_cv_folds(exp, block, folds_num, split_ratio, es, ann):
 
         classes_vector = pheno_df["User_class"].values
         i = 0
-        for train_idx, test_idx in cross_validation.StratifiedShuffleSplit(
-                classes_vector,
-                n_iter=folds_num,
-                train_size=split_ratio, test_size= 1- split_ratio):
+        # for train_idx, test_idx in cross_validation.StratifiedShuffleSplit(
+        #         classes_vector,
+        #         n_iter=folds_num,
+        #         train_size=split_ratio, test_size= 1- split_ratio):
+        #
+        for train_idx, test_idx in cross_validation.StratifiedKFold(
+            classes_vector,
+            n_iter=folds_num
+        ):
+
+
             train_es = es.clone( "%s_train_%s" % (es.base_filename ,i))
             train_es.store_assay_data_frame(assay_df[train_idx])
             train_es.store_pheno_data_frame(pheno_df.iloc[train_idx])

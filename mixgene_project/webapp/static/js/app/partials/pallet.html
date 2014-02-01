@@ -10,13 +10,17 @@
                 <div class="panel panel-default">
                     <div class="panel-heading">{$ name $}</div>
                     <div class="panel-body">
+                        <div class="btn-group-vertical">
 
-                        <a ng-repeat="block in blocks"
-                           class="btn btn-default btn-block-provider btn-block"
-                           ng-click="add_block(bscope, block.name)"
-                                >
-                            {$ block.title $}
-                        </a>
+                            <button ng-repeat="block in blocks"
+                                    type="button" class="btn btn-default btn-block-provider"
+                                    ng-click="add_block(bscope, block.name)"
+                                    >
+                                {$ block.title $}
+                            </button>
+                        </div>
+
+
                     </div>
                 </div>
             </div>

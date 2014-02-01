@@ -51,6 +51,7 @@ Constructor.factory("blockAccess", function($http, $log){
             ,body: angular.toJson(block)
         }).success(function(data, status, headers, config){
             access.block_bodies[data.uuid] = data;
+            $log.debug(data);
         })
     }
 

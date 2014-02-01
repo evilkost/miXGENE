@@ -22,7 +22,7 @@ class SvmClassifier(GenericBlock):
 
             ]
     })
-    block_base_name = "SVM_CLASSIFY"
+    block_base_name = "LIN_SVM"
     all_actions = [
         ("bind_variables", "Select variable", True),
         ("run_svm", "Run SVM", True),
@@ -42,7 +42,7 @@ class SvmClassifier(GenericBlock):
     ]
 
     def __init__(self, *args, **kwargs):
-        super(SvmClassifier, self).__init__("SvmClassifier", *args, **kwargs)
+        super(SvmClassifier, self).__init__("Linear Svm Classifier", *args, **kwargs)
 
         self.ports = {
             "input": {
@@ -50,7 +50,7 @@ class SvmClassifier(GenericBlock):
                                    data_type="ExpressionSet", scopes=[self.scope]),
                 "test": BlockPort(name="test", title="Choose expression set",
                                   data_type="ExpressionSet", scopes=[self.scope]),
-                }
+            }
         }
 
         self.mixMlResult = None

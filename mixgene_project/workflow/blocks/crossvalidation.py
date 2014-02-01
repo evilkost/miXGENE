@@ -17,7 +17,7 @@ from generic import GenericBlock
 
 class CrossValidationForm(forms.Form):
     folds_num = forms.IntegerField(min_value=2, max_value=100)
-    split_ratio = forms.FloatField(min_value=0, max_value=1)
+    #split_ratio = forms.FloatField(min_value=0, max_value=1)
 
 class CrossValidation(GenericBlock):
     fsm = Fysom({
@@ -57,7 +57,7 @@ class CrossValidation(GenericBlock):
             {'name': 'run_sub_blocks', 'src': 'split_dataset', 'dst': 'split_dataset'},
             {'name': 'run_sub_blocks', 'src': 'split_dataset', 'dst': 'finished'},
 
-            ]
+        ]
     })
     widget = "widgets/cross_validation_base.html"
     elements = [
@@ -100,21 +100,21 @@ class CrossValidation(GenericBlock):
     params_prototype = {
         "folds_num": {
             "name": "folds_num",
-            "title": "Number of folds",
+            "title": "Folds number",
             "input_type": "text",
             "validation": None,
             "default": 10,
             },
-        "split_ratio": {
-            "name": "split_ratio",
-            "title": "Train/Test ratio",
-            "input_type": "slider",
-            "min_value": 0,
-            "max_value": 1,
-            "step": 0.01,
-            "default": 0.7,
-            "validation": None
-        }
+        # "split_ratio": {
+        #     "name": "split_ratio",
+        #     "title": "Train/Test ratio",
+        #     "input_type": "slider",
+        #     "min_value": 0,
+        #     "max_value": 1,
+        #     "step": 0.01,
+        #     "default": 0.7,
+        #     "validation": None
+        # }
     }
 
     @property
@@ -144,20 +144,20 @@ class CrossValidation(GenericBlock):
             "input": {
                 "es": BlockPort(name="es", title="Choose expression set",
                                 data_type="ExpressionSet", scopes=[self.scope]),
-                "ann": BlockPort(name="ann", title="Choose annotation",
-                                 data_type="PlatformAnnotation", scopes=[self.scope])
+                # "ann": BlockPort(name="ann", title="Choose annotation",
+                #                  data_type="PlatformAnnotation", scopes=[self.scope])
 
             },
             "collect_internal": {
                 "result": BlockPort(name="result", title="Choose classifier result",
                                     data_type="mixML", scopes=[self.scope, self.sub_scope]),
 
-                }
+            }
         }
 
-        #  TODO: fix by introducing register_var method to class
+        #  TODO: fix by introducing register_var method to class / metaclass
         #   or at least method to look through params_prototype and popultions params with default values
-        self.params["split_ratio"] = self.params_prototype["split_ratio"]["default"]
+        # self.params["split_ratio"] = self.params_prototype["split_ratio"]["default"]
         self.params["folds_num"] = self.params_prototype["folds_num"]["default"]
 
         self.sequence = SequenceContainer(fields=self.provided_objects_inner)
@@ -208,12 +208,13 @@ class CrossValidation(GenericBlock):
         self.clean_errors()
 
         es = self.get_var_by_bound_key_str(exp, self.ports["input"]["es"].bound_key)
-        ann = self.get_var_by_bound_key_str(exp, self.ports["input"]["ann"].bound_key)
+        # ann = self.get_var_by_bound_key_str(exp, self.ports["input"]["ann"].bound_key)
         # TODO: keep actual BoundVar object
 
         self.celery_task = generate_cv_folds.s(exp, self,
-                                               self.params["folds_num"], self.params["split_ratio"],
-                                               es, ann)
+                                               self.params["folds_num"],
+                                               # self.params["split_ratio"],
+                                               es)
         exp.store_block(self)
         self.celery_task.apply_async()
 
