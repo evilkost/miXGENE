@@ -4,10 +4,27 @@ from django import forms
 from fysom import Fysom
 import pandas as pd
 
+
 from workflow.common_tasks import fetch_geo_gse, preprocess_soft
 from workflow.execution import ExecStatus
 
-from generic import GenericBlock
+from workflow.blocks import GenericBlock, ActionsList, save_form_actions_list
+
+
+class FetchGSE(GenericBlock):
+    _save_form_actions = save_form_actions_list
+    _fetch_actions = ActionsList([
+        ("start_fetch", ["form_valid"], "source_is_being_fetched", False),
+        ("error_during_fetch", [], "", False)
+    ])
+
+    pages = {
+        "assign_sample_classes": {
+            "title": "Assign sample classes",
+            "resource": "assign_sample_classes",
+            "widget": "widgets/fetch_gse/assign_sample_classes.html"
+        },
+    }
 
 
 class FetchGseForm(forms.Form):
@@ -20,7 +37,7 @@ class FetchGseForm(forms.Form):
         return data
 
 
-class FetchGSE(GenericBlock):
+class FetchGSEOld(GenericBlock):
     fsm = Fysom({
         'events': [
             {'name': 'save_form', 'src': 'created', 'dst': 'form_modified'},
@@ -92,7 +109,7 @@ class FetchGSE(GenericBlock):
             "widget": "widgets/fetch_gse/assign_sample_classes.html"
 
         },
-        }
+    }
     form_cls = FetchGseForm
     form_data = {
         # "expression_set_name": "expression",
@@ -104,7 +121,7 @@ class FetchGSE(GenericBlock):
     provided_objects = {
         "expression_set": "ExpressionSet",
         "gpl_annotation": "PlatformAnnotation",
-        }
+    }
     #TODO: param proto class
     params_prototype = {
         "geo_uid": {
@@ -113,11 +130,11 @@ class FetchGSE(GenericBlock):
             "input_type": "text",
             "validation": None,
             "default": "",
-            }
+        }
     }
 
     def __init__(self, *args, **kwargs):
-        super(FetchGSE, self).__init__("Fetch ncbi gse", *args, **kwargs)
+        super(FetchGSEOld, self).__init__("Fetch ncbi gse", *args, **kwargs)
 
         self.form = self.form_cls(self.form_data)
 

@@ -11,7 +11,7 @@ class GroupType(object):
     PROCESSING = "Data processing"
 
 
-class GenericBlock(object):
+class GenericBlockOld(object):
     block_base_name = "GENERIC_BLOCK"
     provided_objects = {}
     provided_objects_inner = {}
@@ -30,7 +30,6 @@ class GenericBlock(object):
     def __init__(self, name, exp_id, scope):
         """
             Building block for workflow
-            @type can be: "user_input", "computation"
         """
         self.uuid = uuid1().hex
         self.name = name
