@@ -12,7 +12,6 @@ def add_block_to_exp_from_request(request):
     blocks_uuids = exp.get_all_block_uuids()
     block.base_name = "%s:%s" % (block.block_base_name, len(blocks_uuids) + 1)
 
-
     exp.store_block(block, new_block=True)
 
     return block

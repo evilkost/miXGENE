@@ -37,7 +37,7 @@ class GlobalTest(GenericBlock):
 
     def __init__(self, *args, **kwargs):
         super(GlobalTest, self).__init__("Global test", *args, **kwargs)
-        self.gt_df_storage = None
+        self.result = None
         self.celery_task = None
 
         self.ports = {
@@ -45,7 +45,7 @@ class GlobalTest(GenericBlock):
                 "es": BlockPort(name="es", title="Choose expression set",
                                 data_type="ExpressionSet", scopes=[self.scope]),
                 "gs": BlockPort(name="gs", title="Choose gene set",
-                                data_type="GmtStorage", scopes=[self.scope])
+                                data_type="GeneSets", scopes=[self.scope])
             }
         }
 
@@ -63,17 +63,18 @@ class GlobalTest(GenericBlock):
     def run_gt(self, exp, request, *args, **kwargs):
         self.clean_errors()
         es = self.get_var_by_bound_key_str(exp, self.ports["input"]["es"].bound_key)
-        gmt_storage = self.get_var_by_bound_key_str(exp, self.ports["input"]["gs"].bound_key)
+        gs = self.get_var_by_bound_key_str(exp, self.ports["input"]["gs"].bound_key)
 
         self.celery_task = global_test_task.s(
             exp, self, "gt_df_storage",
-            es, gmt_storage,
+            es, gs,
             exp.get_data_file_path("%s_gt_result" % self.uuid, "csv.gz")
         )
         exp.store_block(self)
         self.celery_task.apply_async()
 
-    def success(self, exp):
+    def success(self, exp, result):
+        self.result = result
         exp.store_block(self)
 
     def error(self, exp):

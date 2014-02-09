@@ -72,8 +72,8 @@ def constructor(request, exp_id):
         }),
         "ctx": ctx,
     }
-    for _, block in blocks:
-        context.update(block.before_render(exp))
+    # for _, block in blocks:
+    #     context.update(block.before_render(exp))
 
     template = loader.get_template('constructor.html')
     #pprint(context)
@@ -133,7 +133,7 @@ def blocks_resource(request, exp_id):
     blocks = exp.get_blocks(blocks_uuids, redis_instance=r)
 
     block_bodies = {
-        block.uuid: block.serialize(exp)
+        block.uuid: block.to_dict(exp)
         for uuid, block in blocks
     }
     blocks_by_bscope = defaultdict(list)
@@ -153,7 +153,7 @@ def blocks_resource(request, exp_id):
             }
         )
 
-    root_blocks = [block.serialize(exp) for
+    root_blocks = [block.to_dict(exp) for
                 uuid, block in blocks if block.scope == "root"]
 
     result = {
@@ -191,7 +191,7 @@ def block_resource(request, exp_id, block_uuid, action_code=None):
         block.do_action(action_code, exp=exp, request=request, received_block=received_block)
 
     if request.method == "GET" or request.method == "POST":
-        block_dict = exp.get_block(block_uuid).serialize(exp)
+        block_dict = exp.get_block(block_uuid).to_dict(exp)
         resp = HttpResponse(content_type="application/json")
         json.dump(block_dict, resp)
         return resp

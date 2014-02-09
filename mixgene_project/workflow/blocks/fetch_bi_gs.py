@@ -6,6 +6,7 @@ from webapp.models import BroadInstituteGeneSet
 from generic import GenericBlock
 
 
+
 class GeneSetSelectionForm(forms.Form):
     msigdb_id = forms.IntegerField()
 
@@ -57,7 +58,7 @@ class GetBroadInstituteGeneSet(GenericBlock):
 
     def __init__(self, *args, **kwargs):
         super(GetBroadInstituteGeneSet, self).__init__("Get MSigDB gene set", *args, **kwargs)
-        self.gmt = None
+        self.gene_sets = None
         self.errors = []
         self.form = None
         self.selected_gs_id = None
@@ -65,7 +66,7 @@ class GetBroadInstituteGeneSet(GenericBlock):
     def on_form_is_valid(self):
         self.errors = []
         self.selected_gs_id = int(self.params["msigdb_id"])
-        self.gmt = BroadInstituteGeneSet.objects.get(pk=self.selected_gs_id).get_gmt_storage()
+        self.gene_sets = BroadInstituteGeneSet.objects.get(pk=self.selected_gs_id).get_gene_sets()
         #print self.selected_gs_id
 
     def on_form_not_valid(self):

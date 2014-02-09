@@ -56,7 +56,7 @@
                         </div>
 
                         <div class="row">
-                            <form class="form-horizontal" ng-repeat="param_proto in block.params_prototype"
+                            <form class="form-horizontal" ng-repeat="param_proto in block._params_prototype"
                                   ng-controller="formFieldCtrl">
 
                                 <div ng-include="template">
@@ -79,15 +79,13 @@
                         <!-- TODO: remove hardcoded link
                            use angular routing and ng-view
                         -->
-                        <div class="list-group" ng-if="block.is_sub_pages_visible">
-                            <a ng-repeat="(res, page) in block.pages"
-                               href="/block_sub_page/{$ exp_id $}/{$ block.uuid$}/{$ page.resource$}"
-                               class="list-group-item"
-                                    >
-                                {$ page.title $}
-                            </a>
-
-                        </div>
+                        <ul ng-if="block.is_sub_pages_visible">
+                            <li ng-repeat="(res, page) in block.pages">
+                                <a href="/block_sub_page/{$ exp_id $}/{$ block.uuid$}/{$ page.resource$}">
+                                    {$ page.title $}
+                                </a>
+                            </li>
+                        </ul>
                     </div>
                 </div>
 

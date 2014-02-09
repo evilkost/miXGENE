@@ -50,21 +50,25 @@ class MergeGeneSetWithPlatformAnnotation(GenericBlock):
         }
 
     def run_merge(self, exp, request, *args, **kwargs):
+        """
+        @type exp: webapp.models.Experiment
+        """
         self.clean_errors()
 
-        gmt_storage = self.get_var_by_bound_key_str(exp, self.ports["input"]["gs"].bound_key)
+        src_gs = self.get_var_by_bound_key_str(exp, self.ports["input"]["gs"].bound_key)
         ann = self.get_var_by_bound_key_str(exp, self.ports["input"]["ann"].bound_key)
 
-        result_filepath = exp.get_data_file_path("%s_gs_merged" % self.uuid, "gmt.gz")
-
+        self.gs_merged = None
         self.celery_task = merge_gs_with_platform_annotation.s(
             exp, self, "gs_merged",
-            gmt_storage, ann, result_filepath,
+            src_gs, ann,
+            exp.get_data_folder(), "%s_merged" % self.uuid
         )
         exp.store_block(self)
         self.celery_task.apply_async()
 
-    def success(self, exp):
+    def success(self, exp, gs):
+        self.gs_merged = gs
         exp.store_block(self)
 
     def error(self, exp):

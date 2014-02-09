@@ -10,31 +10,33 @@ from Bio.Geo import parse as parse_geo
 from mixgene.util import prepare_GEO_ftp_url, fetch_file_from_url
 from webapp.models import CachedFile, Experiment
 from environment.units import GeneUnits
-from workflow.input import FileInputVar
-from environment.structures import ExpressionSet, PlatformAnnotation, GeneSets
+from environment.structures import ExpressionSet, PlatformAnnotation, \
+    GeneSets, GS, FileInputVar
 import sys
 import traceback
 
 
-@task(name="workflow.common_tasks.fetch_GEO_gse_matrix")
-def fetch_geo_gse(exp, block, ignore_cache=False):
+@task(name="workflow.common_tasks.fetch_GEO_gse")
+def fetch_geo_gse(exp, block,
+                  geo_uid,
+                  success_action="success", error_action="error",
+                  ignore_cache=False):
     """
         @type  exp: webapp.models.Experiment
-        @param exp:
 
-        @type  block:
-        @param block:
+        @type  block: GenericBlock
+
 
         Fetch dataset from GEO and caching it.
     """
     # noinspection PyBroadException
     try:
         file_format = "soft"
-        geo_uid = block.get_geo_uid().upper()
+        geo_uid = geo_uid.upper()
 
         url, compressed_filename, filename = prepare_GEO_ftp_url(geo_uid, file_format)
 
-        fi = FileInputVar(block.get_gse_source_name(), title="", description="")
+        fi = FileInputVar("%s/%s_source.soft.gz" % (exp.get_data_folder(), block.uuid), title="", description="")
         fi.is_done = True
         fi.is_being_fetched = False
         fi.file_extension = "soft.gz"
@@ -59,8 +61,8 @@ def fetch_geo_gse(exp, block, ignore_cache=False):
             shutil.copy(mb_cached.get_file_path(), fi.filepath)
             print "copied file from cache"
 
-        block.source_file = fi
-        block.do_action("successful_fetch", exp)
+        #print "current block state: ", exp.state
+        block.do_action(success_action, exp, fi)
 
     except RuntimeError, e:
         import sys, traceback
@@ -68,18 +70,22 @@ def fetch_geo_gse(exp, block, ignore_cache=False):
         traceback.print_tb(tb)
         #print e
         block.errors.append(e)
-        block.do_action("error_during_fetch", exp)
+        block.do_action(error_action, exp)
 
 
 @task(name="workflow.common_tasks.preprocess_soft")
-def preprocess_soft(exp, block):
+def preprocess_soft(exp, block,
+        source_file,
+        success_action="success", error_action="error"
+    ):
     """
+        @type source_file: FileInputVar
         Produce symbols and phenotype objects( MixData, MixPheno) from .soft file.
     """
     try:
         #TODO: now we assume that we get GSE file
         try:
-            soft = list(parse_geo(gzip.open(block.source_file.filepath)))
+            soft = list(parse_geo(gzip.open(source_file.filepath)))
         except:
             raise RuntimeError("Bad source file, can't read")
 
@@ -88,20 +94,21 @@ def preprocess_soft(exp, block):
         pl = soft[2].table_rows
         id_idx = pl[0].index('ID')
         entrez_idx = pl[0].index('ENTREZ_GENE_ID')
-        probe_to_genes_GS = GeneSets()
+
+        #TODO bug here
+        probe_to_genes_GS = GS()
         for row in pl[1:]:
             probe_to_genes_GS.description[row[id_idx]] = ""
             probe_to_genes_GS.genes[row[id_idx]] = row[entrez_idx].split(" /// ")
 
         platform_annotation = PlatformAnnotation("TODO:GET NAME FROM SOFT",
             base_dir=exp.get_data_folder(),
-            base_filename= "%s_annotation" % block.uuid
+            base_filename="%s_annotation" % block.uuid
         )
 
         platform_annotation.gene_units = GeneUnits.ENTREZ_ID
         platform_annotation.set_units = GeneUnits.PROBE_ID
         platform_annotation.store_gmt(probe_to_genes_GS)
-        block.gpl_annotation = platform_annotation
 
         id_ref_idx = soft[3].table_rows[0].index("ID_REF")
         value_idx = soft[3].table_rows[0].index("VALUE")
@@ -127,9 +134,9 @@ def preprocess_soft(exp, block):
         pheno_df = DataFrame([Series(factor) for factor in factors], index=pheno_index)
         pheno_df.index.name = 'Sample_geo_accession'
         expression_set.store_pheno_data_frame(pheno_df)
-        block.expression_set = expression_set
 
-        block.do_action("successful_preprocess", exp)
+        block.do_action(success_action, exp,
+                        expression_set, platform_annotation)
     except Exception, e:
 
         ex_type, ex, tb = sys.exc_info()
@@ -138,7 +145,7 @@ def preprocess_soft(exp, block):
         #TODO: LOG ERROR AND TRACEBACK OR WE LOSE IT!
         #import ipdb; ipdb.set_trace()
         block.errors.append(e)
-        block.do_action("error_during_preprocess", exp)
+        block.do_action(error_action, exp)
 
 
 @task(name="workflow.common_tasks.generate_cv_folds")

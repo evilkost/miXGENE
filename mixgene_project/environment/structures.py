@@ -6,6 +6,7 @@ import rpy2.robjects as R
 from rpy2.robjects.packages import importr
 from mixgene.settings import R_LIB_CUSTOM_PATH
 import json
+from workflow.input import AbsInputVar
 
 
 class DataFrameStorage(object):
@@ -403,3 +404,29 @@ class mixML(object):
         self.has_col_names = True
         self.has_row_names = True
         self.csv_delimiter = " "
+
+
+class FileInputVar(AbsInputVar):
+    #TODO: rework into storage + variable
+    def __init__(self, *args, **kwargs):
+        super(FileInputVar, self).__init__(*args, **kwargs)
+        self.input_type = "file"
+        self.is_done = False
+        self.is_being_fetched = False
+
+        self.file_type = None
+        self.filename = None
+        self.filepath = None
+        self.file_extension = "csv"
+        self.is_gzipped = False
+
+        self.file_format = None
+
+        self.geo_uid = None
+        self.geo_type = None
+
+    def set_file_type(self, file_type):
+        if file_type in ['user', 'ncbi_geo', 'gmt']:
+            self.file_type = file_type
+        else:
+            raise Exception("file type should be in [`user`, `ncbi_geo`, `gmt`], not %s" % type)

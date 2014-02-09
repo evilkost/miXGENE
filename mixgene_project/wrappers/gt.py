@@ -8,7 +8,7 @@ import pandas.rpy.common as com
 from celery import task
 
 from converters.gene_set_tools import filter_gs_by_genes
-from environment.structures import DataFrameStorage
+from environment.structures import DataFrameStorage, TableResult
 from mixgene.settings import R_LIB_CUSTOM_PATH
 
 import sys
@@ -63,7 +63,7 @@ class GlobalTest(object):
 def global_test_task(
         exp, block, store_field,
         es, gs_storage,
-        filepath,
+        base_dir, base_filename,
         pheno_class_column="User_class",
         success_action="success", error_action="error"
     ):
@@ -71,9 +71,9 @@ def global_test_task(
     @param es: Expression set with defined user class in pheno
     @type es: ExpressionSet
 
-    @type gs: environment.structures.GmtStorage
+    @type gs: environment.structures.GeneSets
 
-    @param filepath: Fully qualified filepath to store result dataframe
+    @param filepath: Fully qualified filepath to store result data frame
     @type filepath: str
 
 
@@ -83,11 +83,12 @@ def global_test_task(
     try:
         gs = gs_storage.load()
         result_df = GlobalTest.gt_basic(es, gs, pheno_class_column)
-        result_storage = DataFrameStorage(filepath)
-        result_storage.store(result_df)
 
-        setattr(block, store_field, result_storage)
-        block.do_action(success_action, exp)
+        res = TableResult(base_dir, base_filename)
+        res.store_table(result_df)
+
+
+        block.do_action(success_action, exp, res)
     except Exception, e:
         ex_type, ex, tb = sys.exc_info()
         traceback.print_tb(tb)
