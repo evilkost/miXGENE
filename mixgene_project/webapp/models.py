@@ -282,6 +282,18 @@ class Experiment(models.Model):
 
         return pickle.loads(r.get(ExpKeys.get_block_key(block_uuid)))
 
+    def get_scope_var_value(self, scope_var, redis_instance=None):
+        """
+            @type scope_var: webapp.scope.ScopeVar
+        """
+        if redis_instance is None:
+            r = get_redis_instance()
+        else:
+            r = redis_instance
+
+        block = self.get_block(scope_var.block_uuid, r)
+        return block.get_out_var(scope_var.var_name)
+
     @staticmethod
     def get_blocks(block_uuid_list, redis_instance=None):
         """

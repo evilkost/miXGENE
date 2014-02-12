@@ -161,6 +161,8 @@ def blocks_resource(request, exp_id):
     for scope_name, _ in exp.get_all_scopes_with_block_uuids(redis_instance=r).iteritems():
         scope = Scope(exp, scope_name)
         scope.load(redis_instance=r)
+        scope.update_scope_vars_by_block_aliases(aliases_map)
+
         scopes[scope_name] = scope.to_dict()
 
     result = {
@@ -194,13 +196,14 @@ def block_resource(request, exp_id, block_uuid, action_code=None):
     if request.method == "POST":
         try:
             received_block = json.loads(request.body)
+            print received_block
         except Exception, e:
             # TODO log errors
             received_block = {}
         block.do_action(action_code, exp=exp, request=request, received_block=received_block)
 
     if request.method == "GET" or request.method == "POST":
-        block_dict = exp.get_block(block_uuid).to_dict(exp)
+        block_dict = exp.get_block(block_uuid).to_dict()
         resp = HttpResponse(content_type="application/json")
         json.dump(block_dict, resp)
         return resp

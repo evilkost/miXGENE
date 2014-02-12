@@ -1,7 +1,5 @@
 import json
 
-from django import forms
-from fysom import Fysom
 import pandas as pd
 
 
@@ -15,7 +13,6 @@ from workflow.blocks.generic import GenericBlock, ActionsList, save_params_actio
 
 class FetchGSE(GenericBlock):
     block_base_name = "FETCH_GEO"
-
     _block_actions = ActionsList([
         ActionRecord("start_fetch", ["valid_params", "done"], "source_is_being_fetched", "Start fetch"),
         ActionRecord("error_during_fetch", ["source_is_being_fetched"], "form_valid"),
@@ -28,7 +25,6 @@ class FetchGSE(GenericBlock):
         ActionRecord("assign_sample_classes", ["source_was_preprocessed", "done"], "done"),
     ])
     _block_actions.extend(save_params_actions_list)
-    #_block_actions.extend(execute_block_actions_list)
 
     source_file = BlockField("source_file", FieldType.CUSTOM, None)
     # TODO: add sub page field
@@ -45,26 +41,15 @@ class FetchGSE(GenericBlock):
     geo_uid = ParamField("geo_uid", "Geo accession id",
                          InputType.TEXT, FieldType.STR, "")
 
-
     _expression_set = OutputBlockField(name="expression_set", field_type=FieldType.HIDDEN,
                                 provided_data_type="ExpressionSet")
     _gpl_annotation = OutputBlockField(name="gpl_annotation", field_type=FieldType.HIDDEN,
                                 provided_data_type="PlatformAnnotation")
 
-    # provided_objects = {
-    #     "expression_set": "ExpressionSet",
-    #     "gpl_annotation": "PlatformAnnotation",
-    # }
-
     def __init__(self, *args, **kwargs):
-        print "BEFORE SUPER", self._block_serializer.outputs
         super(FetchGSE, self).__init__("Fetch ncbi gse", *args, **kwargs)
-        print "AFTER SUPER", self._block_serializer.outputs
         self.celery_task_fetch = None
         self.celery_task_preprocess = None
-
-        self.expression_set = None
-        self.gpl_annotation = None
 
     def is_form_fields_editable(self):
         if self.state in ['created', 'form_modified']:

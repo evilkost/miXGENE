@@ -48,13 +48,15 @@ Constructor.controller('PortCtrl', function PortCtrl($scope, blockAccess){
         }
     }
 
-    $scope.options = blockAccess.get_port_input_options($scope.port);
-
-    if( $scope.port.bound_key == undefined || $scope.port.bound_key == null){
-        if( $scope.options.length > 0){
-            $scope.port.bound_key = $scope.get_option_key($scope.options[0]);
-        }
-    }
+    $scope.options = blockAccess.scopes[$scope.block.scope].by_data_type[$scope.input.required_data_type];
+    document.opts2 = $scope.options;
+//    $scope.options = blockAccess.get_port_input_options($scope.port);
+//
+//    if( $scope.port.bound_key == undefined || $scope.port.bound_key == null){
+//        if( $scope.options.length > 0){
+//            $scope.port.bound_key = $scope.get_option_key($scope.options[0]);
+//        }
+//    }
 })
 
 
@@ -83,5 +85,6 @@ Constructor.controller('PalletCtrl', function($scope, blockAccess){
 
 Constructor.controller('fieldSelectCtrl', function($scope, blockAccess){
     $scope.select_options = $scope.block[$scope.field.data_source];
+
 
 })

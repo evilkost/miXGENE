@@ -7,14 +7,33 @@ from mixgene.util import get_redis_instance
 
 
 class ScopeVar(object):
-    def __init__(self, block_uuid, var_name, data_type, block_alias=None):
+    def __init__(self, block_uuid, var_name, data_type=None, block_alias=None):
         self.block_uuid = block_uuid
         self.var_name = var_name
         self.data_type = data_type
         self.block_alias = block_alias
 
+    @property
+    def title(self):
+        return "%s -> %s" % (self.block_alias or self.block_uuid, self.var_name)
+
+    @property
+    def pk(self):
+        return str(self)
+
+    @staticmethod
+    def from_key(key):
+        split = key.split(":")
+        block_uuid, rest = split[0], split[1:]
+        var_name = "".join(rest)
+        return ScopeVar(block_uuid, var_name)
+
     def to_dict(self):
-        return copy.deepcopy(self.__dict__)
+        result = copy.deepcopy(self.__dict__)
+        result["pk"] = self.pk
+        result["title"] = self.title
+
+        return result
 
     def __hash__(self):
         return hash(self.__str__())
