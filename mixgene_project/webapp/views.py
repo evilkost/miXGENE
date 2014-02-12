@@ -18,7 +18,8 @@ from django.contrib.auth.decorators import login_required
 
 from webapp.models import Experiment, UploadedData, delete_exp
 from webapp.forms import UploadForm
-from webapp.store import add_block_to_exp_from_request, add_block_to_exp_from_dict
+from webapp.scope import Scope
+from webapp.store import add_block_to_exp_from_dict
 from workflow.blocks import blocks_by_group
 
 from workflow.execution import ScopeState
@@ -133,7 +134,7 @@ def blocks_resource(request, exp_id):
     blocks = exp.get_blocks(blocks_uuids, redis_instance=r)
 
     block_bodies = {
-        block.uuid: block.to_dict(exp)
+        block.uuid: block.to_dict()
         for uuid, block in blocks
     }
     blocks_by_bscope = defaultdict(list)
@@ -142,28 +143,36 @@ def blocks_resource(request, exp_id):
 
     aliases_map = exp.get_block_aliases_map(redis_instance=r)
 
-    vars = exp.get_registered_variables(redis_instance=r)
-    vars_by_bscope = defaultdict(lambda: defaultdict(list))
-    for scope, uuid, var_name, var_data_type in vars:
-        vars_by_bscope[scope][var_data_type].append(
-            {
-                "block_uuid": uuid,
-                "block_alias": aliases_map[uuid],
-                "var_name": var_name
-            }
-        )
+    # vars = exp.get_registered_variables(redis_instance=r)
+    # vars_by_bscope = defaultdict(lambda: defaultdict(list))
+    # for scope, uuid, var_name, var_data_type in vars:
+    #     vars_by_bscope[scope][var_data_type].append(
+    #         {
+    #             "block_uuid": uuid,
+    #             "block_alias": aliases_map[uuid],
+    #             "var_name": var_name
+    #         }
+    #     )
 
-    root_blocks = [block.to_dict(exp) for
+    root_blocks = [block.to_dict() for
                 uuid, block in blocks if block.scope == "root"]
+
+    scopes = {}
+    for scope_name, _ in exp.get_all_scopes_with_block_uuids(redis_instance=r).iteritems():
+        scope = Scope(exp, scope_name)
+        scope.load(redis_instance=r)
+        scopes[scope_name] = scope.to_dict()
 
     result = {
         "blocks": root_blocks,
 
         "blocks_by_bscope": blocks_by_bscope,
         "block_bodies": block_bodies,
-        "vars_by_bscope": vars_by_bscope,
+        # "vars_by_bscope": vars_by_bscope,
 
         "blocks_by_group": blocks_by_group,
+        "scopes": scopes,
+
     }
     resp = HttpResponse(content_type="application/json")
     # import ipdb; ipdb.set_trace()
@@ -207,7 +216,7 @@ def block_sub_page(request, exp_id, block_uuid, sub_page):
     template = loader.get_template(block.pages[sub_page]['widget'])
     context = {
         "block_": block,
-        "ctx": ctx,
+        #"ctx": ctx,
         "exp": exp,
     }
     context = RequestContext(request, context)
@@ -375,6 +384,8 @@ def add_experiment(request):
         status='initiated',  # TODO: until layout configuration will be implemented
     )
 
+
+    # TODO: move all init stuff to the model
     exp.save()
     ctx = {
         "exp_id": exp.pk,

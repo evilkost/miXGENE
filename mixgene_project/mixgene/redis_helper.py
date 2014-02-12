@@ -51,6 +51,13 @@ class ExpKeys(object):
     def get_context_version_key(cls, exp_id):
         return "CVP-%s" % exp_id
 
+    @staticmethod
+    def get_scope_key(exp_id, scope_name):
+        """
+            Set of scope_name vars see workflow.scope.ScopeVar
+        """
+        return "S_ESCP-%s-%s" % (exp_id, scope_name)
+
 
 def register_sub_key(exp_id, key, redis_instance=None):
     if redis_instance is None:

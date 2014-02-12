@@ -1,4 +1,6 @@
 import copy
+from webapp.models import Experiment
+from webapp.scope import Scope, ScopeVar
 from workflow.execution import ExecStatus
 
 from uuid import uuid1
@@ -32,8 +34,6 @@ class ActionsList(object):
 
     def contribute_to_class(self, cls, name):
         for action_record in self.actions_list:
-            if action_record.name == "save_params":
-                print "adding save params"
             getattr(cls, "_trans").register(action_record)
 
 
@@ -108,18 +108,47 @@ class FieldType(object):
     SIMPLE_DICT = "simple_dict"
     SIMPLE_LIST = "simple_list"
 
+    OUTPUT = "output"
+
+    HIDDEN = "hidden"  # don't serialize this
+
 
 class BlockField(object):
-    def __init__(self, name, field_type, init_val, *args, **kwargs):
+    def __init__(self, name, field_type=FieldType.HIDDEN, init_val=None,
+                 is_immutable=False,
+                 *args, **kwargs):
         self.name = name
         self.field_type = field_type
         self.init_val = init_val
-        self.is_immutable = kwargs.get("is_immutable", False)
-        self.is_exported = kwargs.get("is_exported", True)
+        self.is_immutable = is_immutable
 
     def contribute_to_class(self, cls, name):
         setattr(cls, name, self.init_val)
-        getattr(cls, "_bs").register(self)
+        getattr(cls, "_block_serializer").register(self)
+
+
+class OutputBlockField(BlockField):
+    def __init__(self, provided_data_type=None, *args, **kwargs):
+        super(OutputBlockField, self).__init__(*args, **kwargs)
+        self.provided_data_type = provided_data_type
+
+    def contribute_to_class(self, cls, name):
+        getattr(cls, "_block_serializer").register(self)
+
+class OutManager(object):
+    def __init__(self):
+        self.data_type_by_name = defaultdict()
+        self.fields_by_data_type = defaultdict(list)
+
+    def register(self, name, data_type):
+        if name in self.fields_by_name.keys():
+            raise KeyError("Field with name %s already exists" % name)
+
+        self.data_type_by_name[name] = data_type
+        self.fields_by_data_type[data_type].append(name)
+
+    def get_fields_by_data_type(self, data_type):
+        return self.fields_by_data_type[data_type]
 
 
 class InputType(object):
@@ -131,7 +160,8 @@ class InputType(object):
 # TODO: maybe more use of django form fields?
 # TODO: or join ParamField and BlockField?
 class ParamField(object):
-    def __init__(self, name, title, input_type, field_type, init_val, validator=None, *args, **kwargs):
+    def __init__(self, name, title, input_type, field_type, init_val,
+                 validator=None, *args, **kwargs):
         self.name = name
         self.title = title
         self.input_type = input_type
@@ -141,7 +171,7 @@ class ParamField(object):
 
     def contribute_to_class(self, cls, name):
         setattr(cls, name, self.init_val)
-        getattr(cls, "_bs").register(self)
+        getattr(cls, "_block_serializer").register(self)
 
     def to_dict(self):
         return {
@@ -158,13 +188,20 @@ class BlockSerializer(object):
     def __init__(self):
         self.fields = dict()
         self.params = dict()
+        self.outputs = dict()
 
     def register(self, field):
+        if isinstance(field, OutputBlockField):
+            self.outputs[field.name] = field
+            return
+
         if isinstance(field, BlockField):
             self.fields[field.name] = field
+            return
 
         if isinstance(field, ParamField):
             self.params[field.name] = field
+            return
 
     @staticmethod
     def clone(other):
@@ -173,18 +210,26 @@ class BlockSerializer(object):
         bs.params = copy.deepcopy(other.params)
         return bs
 
-    def to_dict(self, block, exp):
+    def to_dict(self, block):
         result = {}
         for f_name, f in self.fields.iteritems():
+            if f.field_type == FieldType.HIDDEN:
+                continue
+
             raw_val = getattr(block, f_name)
-            if f.field_type == FieldType.RAW:
-                result[f_name] = raw_val
-            if f.field_type in [FieldType.STR, FieldType.INT, FieldType.FLOAT, FieldType.BOOLEAN]:
-                result[f_name] = str(raw_val)
-            if f.field_type == FieldType.SIMPLE_DICT:
-                result[f_name] = {(str(k), str(v)) for k, v in raw_val.iteritems()}
-            if f.field_type == FieldType.SIMPLE_LIST:
-                result[f_name] = map(str, raw_val)
+            if raw_val is None:
+                result[f_name] = None
+            else:
+                if f.field_type == FieldType.RAW:
+                    result[f_name] = raw_val
+                if f.field_type == FieldType.CUSTOM:
+                    result[f_name] = raw_val.to_dict(block)
+                if f.field_type in [FieldType.STR, FieldType.INT, FieldType.FLOAT, FieldType.BOOLEAN]:
+                    result[f_name] = str(raw_val)
+                if f.field_type == FieldType.SIMPLE_DICT:
+                    result[f_name] = {str(k): str(v) for k, v in raw_val.iteritems()}
+                if f.field_type == FieldType.SIMPLE_LIST:
+                    result[f_name] = map(str, raw_val)
 
         result["_params_prototype"] = dict([(str(param_name), param_field.to_dict())
                                    for param_name, param_field in self.params.iteritems()])
@@ -199,6 +244,7 @@ class BlockSerializer(object):
             "title": ar.user_title,
         } for ar in block.get_user_actions()]
 
+        result["out"] = block.out_manager.to_dict()
 
         return result
 
@@ -219,9 +265,8 @@ class BlockMeta(type):
         module = attrs.pop('__module__')
         new_class = super_new(cls, name, bases, {'__module__': module})
 
-        if hasattr(bases[0], "_bs"):
-            setattr(new_class, "_bs", BlockSerializer.clone(bases[0]._bs))
-        if hasattr(bases[0], "_trans"):
+        if hasattr(bases[0], "_block_serializer"):
+            setattr(new_class, "_block_serializer", BlockSerializer.clone(bases[0]._block_serializer))
             setattr(new_class, "_trans", TransSystem.clone(bases[0]._trans))
 
         for obj_name, obj in attrs.items():
@@ -230,7 +275,7 @@ class BlockMeta(type):
         return new_class
 
     def add_to_class(cls, name, value):
-        #print cls._bs
+        #print cls._block_serializer
         if hasattr(value, "contribute_to_class"):
             value.contribute_to_class(cls, name)
         else:
@@ -238,17 +283,53 @@ class BlockMeta(type):
 
 
 class BaseBlock(object):
-    _bs = BlockSerializer()
+    _block_serializer = BlockSerializer()
     _trans = TransSystem()
+
+    # _out = OutManager("out")
     """
         WARNING: For blocks always inherit other *Block class at first
     """
     __metaclass__ = BlockMeta
 
 
+# class OutAccessor(object):
+#     def __init__(self, storage):
+#         self.__dict__["_storage"] = storage
+#
+#     # TODO: ugly hack for pickle
+#     def __getstate__(self):
+#         return self.__dict__
+#
+#     def __getattr__(self, item):
+#         storage = self.__dict__["_storage"]
+#         if item not in storage:
+#             raise KeyError("No variable under name  '%s' was stored " % item)
+#         return storage[item]
+#
+#     def __setattr__(self, key, value):
+#         self.__dict__["_storage"][key] = value
+
+class OutManager(object):
+    def __init__(self):
+        self.data_type_by_name = {}
+        self.fields_by_data_type = defaultdict(list)
+
+    def register(self, name, data_type):
+        if name in self.data_type_by_name.keys():
+            raise KeyError("Field with name %s already exists" % name)
+
+        self.data_type_by_name[name] = data_type
+        self.fields_by_data_type[data_type].append(name)
+
+    def get_fields_by_data_type(self, data_type):
+        return self.fields_by_data_type[data_type]
+
+    def to_dict(self):
+        return {}
+
+
 class GenericBlock(BaseBlock):
-
-
     # block fields
     uuid = BlockField("uuid", FieldType.STR, None, is_immutable=True)
     name = BlockField("name", FieldType.STR, None)
@@ -263,22 +344,47 @@ class GenericBlock(BaseBlock):
     errors = BlockField("errors", FieldType.SIMPLE_LIST, list())
     warnings = BlockField("warnings", FieldType.SIMPLE_LIST, list())
 
-    def __init__(self, name, exp_id, scope):
+    def __init__(self, name, exp_id, scope_name):
         """
             Building block for workflow
         """
         self.uuid = uuid1().hex
         self.name = name
         self.exp_id = exp_id
+        self.scope_name = scope_name
 
         # pairs of (var name, data type, default name in context)
-        self.require_inputs = []
-        self.provide_outputs = []
+        # self.require_inputs = []
+        # self.provide_outputs = []
 
         self.base_name = ""
 
         self.ports = {}  # {group_name -> [BlockPort1, BlockPort2]}
         self.params = {}
+
+        self._out_data = dict()
+        # self.out = OutAccessor(self._out_data)
+        self.out_manager = OutManager()
+        self._late_init()
+
+    def _late_init(self):
+        scope = self.get_scope()
+        scope.load()
+        print "LATE_INIT"
+        for f_name, f in self._block_serializer.outputs.iteritems():
+
+            self.register_provided_objects(scope, ScopeVar(self.uuid, f_name, f.provided_data_type))
+        scope.store()
+
+    def get_out_var(self, name):
+        return self._out_data.get(name)
+
+    def set_out_var(self, name, value):
+        self._out_data[name] = value
+
+    def get_scope(self):
+        exp = Experiment.get_exp_by_id(self.exp_id)
+        return Scope(exp, self.scope_name)
 
     def get_user_actions(self):
         """
@@ -286,9 +392,13 @@ class GenericBlock(BaseBlock):
         """
         return self._trans.user_visible(self.state)
 
-    def to_dict(self, exp):
+    def to_dict(self):
         # import ipdb; ipdb.set_trace()
-        return self._bs.to_dict(self, exp)
+        return self._block_serializer.to_dict(self)
+
+    def register_provided_objects(self, scope, scope_var):
+        self.out_manager.register(scope_var.var_name, scope_var.data_type)
+        scope.register_variable(scope_var)
 
     def do_action(self, action_name, *args, **kwargs):
         # import ipdb; ipdb.set_trace()
@@ -300,7 +410,7 @@ class GenericBlock(BaseBlock):
             raise RuntimeError("Action %s isn't available" % action_name)
 
     def save_params(self, exp, request, received_block=None, *args, **kwargs):
-        self._bs.save_params(self, received_block)
+        self._block_serializer.save_params(self, received_block)
         exp.store_block(self)
         self.validate_params(exp)
 
@@ -457,7 +567,7 @@ class GenericBlockOld(object):
         exp.store_block(self)
 
     def save_params(self, exp, request, received_block=None, *args, **kwargs):
-        self._bs.save_params(received_block)
+        self._block_serializer.save_params(received_block)
         exp.store_block(self)
         self.validate_params()
 

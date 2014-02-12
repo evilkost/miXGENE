@@ -10,7 +10,7 @@ from workflow.common_tasks import fetch_geo_gse, preprocess_soft
 from workflow.execution import ExecStatus
 
 from workflow.blocks.generic import GenericBlock, ActionsList, save_params_actions_list, BlockField, FieldType, \
-    ActionRecord, ParamField, InputType, execute_block_actions_list
+    ActionRecord, ParamField, InputType, execute_block_actions_list, OutputBlockField
 
 
 class FetchGSE(GenericBlock):
@@ -45,18 +45,21 @@ class FetchGSE(GenericBlock):
     geo_uid = ParamField("geo_uid", "Geo accession id",
                          InputType.TEXT, FieldType.STR, "")
 
-    ### PRODUCED VARIABLES
-    # TODO: !!!!
-    # expression_set = BlockField ....  ... provided_datatype="ExpressionSet"
-    # gpl_annotation = ...
-    provided_objects = {
-        "expression_set": "ExpressionSet",
-        "gpl_annotation": "PlatformAnnotation",
-    }
+
+    _expression_set = OutputBlockField(name="expression_set", field_type=FieldType.HIDDEN,
+                                provided_data_type="ExpressionSet")
+    _gpl_annotation = OutputBlockField(name="gpl_annotation", field_type=FieldType.HIDDEN,
+                                provided_data_type="PlatformAnnotation")
+
+    # provided_objects = {
+    #     "expression_set": "ExpressionSet",
+    #     "gpl_annotation": "PlatformAnnotation",
+    # }
 
     def __init__(self, *args, **kwargs):
+        print "BEFORE SUPER", self._block_serializer.outputs
         super(FetchGSE, self).__init__("Fetch ncbi gse", *args, **kwargs)
-
+        print "AFTER SUPER", self._block_serializer.outputs
         self.celery_task_fetch = None
         self.celery_task_preprocess = None
 

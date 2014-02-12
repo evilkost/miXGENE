@@ -13,7 +13,7 @@ from mixgene.settings import MEDIA_ROOT
 from mixgene.util import get_redis_instance
 from mixgene.redis_helper import ExpKeys
 from mixgene.util import dyn_import
-from environment.structures import GmtStorage
+from environment.structures import GmtStorage, GeneSets
 from workflow.execution import ScopeState
 
 
@@ -52,6 +52,7 @@ class CachedFile(models.Model):
         else:
             return res[0]
 
+
 class Experiment(models.Model):
     author = models.ForeignKey(User)
 
@@ -73,7 +74,12 @@ class Experiment(models.Model):
     def get_exp_by_ctx(ctx):
         return Experiment.objects.get(pk=ctx["exp_id"])
 
+    @staticmethod
+    def get_exp_by_id(_pk):
+        return Experiment.objects.get(pk=_pk)
+
     def init_ctx(self, ctx, redis_instance=None):
+        ## TODO: RENAME TO init experiment and invoke on first save
         if redis_instance is None:
             r = get_redis_instance()
         else:
@@ -88,6 +94,8 @@ class Experiment(models.Model):
         pipe.set(key_context, pickle.dumps(ctx))
         pipe.set(key_context_version, 0)
 
+        pipe.hset(ExpKeys.get_scope_creating_block_uuid_keys(self.pk), "root", None)
+
         pipe.sadd(ExpKeys.get_all_exp_keys_key(self.pk),
                   [key_context,
                    key_context_version,
@@ -95,7 +103,8 @@ class Experiment(models.Model):
                    ExpKeys.get_blocks_uuid_by_alias(self.pk),
                    ExpKeys.get_scope_vars_keys(self.pk),
                    ExpKeys.get_scope_creating_block_uuid_keys(self.pk),
-                  ])
+                   ExpKeys.get_scope_key(self.pk, "root")
+        ])
 
         pipe.execute()
 
@@ -173,6 +182,15 @@ class Experiment(models.Model):
         self.update_ctx({})
         self.save()
 
+    def get_all_scopes_with_block_uuids(self, redis_instance=None):
+        if redis_instance is None:
+            r = get_redis_instance()
+        else:
+            r = redis_instance
+
+        return r.hgetall(ExpKeys.get_scope_creating_block_uuid_keys(self.pk))
+
+
     def store_block(self, block, new_block=False, redis_instance=None, dont_execute_pipe=False):
         if redis_instance is None:
             r = get_redis_instance()
@@ -189,26 +207,19 @@ class Experiment(models.Model):
             pipe.rpush(ExpKeys.get_exp_blocks_list_key(self.pk), block.uuid)
             pipe.sadd(ExpKeys.get_all_exp_keys_key(self.pk), block_key)
 
-            for var_name, data_type in block.provided_objects.iteritems():
-                self.register_variable(block.scope, block.uuid, var_name, data_type, pipe)
+            # # TODO: refactor to scope.py
+            # for var_name, data_type in block.provided_output.iteritems():
+            #     self.register_variable(block.scope, block.uuid, var_name, data_type, pipe)
 
             if block.create_new_scope:
                 #import ipdb; ipdb.set_trace()
-                for var_name, data_type in block.provided_objects_inner.iteritems():
-                    self.register_variable(block.sub_scope, block.uuid, var_name, data_type, pipe)
+                # for var_name, data_type in block.provided_objects_inner.iteritems():
+                #     self.register_variable(block.sub_scope, block.uuid, var_name, data_type, pipe)
 
                 pipe.hset(ExpKeys.get_scope_creating_block_uuid_keys(self.pk),
                           block.sub_scope, block.uuid)
 
-                # TODO: move scope states to dedicated key
-                ctx = self.get_ctx()
-                ctx['scope_state'][block.sub_scope] = ScopeState.HALT
-                self.update_ctx(ctx)
-
             if block.scope != "root":
-
-
-
                 # need to register in parent block
                 parent_uuid = r.hget(ExpKeys.get_scope_creating_block_uuid_keys(self.pk),
                                      block.scope)
@@ -390,14 +401,14 @@ class Experiment(models.Model):
 
         return visible
 
-    def register_variable(self, scope, block_uuid, var_name, data_type, redis_instance=None):
-        if redis_instance is None:
-            r = get_redis_instance()
-        else:
-            r = redis_instance
-
-        record = pickle.dumps((scope, block_uuid, var_name, data_type))
-        r.hset(ExpKeys.get_scope_vars_keys(self.pk), "%s:%s" % (block_uuid, var_name), record)
+    # def register_variable(self, scope, block_uuid, var_name, data_type, redis_instance=None):
+    #     if redis_instance is None:
+    #         r = get_redis_instance()
+    #     else:
+    #         r = redis_instance
+    #
+    #     record = pickle.dumps((scope, block_uuid, var_name, data_type))
+    #     r.hset(ExpKeys.get_scope_vars_keys(self.pk), "%s:%s" % (block_uuid, var_name), record)
 
 
 def delete_exp(exp):
@@ -468,13 +479,10 @@ class BroadInstituteGeneSet(models.Model):
     def __unicode__(self):
         return u"%s: %s. Units: %s" % (self.section, self.name, self.get_unit_display())
 
-    def get_gmt_storage(self):
-        return GmtStorage(self.gmt_file.path)
-
     def get_gene_sets(self):
-        gene_sets_s = GmtStorage(self.gmt_file.path)
-        gene_sets = gene_sets_s.load()
-        gene_sets.units = self.unit
+        gene_sets = GeneSets(None, None)
+        gene_sets.storage = GmtStorage(self.gmt_file.path)
+        gene_sets.metadata["gene_units"] = self.unit
         return gene_sets
 
     @staticmethod
