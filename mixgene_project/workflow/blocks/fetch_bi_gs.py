@@ -1,66 +1,62 @@
 from django import forms
-from fysom import Fysom
-
 from webapp.models import BroadInstituteGeneSet
+
+from workflow.ports import BlockPort
+
 
 from generic import GenericBlock
 
+import json
+
+import pandas as pd
 
 
-class GeneSetSelectionForm(forms.Form):
-    msigdb_id = forms.IntegerField()
+from webapp.models import Experiment
+from workflow.common_tasks import fetch_geo_gse, preprocess_soft
+from workflow.execution import ExecStatus
 
-    def clean_msigdb_id(self):
-        data = self.cleaned_data["msigdb_id"]
-        if len(BroadInstituteGeneSet.objects.filter(id=data)) == 0:
-            raise forms.ValidationError("Got wrong gene set identifier, try again")
+from workflow.blocks.generic import GenericBlock, ActionsList, save_params_actions_list, BlockField, FieldType, \
+    ActionRecord, ParamField, InputType, execute_block_actions_list, OutputBlockField, InputBlockField
+
+
+# class GeneSetSelectionForm(forms.Form):
+#     msigdb_id = forms.IntegerField()
+#
+#     def clean_msigdb_id(self):
+#         data = self.cleaned_data["msigdb_id"]
+#         if len(BroadInstituteGeneSet.objects.filter(id=data)) == 0:
+#             raise forms.ValidationError("Got wrong gene set identifier, try again")
 
 
 class GetBroadInstituteGeneSet(GenericBlock):
-    fsm = Fysom({
-        'events': [
-            {'name': 'save_form', 'src': 'created', 'dst': 'form_modified'},
-            {'name': 'save_form', 'src': 'form_modified', 'dst': 'form_modified'},
-            {'name': 'save_form', 'src': 'form_valid', 'dst': 'form_modified'},
-
-            {'name': 'on_form_is_valid', 'src': 'form_modified', 'dst': 'form_valid'},
-            {'name': 'on_form_not_valid', 'src': 'form_modified', 'dst': 'form_modified'},
-    ]})
-
-    all_actions = [
-        # method name, human readable title, user visible
-        ("save_form", "Select", True),
-
-        ("on_form_is_valid", "", False),
-        ("on_form_not_valid", "", False),
-    ]
-
-    widget = "widgets/get_bi_gene_set.html"
-    form_cls = GeneSetSelectionForm
     block_base_name = "BI_GENE_SET"
-    is_base_name_visible = True
+    _block_actions = ActionsList([
+        ActionRecord("save_params", ["created", "valid_params", "done"], "validating_params",
+                     user_title="Save parameters"),
+        ActionRecord("on_params_is_valid", ["validating_params"], "done"),
+        ActionRecord("on_params_not_valid", ["validating_params"], "created"),
+    ])
 
-    provided_objects = {
-        "gmt": "GmtStorage",
-    }
+    # TODO: maybe create more general solution ?
+    _all_gene_sets = BlockField("all_gene_sets", title="", input_type=InputType.HIDDEN,
+                               field_type=FieldType.RAW)
 
-    params_prototype = {
-        "msigdb_id": {
-            "name": "msigdb_id",
-            "title": "Gene set",
-            "input_type": "select",
-            "validation": None,
-            "default": "",
-            "data_source": "all_gene_sets",
-            "required": True,
-        }
-    }
+    msigdb_id = ParamField(name="msigdb_id", title="MSigDB gene set", input_type=InputType.SELECT,
+                           field_type=FieldType.INT, init_val="0",  # TODO: fix hardcoded value
+                           select_provider="all_gene_sets")
+
+    _gs = OutputBlockField(name="gs", field_type=FieldType.HIDDEN,
+                           provided_data_type="GeneSets")
+
+
+    @property
+    def all_gene_sets(self):
+        return BroadInstituteGeneSet.get_all_meta()
 
     def __init__(self, *args, **kwargs):
         super(GetBroadInstituteGeneSet, self).__init__("Get MSigDB gene set", *args, **kwargs)
         self.gene_sets = None
         self.errors = []
-        self.form = None
         self.selected_gs_id = None
 
     def on_form_is_valid(self):

@@ -1,32 +1,39 @@
 from celery import task
-from environment.structures import GeneSets, GmtStorage
+from environment.structures import GeneSets, GS
 from environment.units import GeneUnits
 
 from mixgene.util import transpose_dict_list
 
 
-def map_gene_sets_to_probes(annotation, gs):
+def map_gene_sets_to_probes(base_dir, base_filename, ann_gs, src_gs):
     """
-    @type annotation: environment.structures.PlatformAnnotation
-    @type gs: environment.structures.GeneSets
+    TODO: working units check
 
-    @rtype: environment.structures.GeneSets
+    @param filepath: Filepath to store result obj
+
+    @type ann_gs: GeneSets
+    @type gs: GeneSets
+
+    @rtype: GeneSets
     """
-    ann_gs = annotation.get_gmt()
     entrez_ids_to_probes_map = transpose_dict_list(ann_gs.genes)
 
-    gs_probes = GeneSets()
-    gs_probes.org = gs.org
-    gs_probes.units = GeneUnits.PROBE_ID
-    for set_name, gene_ids in gs.genes.iteritems():
+    gene_sets_probes = GeneSets(base_dir, base_filename)
+
+    gene_sets_probes.org = src_gs.org
+    gene_sets_probes.units = GeneUnits.PROBE_ID
+    gs = GS()
+    for set_name, gene_ids in src_gs.genes.iteritems():
         tmp_set = set()
         for entrez_id in gene_ids:
             tmp_set.update(entrez_ids_to_probes_map.get(entrez_id ,[]))
         if tmp_set:
-            gs_probes.genes[set_name] = list(tmp_set)
-            gs_probes.description[set_name] = gs.description[set_name]
+            gs.genes[set_name] = list(tmp_set)
+            gs.description[set_name] = gs.description[set_name]
 
-    return gs_probes
+    gene_sets_probes.store_gs(gs)
+
+    return gene_sets_probes
 
 
 def filter_gs_by_genes(src, allowed_genes):
@@ -40,38 +47,36 @@ def filter_gs_by_genes(src, allowed_genes):
     """
 
     allowed = set(allowed_genes)
-    gs = GeneSets()
-    gs.org = src.org
-    gs.units = src.units
+    gene_sets = GeneSets()
+    gene_sets.org = src.org
+    gene_sets.units = src.units
+    gs = GS()
 
     for k, gene_set in src.genes.iteritems():
         to_preserve = set(gene_set).intersection(allowed)
         if to_preserve:
-            gs.genes[k] = list(to_preserve)
-            gs.description[k] = src.description
-    return gs
+            gene_sets.genes[k] = list(to_preserve)
+            gene_sets.description[k] = src.description
+    return gene_sets
 
 @task(name="converters.gene_set_tools.merge_gs_with_platform_annotation")
 def merge_gs_with_platform_annotation(
         exp, block, store_field,
-        gmt_storage_gs,
+        gene_set,
         annotation,
-        filepath,
+        base_dir, base_filename,
         success_action="success", error_action="error",
     ):
     """
-        @type gmt_storage_gs: GmtStorage
+        @type gene_set: GeneSets
         @type annotation: PlatformAnnotation
     """
     try:
-        gs = gmt_storage_gs.load()
-        gs_merged = map_gene_sets_to_probes(annotation, gs)
+        gs = gene_set.get_gs()
+        ann_gs = annotation.get_gmt().load() # TODO: rename method in PlatformAnnotation
+        gs_merged = map_gene_sets_to_probes(base_dir, base_filename, ann_gs, gs)
 
-        gmts = GmtStorage(filepath)
-        gmts.store(gs_merged)
-
-        setattr(block, store_field, gmts)
-        block.do_action(success_action, exp)
+        block.do_action(success_action, exp, gs_merged)
     except Exception, e:
         block.errors.append(e)
         block.do_action(error_action, exp)

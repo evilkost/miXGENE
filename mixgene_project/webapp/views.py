@@ -213,13 +213,11 @@ def block_resource(request, exp_id, block_uuid, action_code=None):
 
 def block_sub_page(request, exp_id, block_uuid, sub_page):
     exp = Experiment.objects.get(pk=exp_id)
-    ctx = exp.get_ctx()
     block = exp.get_block(block_uuid)
 
     template = loader.get_template(block.pages[sub_page]['widget'])
     context = {
         "block_": block,
-        #"ctx": ctx,
         "exp": exp,
     }
     context = RequestContext(request, context)

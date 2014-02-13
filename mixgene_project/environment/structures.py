@@ -183,7 +183,7 @@ class ExpressionSet(GenericStoreStructure):
         return json.dumps(result)
 
 
-class GeneSets(object):
+class GS(object):
     def __init__(self, description=None, genes=None):
         if description is not None:
             self.description = description
@@ -195,9 +195,6 @@ class GeneSets(object):
         else:
             self.genes = {}
 
-        self.org = ""
-        self.units = ""
-
     def to_r_obj(self):
         gene_sets = R.ListVector(dict([
             (k, R.StrVector(list(v)))
@@ -206,12 +203,6 @@ class GeneSets(object):
         ]))
         return gene_sets
 
-
-        # mgs = R.r['new']('mixGeneSets')
-        # mgs.do_slot_assign("gene.sets", gene_sets)
-        # mgs.do_slot_assign("org", R.StrVector([self.org]))
-        # mgs.do_slot_assign("units", R.StrVector([self.units]))
-        # return mgs
 
 class GmtStorage(object):
     def __init__(self, filepath, compression=None, sep=None):
@@ -237,8 +228,7 @@ class GmtStorage(object):
 
     def load(self):
         """
-            @rtype  : GeneSets
-            @return : Gene sets
+            @rtype  : GS
         """
         gene_sets = GeneSets(dict(), dict())
 
@@ -261,9 +251,7 @@ class GmtStorage(object):
 
     def store(self, gene_sets):
         """
-            @type gene_sets: GeneSets
-            @param gene_sets: Gene sets
-
+            @type gene_sets: GS
             @return: None
         """
         def write_out(out):
@@ -279,6 +267,34 @@ class GmtStorage(object):
         else:
             with open(self.filepath, "w") as output:
                 write_out(output)
+
+
+class GeneSets(GenericStoreStructure):
+    def __init__(self, base_dir, base_filename):
+        super(GeneSets, self).__init__(base_dir, base_filename)
+
+        self.storage = None
+        self.metadata = {
+            "org": list(),
+            "set_units": str(),
+            "gene_units": str(),
+        }
+
+    def store_gs(self, gs):
+        """
+            @type gs: GS
+        """
+        if self.storage is None:
+            self.storage = GmtStorage(
+                filepath="%s/%s_gene_sets.gmt.gz" % (self.base_dir, self.base_filename),
+                compression="gzip"
+            )
+        self.storage.store_gs(gs)
+
+    def get_gs(self):
+        if self.storage is None:
+            raise RuntimeError("No gene sets was stored")
+        return self.storage.load()
 
 
 class PlatformAnnotation(object):
@@ -378,9 +394,25 @@ class SequenceContainer(object):
         self.iterator = -1
 
 
-class IntegerValue(object):
-    def __init__(self, val):
-        self.val = val
+class TableResult(GenericStoreStructure):
+    def __init__(self, base_dir, base_filename):
+        super(GeneSets, self).__init__(base_dir, base_filename)
+
+        self.table_storage = None
+        self.metadata = dict()
+
+    def store_table(self, df):
+        if self.table_storage is None:
+            self.table_storage = DataFrameStorage(self.form_filepath("result_table"))
+        self.table_storage.store(df)
+
+    def get_table(self):
+        if self.table_storage is None:
+            raise RuntimeError("Result table data wasn't stored prior")
+        return self.table_storage.load()
+
+
+
 
 
 ### R Legacy
@@ -424,6 +456,9 @@ class FileInputVar(AbsInputVar):
 
         self.geo_uid = None
         self.geo_type = None
+
+    def to_dict(self, *args, **kwargs):
+        return self.__dict__
 
     def set_file_type(self, file_type):
         if file_type in ['user', 'ncbi_geo', 'gmt']:

@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 
 {% block inner %}
-<input id="exp_id_storage" type="hidden" name="exp_id" value="{{ ctx.exp_id }}" />
+<input id="exp_id_storage" type="hidden" name="exp_id" value="{{ exp.pk }}" />
 <input id="csrf_token_storage" type="hidden" name="exp_id" value="{{ csrf_token }}" />
 
 
 <div id="{{ input_var.uuid }}_div" class="row">
 
 <div class="well">
-    <a href="{% url 'constructor' ctx.exp_id %}" class="btn btn-block btn-large btn-primary">
+    <a href="{% url 'constructor' exp.pk %}" class="btn btn-block btn-large btn-primary">
         Return to experiment.
     </a>
 </div>

@@ -1,21 +1,21 @@
-<div class="form-group" ng-controller="fieldSelectCtrl">
+<div class="form-group">
 
-    <label class="col-sm-3 control-label">
-        {$ field.title $}
-
+    <label class="col-sm-5 control-label">
+        {$ field.title $}.
+        <!--{$ block[field.name].str $}-->
     </label>
-    <div class="col-sm-9">
+    <!--<input ng-model="block[field.name]" type="text" />-->
+    <div class="col-sm-6">
         <select class="form-control"
                 name="{{ field.name }}"
                 ng-model="block[field.name]"
-                ng-options="o.pk as o.str for o in select_options"
-
+                ng-options="o.pk as o.str for o in block[field.select_provider]"
         >
         </select>
     </div>
 
     <div class="row">
-        <div ng-repeat="error in block.form_errors[field.name]" class="col-sm-9 col-sm-offset-3">
+        <div ng-repeat="error in block.named_errors[field.name]" class="col-sm-9 col-sm-offset-3">
             <span class="label label-danger">
                 {$ error $}
             </span>

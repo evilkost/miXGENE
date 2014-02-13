@@ -22,8 +22,12 @@ from workflow.blocks.generic import GenericBlock, ActionsList, save_params_actio
 class GlobalTest(GenericBlock):
     block_base_name = "GLOBAL_TEST"
 
-    _block_actions = ActionsList([])
-    _block_actions.extend(save_params_actions_list)
+    _block_actions = ActionsList([
+        ActionRecord("save_params", ["created", "valid_params", "done"], "validating_params",
+                     user_title="Save parameters"),
+        ActionRecord("on_params_is_valid", ["validating_params"], "ready"),
+        ActionRecord("on_params_not_valid", ["validating_params"], "created"),
+    ])
     _block_actions.extend(execute_block_actions_list)
 
     _input_es = InputBlockField(name="es", required_data_type="ExpressionSet", required=True)
@@ -39,16 +43,6 @@ class GlobalTest(GenericBlock):
         self.celery_task = None
         self.result = None # TODO: move to output variables
 
-
-        # self.ports = {
-        #     "input": {
-        #         "es": BlockPort(name="es", title="Choose expression set",
-        #                         data_type="ExpressionSet", scopes=[self.scope]),
-        #         "gs": BlockPort(name="gs", title="Choose gene set",
-        #                         data_type="GeneSets", scopes=[self.scope])
-        #     }
-        # }
-
     def gt_result_in_dict(self):
         return ""
         # df = self.pca_result.get_pca()
@@ -56,13 +50,11 @@ class GlobalTest(GenericBlock):
 
     def execute(self, exp, request, *args, **kwargs):
         self.clean_errors()
-        es = self.get_var_by_bound_key_str(exp, self.ports["input"]["es"].bound_key)
-        gs = self.get_var_by_bound_key_str(exp, self.ports["input"]["gs"].bound_key)
-
         self.celery_task = global_test_task.s(
-            exp, self, "gt_df_storage",
-            es, gs,
-            exp.get_data_file_path("%s_gt_result" % self.uuid, "csv.gz")
+            exp, self,
+            self.get_input_var("es"), self.get_input_var("gs"),
+            exp.get_data_folder(), "%s_gt_result" % self.uuid,
+            #exp.get_data_file_path("%s_gt_result" % self.uuid, "csv.gz")
         )
         exp.store_block(self)
         self.celery_task.apply_async()
@@ -71,5 +63,3 @@ class GlobalTest(GenericBlock):
         self.result = result
         exp.store_block(self)
 
-    def error(self, exp):
-        exp.store_block(self)

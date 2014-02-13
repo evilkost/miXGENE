@@ -61,7 +61,7 @@ class GlobalTest(object):
 
 @task(name="wrappers.gt.global_test_task")
 def global_test_task(
-        exp, block, store_field,
+        exp, block,
         es, gs_storage,
         base_dir, base_filename,
         pheno_class_column="User_class",
@@ -87,10 +87,8 @@ def global_test_task(
         res = TableResult(base_dir, base_filename)
         res.store_table(result_df)
 
-
         block.do_action(success_action, exp, res)
     except Exception, e:
         ex_type, ex, tb = sys.exc_info()
         traceback.print_tb(tb)
-        block.errors.append(e)
-        block.do_action(error_action, exp)
+        block.do_action(error_action, exp, e)
