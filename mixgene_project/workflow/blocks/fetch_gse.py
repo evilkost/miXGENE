@@ -103,16 +103,18 @@ class FetchGSE(GenericBlock):
             @type es: ExpressionSet
             @type ann: PlatformAnnotation
         """
-        self.expression_set = es
-        self.gpl_annotation = ann
+        self.set_out_var("expression_set", es)
+        self.set_out_var("gpl_annotation", ann)
+        # print "OUT_DATA: ", self._out_data
         self.clean_errors()
         exp.store_block(self)
 
     def assign_sample_classes(self, exp, request, *args, **kwargs):
         #TODO: Shift to celery
-        pheno_df = self.expression_set.get_pheno_data_frame()
+        es = self.get_out_var("expression_set")
+        pheno_df = es.get_pheno_data_frame()
         sample_classes = json.loads(request.POST['sample_classes'])
         pheno_df['User_class'] = pd.Series(sample_classes)
 
-        self.expression_set.store_pheno_data_frame(pheno_df)
+        es.store_pheno_data_frame(pheno_df)
         exp.store_block(self)

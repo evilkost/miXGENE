@@ -26,14 +26,14 @@ class GlobalTest(object):
             GlobalTest.gt = R.r['gt']
 
     @staticmethod
-    def gt_basic(es, gs, pheno_class_column="User_class",
+    def gt_basic(es, gene_sets, pheno_class_column="User_class",
                  model="logistic",
                  permutations=100):
         """
             @param es: Expression set with defined user class in pheno
             @type es: ExpressionSet
 
-            @type gs: environment.structures.GeneSets
+            @type gene_sets: environment.structures.GeneSets
 
             @param pheno_class_column: Column name of target classes in phenotype table
             @type pheno_class_column: string or None
@@ -44,7 +44,7 @@ class GlobalTest(object):
         response = es.get_pheno_column_as_r_obj(pheno_class_column)
 
         genes_in_es = es.get_assay_data_frame().index.tolist()
-        gs_filtered = filter_gs_by_genes(gs, genes_in_es)
+        gs_filtered = filter_gs_by_genes(gene_sets.get_gs(), genes_in_es)
 
         gt_instance = GlobalTest.gt(
             response,
@@ -62,7 +62,7 @@ class GlobalTest(object):
 @task(name="wrappers.gt.global_test_task")
 def global_test_task(
         exp, block,
-        es, gs_storage,
+        es, gene_sets,
         base_dir, base_filename,
         pheno_class_column="User_class",
         success_action="success", error_action="error"
@@ -81,8 +81,8 @@ def global_test_task(
     @type pheno_class_column: str or None
     """
     try:
-        gs = gs_storage.load()
-        result_df = GlobalTest.gt_basic(es, gs, pheno_class_column)
+
+        result_df = GlobalTest.gt_basic(es, gene_sets, pheno_class_column)
 
         res = TableResult(base_dir, base_filename)
         res.store_table(result_df)

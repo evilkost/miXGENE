@@ -48,27 +48,24 @@ class GetBroadInstituteGeneSet(GenericBlock):
     _gs = OutputBlockField(name="gs", field_type=FieldType.HIDDEN,
                            provided_data_type="GeneSets")
 
-
     @property
     def all_gene_sets(self):
         return BroadInstituteGeneSet.get_all_meta()
 
     def __init__(self, *args, **kwargs):
         super(GetBroadInstituteGeneSet, self).__init__("Get MSigDB gene set", *args, **kwargs)
-        self.gene_sets = None
-        self.errors = []
-        self.selected_gs_id = None
+        # self.gene_sets = None
+        # self.errors = []
+        # self.selected_gs_id = None
 
-    def on_form_is_valid(self):
-        self.errors = []
-        self.selected_gs_id = int(self.params["msigdb_id"])
-        self.gene_sets = BroadInstituteGeneSet.objects.get(pk=self.selected_gs_id).get_gene_sets()
-        #print self.selected_gs_id
+    def on_params_is_valid(self, exp):
+        gs = BroadInstituteGeneSet.objects.get(pk=self.msigdb_id).get_gene_sets()
+        self.set_out_var("gs", gs)
 
-    def on_form_not_valid(self):
-        pass
+        super(GetBroadInstituteGeneSet, self).on_params_is_valid(exp)
 
-    def serialize(self, exp, to="dict"):
-        hash = super(GetBroadInstituteGeneSet, self).serialize(exp, to)
-        hash["all_gene_sets"] = BroadInstituteGeneSet.get_all_meta()
-        return hash
+
+    # def serialize(self, exp, to="dict"):
+    #     hash = super(GetBroadInstituteGeneSet, self).serialize(exp, to)
+    #     hash["all_gene_sets"] = BroadInstituteGeneSet.get_all_meta()
+    #     return hash

@@ -106,9 +106,9 @@ def preprocess_soft(exp, block,
             base_filename="%s_annotation" % block.uuid
         )
 
-        platform_annotation.gene_units = GeneUnits.ENTREZ_ID
-        platform_annotation.set_units = GeneUnits.PROBE_ID
-        platform_annotation.store_gmt(probe_to_genes_GS)
+        platform_annotation.gene_sets.metadata["gene_units"] = GeneUnits.ENTREZ_ID
+        platform_annotation.gene_sets.metadata["set_units"] = GeneUnits.PROBE_ID
+        platform_annotation.gene_sets.store_gs(probe_to_genes_GS)
 
         id_ref_idx = soft[3].table_rows[0].index("ID_REF")
         value_idx = soft[3].table_rows[0].index("VALUE")

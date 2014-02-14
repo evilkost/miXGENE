@@ -241,7 +241,6 @@ class BlockSerializer(object):
                                    for param_name, param_field in self.params.iteritems()])
 
         for f_name, f in self.params.iteritems():
-            # import ipdb; ipdb.set_trace()
             ### TODO: remove repetition
             raw_val = getattr(block, f.name)
             if raw_val is None:
@@ -259,8 +258,7 @@ class BlockSerializer(object):
                     val = map(str, raw_val)
 
             result[f.name] = val
-            # if p.input_type == InputType.TEXT:
-            # result[p_name] = str(raw_val)
+
 
         result["actions"] = [{
             "code": ar.name,
@@ -384,7 +382,7 @@ class GenericBlock(BaseBlock):
 
     errors = BlockField("errors", FieldType.SIMPLE_LIST, list())
     warnings = BlockField("warnings", FieldType.SIMPLE_LIST, list())
-    bound_inputs = BlockField("bound_inputs", FieldType.SIMPLE_DICT, dict())
+    bound_inputs = BlockField("bound_inputs", FieldType.SIMPLE_DICT, defaultdict())
 
     def __init__(self, name, exp_id, scope_name):
         """
@@ -404,7 +402,6 @@ class GenericBlock(BaseBlock):
 
         self.out_manager = OutManager()
 
-        # self.bound_inputs = {}
         self.input_manager = InputManager()
 
         # TODO: Hmm maybe more metaclass magic can be applied here
@@ -415,11 +412,12 @@ class GenericBlock(BaseBlock):
         scope.store()
 
         for f_name, f in self._block_serializer.inputs.iteritems():
-            if f.name not in self.bound_inputs:
-                self.bound_inputs[f.name] = None
+            # if f.name not in self.bound_inputs:
+            #     self.bound_inputs[f.name] = None
             self.input_manager.register(f)
 
     def bind_input_var(self, input_name, bound_var):
+        print "bound input %s to %s" % (input_name, bound_var)
         self.bound_inputs[input_name] = bound_var
 
     def get_input_var(self, name):
@@ -448,7 +446,6 @@ class GenericBlock(BaseBlock):
         result = self._block_serializer.to_dict(self)
         print result
         return result
-
 
     def register_provided_objects(self, scope, scope_var):
         self.out_manager.register(scope_var.var_name, scope_var.data_type)

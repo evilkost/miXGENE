@@ -83,12 +83,12 @@ def constructor(request, exp_id):
 
 
 def _render_block(request, exp, block):
-    block.before_render(exp)
+    # block.before_render(exp)
     template = loader.get_template(block.widget)
     context = {
         "exp_block": block,
         "exp": exp,
-        "ctx": exp.get_ctx(),
+        # "ctx": exp.get_ctx(),
     }
     context = RequestContext(request, context)
     return HttpResponse(template.render(context))
@@ -437,7 +437,8 @@ def get_gse_samples_info(request, exp_id, block_uuid):
     block = exp.get_block(block_uuid)
     #assert isinstance(block, FetchGSE)
 
-    pheno_df = block.expression_set.get_pheno_data_frame()
+    #TODO: make common interface to access block variables from JS client
+    pheno_df = block.get_out_var("expression_set").get_pheno_data_frame()
     pheno_headers = [pheno_df.index.name]
     pheno_headers.extend(pheno_df.columns.tolist())
 

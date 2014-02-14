@@ -230,7 +230,7 @@ class GmtStorage(object):
         """
             @rtype  : GS
         """
-        gene_sets = GeneSets(dict(), dict())
+        gene_sets = GS(dict(), dict())
 
         def read_inp(inp):
             for line in inp:
@@ -289,7 +289,7 @@ class GeneSets(GenericStoreStructure):
                 filepath="%s/%s_gene_sets.gmt.gz" % (self.base_dir, self.base_filename),
                 compression="gzip"
             )
-        self.storage.store_gs(gs)
+        self.storage.store(gs)
 
     def get_gs(self):
         if self.storage is None:
@@ -315,45 +315,43 @@ class PlatformAnnotation(object):
         self.base_filename = base_filename
 
         self.name = platform_name
-        self.gmt_storage = None
+        self.gene_sets = GeneSets(base_dir, "%s_platform" % base_filename)
 
-        self.gene_units = None
-        self.set_units = None
 
-    def get_gmt(self):
-        """
-            @rtype: GmtStorage
-        """
-        if self.gmt_storage is None:
-            raise RuntimeError("Gmt wasn't setup prior")
-        return self.gmt_storage.load()
+    # def get_gene_sets(self):
+    #     """
+    #         @rtype: GmtStorage
+    #     """
+    #     if self.gmt_storage is None:
+    #         raise RuntimeError("Gmt wasn't setup prior")
+    #     return self.gmt_storage.load()
+    #
+    # def store_gmt(self, gene_sets):
+    #     """
+    #         @type  gene_sets: dict
+    #         @param gene_sets: {Set Name -> (Set description, [Set elements])}
+    #     """
+    #     if self.gmt_storage is None:
+    #         self.gmt_storage = GmtStorage(
+    #             filepath="%s/%s.gmt.gz" % (self.base_dir, self.base_filename),
+    #             compression="gzip"
+    #         )
+    #     self.gmt_storage.store(gene_sets)
 
-    def store_gmt(self, gene_sets):
-        """
-            @type  gene_sets: dict
-            @param gene_sets: {Set Name -> (Set description, [Set elements])}
-        """
-        if self.gmt_storage is None:
-            self.gmt_storage = GmtStorage(
-                filepath="%s/%s.gmt.gz" % (self.base_dir, self.base_filename),
-                compression="gzip"
-            )
-        self.gmt_storage.store(gene_sets)
-
-    def to_r_obj(self):
-        importr("miXGENE", lib_loc=R_LIB_CUSTOM_PATH)
-        gene_sets = self.load_gmt()
-        r_gene_sets = R.ListVector(dict([
-            (k, R.StrVector(descr_and_elements[1]))
-            for k, descr_and_elements in gene_sets.iteritems()
-        ]))
-
-        mgs = R.r['new']('mixGeneSets')
-        mgs.do_slot_assign("gene.sets", r_gene_sets)
-        mgs.do_slot_assign("org", R.StrVector([self.org]))
-        mgs.do_slot_assign("units", R.StrVector([self.units]))
-
-        return mgs
+    # def to_r_obj(self):
+    #     importr("miXGENE", lib_loc=R_LIB_CUSTOM_PATH)
+    #     gene_sets = self.load_gmt()
+    #     r_gene_sets = R.ListVector(dict([
+    #         (k, R.StrVector(descr_and_elements[1]))
+    #         for k, descr_and_elements in gene_sets.iteritems()
+    #     ]))
+    #
+    #     mgs = R.r['new']('mixGeneSets')
+    #     mgs.do_slot_assign("gene.sets", r_gene_sets)
+    #     mgs.do_slot_assign("org", R.StrVector([self.org]))
+    #     mgs.do_slot_assign("units", R.StrVector([self.units]))
+    #
+    #     return mgs
 
 
 class SequenceContainer(object):
@@ -396,7 +394,7 @@ class SequenceContainer(object):
 
 class TableResult(GenericStoreStructure):
     def __init__(self, base_dir, base_filename):
-        super(GeneSets, self).__init__(base_dir, base_filename)
+        super(TableResult, self).__init__(base_dir, base_filename)
 
         self.table_storage = None
         self.metadata = dict()
@@ -410,9 +408,6 @@ class TableResult(GenericStoreStructure):
         if self.table_storage is None:
             raise RuntimeError("Result table data wasn't stored prior")
         return self.table_storage.load()
-
-
-
 
 
 ### R Legacy

@@ -1,29 +1,15 @@
-from fysom import Fysom
-
-from workflow.ports import BlockPort
-
-from wrappers.gt import global_test_task
-
-from generic import GenericBlock
-
-import json
-
-import pandas as pd
-
-
-from webapp.models import Experiment
-from workflow.common_tasks import fetch_geo_gse, preprocess_soft
-from workflow.execution import ExecStatus
-
+from environment.structures import TableResult
 from workflow.blocks.generic import GenericBlock, ActionsList, save_params_actions_list, BlockField, FieldType, \
     ActionRecord, ParamField, InputType, execute_block_actions_list, OutputBlockField, InputBlockField
+
+from wrappers.gt import global_test_task
 
 
 class GlobalTest(GenericBlock):
     block_base_name = "GLOBAL_TEST"
 
     _block_actions = ActionsList([
-        ActionRecord("save_params", ["created", "valid_params", "done"], "validating_params",
+        ActionRecord("save_params", ["created", "valid_params", "done", "ready"], "validating_params",
                      user_title="Save parameters"),
         ActionRecord("on_params_is_valid", ["validating_params"], "ready"),
         ActionRecord("on_params_not_valid", ["validating_params"], "created"),
@@ -33,6 +19,7 @@ class GlobalTest(GenericBlock):
     _input_es = InputBlockField(name="es", required_data_type="ExpressionSet", required=True)
     _input_gs = InputBlockField(name="gs", required_data_type="GeneSets", required=True)
 
+    _result = OutputBlockField(name="result", field_type=FieldType.STR, provided_data_type=TableResult)
     elements = [
         "gt_result.html"
     ]
@@ -60,6 +47,7 @@ class GlobalTest(GenericBlock):
         self.celery_task.apply_async()
 
     def success(self, exp, result):
+        self.set_out_var("result", result)
         self.result = result
         exp.store_block(self)
 
