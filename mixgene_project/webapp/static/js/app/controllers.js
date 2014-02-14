@@ -73,8 +73,3 @@ Constructor.controller('PalletCtrl', function($scope, blockAccess){
         $scope.toggle_pallet();
     }
 })
-
-Constructor.controller('fieldSelectCtrl', function($scope, blockAccess){
-//    $scope.select_options = $scope.block[$scope.field.select_provider];
-
-})

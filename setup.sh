@@ -1,13 +1,21 @@
+#!/bin/sh
 # Setup instruction, not complete script
 #TODO: move pip install to requirements.txt
 
 sudo apt-get update
 #sudo apt-get upgrade
 
-sudo apt-get install python python-pip git-core tmux mysql-server mysql-common \
+sudo apt-get install -y python python-dev python-pip git-core tmux mysql-server mysql-common \
     mysql-client python-mysqldb nginx redis-server gunicorn  \
     r-base-core libxml2-dev r-cran-xml \
-    python-nose python-django-nose
+    python-nose python-django-nose python-scipy libatlas-dev libatlas3-base
+
+# installing Django from PIP
+sudo pip install -U Django South Celery django-celery redis hiredis \
+    pandas biopython rpy2 fysom flower django-extensions \
+    scikit-learn
+
+
 
 # during installation you will be asked for a password for the root $DB_ROOT_PASSWORD
 mysql -u root -p
@@ -15,17 +23,15 @@ mysql -u root -p
 # SQL begin
 CREATE DATABASE django_miGENEX;
 CREATE USER 'mixgene_app'@'localhost' IDENTIFIED BY '$DATABASE_PASSWORD';
+CREATE USER 'mixgene_app'@'localhost' IDENTIFIED BY 'qeaOHN73aBs2';
 GRANT ALL PRIVILEGES on django_miGENEX.* TO 'mixgene_app'@'localhost' WITH GRANT OPTION;
 FLUSH PRIVILEGES;
 quit
 # SQL end
 
 # now it should be possible to auth:
-#   "mysql django_miGENEX -u migenex_app -p" with  password qeaOHN73aBs2
+#   "mysql django_miGENEX -u migenex_app -p qeaOHN73aBs2"
 
-
-# installing Django from PIP
-sudo pip install -U Django South Celery django-celery redis hiredis pandas biopython rpy2 fysom flower django-extensions
 
 # init base db tables and prepare for migrations
 # cd to appropriate folder

@@ -16,11 +16,13 @@
   ],
   "dependencies": {
     "angular-cookies": "~1.2.4",
-    "angular": "~1.2.4",
+    "angular-slider": "~0.1.6",
+    "angular": "~1.2.13",
     "bootstrap": "~3.0.3",
     "datatables": "~1.9.4",
     "flot": "~0.8.2",
     "jquery-form": "~3.46.0",
+    "jquery-ui": "~1.10.x",
     "jquery.tablesorter": "~2.14.3"
   }
 }

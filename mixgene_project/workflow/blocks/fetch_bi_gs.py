@@ -42,7 +42,7 @@ class GetBroadInstituteGeneSet(GenericBlock):
                                field_type=FieldType.RAW)
 
     msigdb_id = ParamField(name="msigdb_id", title="MSigDB gene set", input_type=InputType.SELECT,
-                           field_type=FieldType.INT, init_val="0",  # TODO: fix hardcoded value
+                           field_type=FieldType.INT, init_val=0,  # TODO: fix hardcoded value
                            select_provider="all_gene_sets")
 
     _gs = OutputBlockField(name="gs", field_type=FieldType.HIDDEN,

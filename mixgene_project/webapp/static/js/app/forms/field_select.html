@@ -1,10 +1,9 @@
 <div class="form-group">
 
     <label class="col-sm-5 control-label">
-        {$ field.title $}.
-        <!--{$ block[field.name].str $}-->
+        {$ field.title $}:
     </label>
-    <!--<input ng-model="block[field.name]" type="text" />-->
+
     <div class="col-sm-6">
         <select class="form-control"
                 name="{{ field.name }}"
@@ -14,13 +13,13 @@
         </select>
     </div>
 
-    <div class="row">
-        <div ng-repeat="error in block.named_errors[field.name]" class="col-sm-9 col-sm-offset-3">
-            <span class="label label-danger">
-                {$ error $}
-            </span>
-        </div>
-    </div>
+    <!--<div class="row">-->
+        <!--<div ng-repeat="error in block.named_errors[field.name]" class="col-sm-9 col-sm-offset-3">-->
+            <!--<span class="label label-danger">-->
+                <!--{$ error $}-->
+            <!--</span>-->
+        <!--</div>-->
+    <!--</div>-->
 
 
 </div>

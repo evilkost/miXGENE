@@ -218,28 +218,49 @@ class BlockSerializer(object):
             if f.field_type == FieldType.HIDDEN:
                 continue
 
+            ### TODO: remove repetition
             raw_val = getattr(block, f_name)
             if raw_val is None:
-                result[f_name] = None
+                val = None
             else:
-                if f.field_type == FieldType.RAW:
-                    result[f_name] = raw_val
+                if f.field_type in [FieldType.RAW, FieldType.INT, FieldType.FLOAT] :
+                    val = raw_val
                 if f.field_type == FieldType.CUSTOM:
-                    result[f_name] = raw_val.to_dict(block)
-                if f.field_type in [FieldType.STR, FieldType.INT, FieldType.FLOAT, FieldType.BOOLEAN]:
-                    result[f_name] = str(raw_val)
+                    val = raw_val.to_dict(block)
+                if f.field_type in [FieldType.STR, FieldType.BOOLEAN]:
+                    val = str(raw_val)
                 if f.field_type == FieldType.SIMPLE_DICT:
-                    result[f_name] = {str(k): str(v) for k, v in raw_val.iteritems()}
+                    val = {str(k): str(v) for k, v in raw_val.iteritems()}
                 if f.field_type == FieldType.SIMPLE_LIST:
-                    result[f_name] = map(str, raw_val)
+                    val = map(str, raw_val)
+
+            result[f_name] = val
+
 
         result["_params_prototype"] = dict([(str(param_name), param_field.to_dict())
                                    for param_name, param_field in self.params.iteritems()])
 
-        for p_name, p in self.params.iteritems():
-            raw_val = getattr(block, p_name)
+        for f_name, f in self.params.iteritems():
+            # import ipdb; ipdb.set_trace()
+            ### TODO: remove repetition
+            raw_val = getattr(block, f.name)
+            if raw_val is None:
+                val = None
+            else:
+                if f.field_type in [FieldType.RAW, FieldType.INT, FieldType.FLOAT] :
+                    val = raw_val
+                if f.field_type == FieldType.CUSTOM:
+                    val = raw_val.to_dict(block)
+                if f.field_type in [FieldType.STR, FieldType.BOOLEAN]:
+                    val = str(raw_val)
+                if f.field_type == FieldType.SIMPLE_DICT:
+                    val = {str(k): str(v) for k, v in raw_val.iteritems()}
+                if f.field_type == FieldType.SIMPLE_LIST:
+                    val = map(str, raw_val)
+
+            result[f.name] = val
             # if p.input_type == InputType.TEXT:
-            result[p_name] = str(raw_val)
+            # result[p_name] = str(raw_val)
 
         result["actions"] = [{
             "code": ar.name,
@@ -248,6 +269,7 @@ class BlockSerializer(object):
 
         result["out"] = block.out_manager.to_dict()
         result["inputs"] = block.input_manager.to_dict()
+
 
         return result
 
