@@ -1,6 +1,7 @@
 from collections import defaultdict
 import copy
 import cPickle as pickle
+from pprint import pprint
 
 from mixgene.redis_helper import ExpKeys
 from mixgene.util import get_redis_instance
@@ -47,6 +48,79 @@ class ScopeVar(object):
         return ":".join(map(str, [self.block_uuid, self.var_name]))
 
 
+class DAG(object):
+    def __init__(self):
+        self.graph = defaultdict(list) # parent -> children list
+        self.parents = defaultdict(list) # child -> parent
+        self.roots = set()
+
+    def reverse_add(self, node, parents=None):
+        self.graph[node].append([])
+        if not parents:
+            self.parents[node] = []
+        else:
+            self.parents[node].extend(parents)
+            for parent in parents:
+                self.graph[parent].append(node)
+                self.parents[parent].append([])
+
+    def update_roots(self):
+        for node, parents in self.parents.iteritems():
+            if not parents:
+                self.roots.add(node)
+
+    # def check_loops(self):
+    #     for root in self.roots:
+    #         visited = set([])
+    #         closed = set([])
+    #         open_list = [root, ]
+    #         # TODO: USE REAL ALGO!!!!!
+    #
+    #         while open_list:
+    #             wn = open_list.pop(0)
+    #             if wn in closed:
+    #                 raise RuntimeError("Loop detected")
+    #             else:
+    #                 visited.add(wn)
+    #                 for new_node in self.graph[wn]:
+    #                     if new_node not in open_list:
+    #                         open_list.append(new_node)
+    #
+    #             if all([n in visited for n in self.parents[wn]]):
+    #                 closed.add(wn)
+
+    def get_unmarked(self):
+        for node, mark in self.marks.iteritems():
+            if mark == "unmarked":
+                return node
+        return None
+
+    def check_loops(self):
+        # http://en.wikipedia.org/wiki/Topological_sorting
+        self.L = []
+        self.marks = {node: "unmarked" for node in  self.graph.keys()}
+        while self.get_unmarked():
+            n = self.get_unmarked()
+            self.visit(n)
+
+    def visit(self, n):
+        if self.marks[n] == "temp":
+            raise RuntimeError("Contains loop")
+        if self.marks[n] == "unmarked":
+            self.marks[n] = "temp"
+            for child in self.graph[n]:
+                self.visit(child)
+            self.marks[n] = "perm"
+            self.L.insert(0, n)
+
+    def p1(self):
+        pprint(("ROOTS:", self.roots))
+        pprint(dict(self.graph))
+        pprint(dict(self.parents))
+        pprint(("TOPO SORT:", self.L))
+
+
+
 class Scope(object):
     # TODO: change webapp.models.py into package and move Scope there
     def __init__(self, exp, scope_name):
@@ -58,6 +132,22 @@ class Scope(object):
         self.name = scope_name
 
         self.scope_vars = set()
+        self.dag = None
+
+    def run(self):
+        self.build_dag()
+
+    def build_dag(self):
+        self.dag = DAG()
+        for uuid, block in self.exp.get_blocks(self.exp.get_all_block_uuids()):
+            if block.scope_name != self.name:
+                continue
+            else:
+                self.dag.reverse_add(block.uuid, block.get_input_blocks())
+
+        self.dag.update_roots()
+        self.dag.check_loops()
+        self.dag.p1()
 
     @property
     def vars_by_data_type(self):

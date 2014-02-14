@@ -1,15 +1,10 @@
-import traceback
-
-import pandas as pd
 import rpy2.robjects as R
-from rpy2.robjects.packages import importr
 import pandas.rpy.common as com
 
 from celery import task
 
 from converters.gene_set_tools import filter_gs_by_genes
-from environment.structures import DataFrameStorage, TableResult
-from mixgene.settings import R_LIB_CUSTOM_PATH
+from environment.structures import TableResult
 
 import sys
 import traceback
@@ -21,8 +16,8 @@ class GlobalTest(object):
     @staticmethod
     def gt_init():
         if GlobalTest.gt is None:
-            #importr("globaltest", lib_loc=R_LIB_CUSTOM_PATH)
-            R.r['library']("globaltest") #, lib_loc=R_LIB_CUSTOM_PATH)
+            # importr("globaltest", lib_loc=R_LIB_CUSTOM_PATH)
+            R.r['library']("globaltest")  # lib_loc=R_LIB_CUSTOM_PATH)
             GlobalTest.gt = R.r['gt']
 
     @staticmethod
@@ -76,12 +71,10 @@ def global_test_task(
     @param filepath: Fully qualified filepath to store result data frame
     @type filepath: str
 
-
     @param pheno_class_column: Column name of target classes in phenotype table
     @type pheno_class_column: str or None
     """
     try:
-
         result_df = GlobalTest.gt_basic(es, gene_sets, pheno_class_column)
 
         res = TableResult(base_dir, base_filename)

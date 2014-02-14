@@ -1,65 +1,72 @@
-import traceback
-import sys
-import rpy2.robjects as R
-from rpy2.robjects.packages import importr
-import pandas.rpy.common as com
+import traceback, sys
+
+from sklearn import svm
+from sklearn import preprocessing
 
 from celery import task
 
-from environment.structures import ExpressionSet, mixML
-from mixgene.settings import R_LIB_CUSTOM_PATH
+from environment.structures import ExpressionSet, ClassifierResult
+from wrappers.scoring import compute_scores
 
-@task(name='worflow.wrappers.svm_test')
-def svm_test(exp, block, train, test):
+
+def linear_svm(train_es, test_es,
+               lin_svm_options,
+               base_folder, base_filename,
+               target_class_column=None):
     """
-        @type train: ExpressionSet
-        @type  test: ExpressionSet
+        @type train_es: ExpressionSet
+        @type test_es: ExpressionSet
     """
+
+    if target_class_column is None:
+        target_class_column = "User_class"
+
+    # Unpack data
+    x_train = train_es.get_assay_data_frame().as_matrix().transpose()
+    y_train = train_es.get_pheno_data_frame()[target_class_column].as_matrix()
+
+    x_test = test_es.get_assay_data_frame().as_matrix().transpose()
+    y_test = test_es.get_pheno_data_frame()[target_class_column].as_matrix()
+
+    # Unfortunately svm can't operate with string labels as a target classes
+    #   so we need to preprocess labels
+    le = preprocessing.LabelEncoder()
+    le.fit(y_train)
+
+    y_train_fixed = le.transform(y_train)
+    y_test_fixed = le.transform(y_test)
+
+    # Classifier initialization
+    classifier = svm.LinearSVC(**lin_svm_options)
+    # Model learning
+    classifier.fit(x_train, y_train_fixed)
+
+    # Applying on test partition
+    y_test_predicted = classifier.predict(x_test)
+
+    # Here we build result object
+    cr = ClassifierResult(base_folder, base_filename)
+    cr.labels_encode_vector = le.classes_  # Store target class labels
+    cr.classifier = "linear_svm"
+    cr.scores = compute_scores(y_test_fixed, y_test_predicted)  # Hmm what about parametric scores?
+    cr.store_model(classifier)
+    return cr
+
+
+## Here is a Celery task wrapper, it will be simplified in the future
+@task(name="wrappers.svm.lin_svm_task")
+def lin_svm_task(exp, block,
+                 train_es, test_es,
+                 lin_svm_options,
+                 base_folder, base_filename,
+                 target_class_column=None,
+                 success_action="success", error_action="error"
+    ):
     try:
-        importr("miXGENE", lib_loc=R_LIB_CUSTOM_PATH)
-
-        assay_train_df = train.get_assay_data_frame()
-        pheno_train_df = train.get_pheno_data_frame()
-
-        assay_test_df = test.get_assay_data_frame()
-        pheno_test_df = test.get_pheno_data_frame()
-
-        rnew = R.r["new"]
-        dataset_train = rnew("mixData")
-        dataset_test = rnew("mixData")
-
-        dataset_train.do_slot_assign("data", com.convert_to_r_dataframe(assay_train_df))
-        dataset_test.do_slot_assign("data", com.convert_to_r_dataframe(assay_test_df))
-
-        pheno_train = rnew("mixPheno")
-        pheno_test = rnew("mixPheno")
-
-        pheno_train.do_slot_assign("phenotype",
-                                   R.r.factor(R.StrVector(pheno_train_df['User_class'].tolist()))
-        )
-        pheno_test.do_slot_assign("phenotype",
-                                  R.r.factor(R.StrVector(pheno_test_df['User_class'].tolist()))
-        )
-
-        svm = R.r['mixSvmLin'](
-            dataset=dataset_train,
-            dataset_factor=pheno_train,
-
-            new_dataset=dataset_test,
-            new_dataset_factor=pheno_test,
-            )
-
-        result = mixML(exp, svm, "%s_ML" % block.uuid)
-        result.title = "SVM result"
-
-        block.mixMlResult = result
-
-        block.do_action("on_svm_done", exp)
+        classifier_result = linear_svm(train_es, test_es,
+                                       lin_svm_options,
+                                       base_folder, base_filename,
+                                       target_class_column)
+        block.do_action(success_action, exp, classifier_result)
     except Exception, e:
-        ex_type, ex, tb = sys.exc_info()
-        traceback.print_tb(tb)
-        print e
-        #TODO: LOG ERROR AND TRACEBACK OR WE LOSE IT!
-        #import ipdb; ipdb.set_trace()
-        block.errors.append(e)
-        block.do_action("on_svm_error", exp)
+        block.do_action(error_action, exp, e)

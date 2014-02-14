@@ -38,13 +38,11 @@ class GlobalTest(GenericBlock):
             exp, self,
             self.get_input_var("es"), self.get_input_var("gs"),
             exp.get_data_folder(), "%s_gt_result" % self.uuid,
-            #exp.get_data_file_path("%s_gt_result" % self.uuid, "csv.gz")
         )
         exp.store_block(self)
         self.celery_task.apply_async()
 
-    def success(self, exp, result):
+    def success(self, exp, result, *args, **kwargs):
         self.set_out_var("result", result)
         self.result = result
         exp.store_block(self)
-

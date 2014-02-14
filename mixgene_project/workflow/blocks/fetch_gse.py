@@ -14,6 +14,11 @@ from workflow.blocks.generic import GenericBlock, ActionsList, save_params_actio
 class FetchGSE(GenericBlock):
     block_base_name = "FETCH_GEO"
     _block_actions = ActionsList([
+        ActionRecord("save_params", ["created", "valid_params", "done", "ready"], "validating_params",
+                     user_title="Save parameters"),
+        ActionRecord("on_params_is_valid", ["validating_params"], "valid_params"),
+        ActionRecord("on_params_not_valid", ["validating_params"], "created"),
+
         ActionRecord("start_fetch", ["valid_params", "done"], "source_is_being_fetched", "Start fetch"),
         ActionRecord("error_during_fetch", ["source_is_being_fetched"], "form_valid"),
         ActionRecord("successful_fetch", ["source_is_being_fetched"], "source_was_fetched"),
@@ -24,7 +29,6 @@ class FetchGSE(GenericBlock):
 
         ActionRecord("assign_sample_classes", ["source_was_preprocessed", "done"], "done"),
     ])
-    _block_actions.extend(save_params_actions_list)
 
     source_file = BlockField("source_file", FieldType.CUSTOM, None)
     # TODO: add sub page field

@@ -156,6 +156,7 @@ class InputBlockField(BlockField):
 class InputType(object):
     TEXT = "text"
     SELECT = "select"
+    CHOICE = "choice"
     CHECKBOX = "checkbox"
     HIDDEN = "hidden"
 
@@ -279,7 +280,17 @@ class BlockSerializer(object):
         # import  ipdb; ipdb.set_trace()
         for p_name, p in self.params.iteritems():
             # TODO: here invoke validator
-            setattr(block, p_name, received_block.get(p_name))
+            raw_val = received_block.get(p_name)
+
+            # TODO: add conversion to BlockField class
+            if p.field_type == FieldType.FLOAT:
+                val = float(raw_val)
+            elif p.field_type == FieldType.INT:
+                val = int(raw_val)
+            else:
+                val = raw_val
+
+            setattr(block, p_name, val)
 
         inputs_dict = received_block.get('bound_inputs')
         if inputs_dict:
@@ -441,6 +452,15 @@ class GenericBlock(BaseBlock):
         exp = Experiment.get_exp_by_id(self.exp_id)
         return Scope(exp, self.scope_name)
 
+    def get_input_blocks(self):
+        required_blocks = []
+        for f in self.input_manager.input_fields:
+            if self.bound_inputs.get(f.name) is None and f.required:
+                raise RuntimeError("Not all required inputs are bound")
+            elif self.bound_inputs.get(f.name):
+                required_blocks.append(self.bound_inputs[f.name].block_uuid)
+        return required_blocks
+
     def get_user_actions(self):
         """
             @rtype: list of ActionRecord
@@ -450,7 +470,6 @@ class GenericBlock(BaseBlock):
     def to_dict(self):
         # import ipdb; ipdb.set_trace()
         result = self._block_serializer.to_dict(self)
-        print result
         return result
 
     def register_provided_objects(self, scope, scope_var):
@@ -505,31 +524,17 @@ class GenericBlock(BaseBlock):
         exp.store_block(self)
 
 save_params_actions_list = ActionsList([
-    ActionRecord("save_params", ["created", "params_modified", "valid_params", "done"], "validating_params",
+    ActionRecord("save_params", ["created", "valid_params", "done", "ready"], "validating_params",
                  user_title="Save parameters"),
-    ActionRecord("on_params_is_valid", ["validating_params"], "valid_params"),
-    ActionRecord("on_params_not_valid", ["validating_params"], "params_modified"),
+    ActionRecord("on_params_is_valid", ["validating_params"], "ready"),
+    ActionRecord("on_params_not_valid", ["validating_params"], "created"),
 ])
 
 execute_block_actions_list = ActionsList([
     ActionRecord("execute", ["ready"], "working", user_title="Run block"),
     ActionRecord("success", ["working"], "done"),
-    ActionRecord("error", ["working"], "ready"),
+    ActionRecord("error", ["ready", "working"], "ready"),
 ])
-
-
-class Y(GenericBlock):
-    _save_form_actions = save_params_actions_list
-
-
-class Z(GenericBlock):
-    _save_form_actions = save_params_actions_list
-
-if __name__ == "__main__":
-    y = Y(1, 2, 3)
-    print(y.to_dict())
-    y.do_action("save_form")
-    print(y.to_dict())
 
 
 class GroupType(object):

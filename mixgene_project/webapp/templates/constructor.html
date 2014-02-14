@@ -3,8 +3,8 @@
 {% block inner %}
 
 <div ng-app="Constructor" ng-controller="MainCtrl">
-<input id="exp_id_storage" type="hidden" name="exp_id" value="{{ ctx.exp_id }}" />
-<input id="csrf_token_storage" type="hidden" name="exp_id" value="{{ csrf_token }}" />
+<input id="exp_id_storage" type="hidden" name="exp_id" value="{{ exp.pk }}" />
+<input id="csrf_token_storage" type="hidden"  value="{{ csrf_token }}" />
 
 <script type="text/javascript">
     {% autoescape off %}
@@ -14,8 +14,15 @@
 
 
 <div id="worktable" class="col-xs-12" ng-controller="WorktableCtrl">
+  <div class="row">
+      <div class="col-xs-2 col-xs-offset-5">
+          <a class="btn btn-primary"
+             href="{% url 'webapp.views.alter_exp' exp_id=exp.pk action='execute' %}">Run experiment</a>
+      </div>
 
-  <div ng-repeat="uuid in access.blocks_by_bscope.root">
+  </div>
+    <hr />
+  <div class="row" ng-repeat="uuid in access.blocks_by_bscope.root">
       <div block-dir block="access.block_bodies[uuid]"> </div>
   </div>
 

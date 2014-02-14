@@ -323,38 +323,38 @@ def experiments(request):
     return HttpResponse(template.render(context))
 
 #@login_required(login_url='/auth/login/')
-
-@never_cache
-def exp_details(request, exp_id):
-    exp = Experiment.objects.get(pk = exp_id)
-    layout = exp.workflow
-    wf = layout.get_class_instance()
-
-    if exp.status in ['done', 'failed']:
-        template = loader.get_template(wf.template_result)
-    else:
-        template = loader.get_template(wf.template)
-
-    ctx = exp.get_ctx()
-    if 'results' not in ctx.keys():
-        ctx['results'] = {}
-    for res_var in ctx['result_vars']:
-        if res_var in ctx:
-            ctx['results'][res_var] = ctx[res_var]
-
-    context = RequestContext(request, {
-        "exp_page_active": True,
-
-        "data_files_url_prefix": "/media/data/%s/%s/" % (exp.author.id, exp.pk),
-        "exp": exp,
-        "layout": layout,
-        "wf": wf,
-        "ctx": ctx,
-        "next": "/experiment/%s" % exp.pk,
-        "runnable": exp.status == "configured",
-        "configurable": exp.status in ["initiated", "configured"],
-    })
-    return HttpResponse(template.render(context))
+#
+# @never_cache
+# def exp_details(request, exp_id):
+#     exp = Experiment.objects.get(pk = exp_id)
+#     layout = exp.workflow
+#     wf = layout.get_class_instance()
+#
+#     if exp.status in ['done', 'failed']:
+#         template = loader.get_template(wf.template_result)
+#     else:
+#         template = loader.get_template(wf.template)
+#
+#     ctx = exp.get_ctx()
+#     if 'results' not in ctx.keys():
+#         ctx['results'] = {}
+#     for res_var in ctx['result_vars']:
+#         if res_var in ctx:
+#             ctx['results'][res_var] = ctx[res_var]
+#
+#     context = RequestContext(request, {
+#         "exp_page_active": True,
+#
+#         "data_files_url_prefix": "/media/data/%s/%s/" % (exp.author.id, exp.pk),
+#         "exp": exp,
+#         "layout": layout,
+#         "wf": wf,
+#         "ctx": ctx,
+#         "next": "/experiment/%s" % exp.pk,
+#         "runnable": exp.status == "configured",
+#         "configurable": exp.status in ["initiated", "configured"],
+#     })
+#     return HttpResponse(template.render(context))
 
 
 @login_required(login_url='/auth/login/')
@@ -364,6 +364,9 @@ def alter_exp(request, exp_id, action):
     exp = Experiment.objects.get(pk=exp_id)
     if exp.author != request.user:
         return redirect("/") # TODO: show alert about wrong experiment
+
+    if action == "execute":
+        exp.execute()
 
     if action == 'delete': # TODO: check that exp state allows deletion
         delete_exp(exp)
@@ -375,7 +378,7 @@ def alter_exp(request, exp_id, action):
         factors = json.loads(request.POST['factors'])
         exp.update_ctx({"gse_factors": factors})
 
-    return redirect(request.POST.get("next") or "/experiment/%s" % exp.pk) # TODO use reverse
+    return redirect(request.POST.get("next") or "/constructor/%s" % exp.pk) # TODO use reverse
 
 
 @login_required(login_url='/auth/login/')

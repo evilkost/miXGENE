@@ -1,12 +1,24 @@
 import gzip
-import copy
+import cPickle as pickle
 from uuid import uuid1
 import pandas as pd
 import rpy2.robjects as R
-from rpy2.robjects.packages import importr
-from mixgene.settings import R_LIB_CUSTOM_PATH
+
+
 import json
+
 from workflow.input import AbsInputVar
+
+class PickleStorage(object):
+    def __init__(self, filepath):
+        self.filepath = filepath
+
+    def load(self):
+        return pickle.load(open(self.filepath, "rb"))
+
+    def store(self, obj):
+        with open(self.filepath, "wb") as out:
+            pickle.dump(obj, out, 2)
 
 
 class DataFrameStorage(object):
@@ -318,42 +330,6 @@ class PlatformAnnotation(object):
         self.gene_sets = GeneSets(base_dir, "%s_platform" % base_filename)
 
 
-    # def get_gene_sets(self):
-    #     """
-    #         @rtype: GmtStorage
-    #     """
-    #     if self.gmt_storage is None:
-    #         raise RuntimeError("Gmt wasn't setup prior")
-    #     return self.gmt_storage.load()
-    #
-    # def store_gmt(self, gene_sets):
-    #     """
-    #         @type  gene_sets: dict
-    #         @param gene_sets: {Set Name -> (Set description, [Set elements])}
-    #     """
-    #     if self.gmt_storage is None:
-    #         self.gmt_storage = GmtStorage(
-    #             filepath="%s/%s.gmt.gz" % (self.base_dir, self.base_filename),
-    #             compression="gzip"
-    #         )
-    #     self.gmt_storage.store(gene_sets)
-
-    # def to_r_obj(self):
-    #     importr("miXGENE", lib_loc=R_LIB_CUSTOM_PATH)
-    #     gene_sets = self.load_gmt()
-    #     r_gene_sets = R.ListVector(dict([
-    #         (k, R.StrVector(descr_and_elements[1]))
-    #         for k, descr_and_elements in gene_sets.iteritems()
-    #     ]))
-    #
-    #     mgs = R.r['new']('mixGeneSets')
-    #     mgs.do_slot_assign("gene.sets", r_gene_sets)
-    #     mgs.do_slot_assign("org", R.StrVector([self.org]))
-    #     mgs.do_slot_assign("units", R.StrVector([self.units]))
-    #
-    #     return mgs
-
-
 class SequenceContainer(object):
     def __init__(self, fields, sequence=None):
         self.sequence = sequence or []
@@ -391,6 +367,31 @@ class SequenceContainer(object):
     def reset_iterator(self):
         self.iterator = -1
 
+
+class ClassifierResult(GenericStoreStructure):
+    def __init__(self, *args, **kwargs):
+        super(ClassifierResult, self).__init__(*args, **kwargs)
+
+        self.classifier = ""
+        self.labels_encode_vector = []
+        self.scores = {}  # metric -> value
+        self.model_storage = None
+
+    def get_model(self):
+        if self.model_storage is None:
+            raise RuntimeError("Model wasn't stored")
+        return self.model_storage.load()
+
+    def store_model(self, model):
+        if self.model_storage is None:
+            self.model_storage = PickleStorage(self.form_filepath("classifier_result"))
+        self.model_storage.store(model)
+
+    def to_dict(self):
+        return {
+            "classifier": self.classifier,
+            "scores": str(self.scores),
+        }
 
 class TableResult(GenericStoreStructure):
     def __init__(self, base_dir, base_filename):
