@@ -19,21 +19,18 @@ class GlobalTest(GenericBlock):
     _input_es = InputBlockField(name="es", required_data_type="ExpressionSet", required=True)
     _input_gs = InputBlockField(name="gs", required_data_type="GeneSets", required=True)
 
-    _result = OutputBlockField(name="result", field_type=FieldType.STR, provided_data_type=TableResult)
-    elements = [
+    _result = OutputBlockField(name="result", field_type=FieldType.STR,
+                               provided_data_type="TableResult", init_val=None)
+
+    elements = BlockField(name="elements", field_type=FieldType.SIMPLE_LIST, init_val=[
         "gt_result.html"
-    ]
+    ])
 
     def __init__(self, *args, **kwargs):
         super(GlobalTest, self).__init__("Global test", *args, **kwargs)
 
         self.celery_task = None
         self.result = None # TODO: move to output variables
-
-    def gt_result_in_dict(self):
-        return ""
-        # df = self.pca_result.get_pca()
-        # return df.to_json(orient="split")
 
     def execute(self, exp, request, *args, **kwargs):
         self.clean_errors()

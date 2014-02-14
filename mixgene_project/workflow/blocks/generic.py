@@ -265,7 +265,7 @@ class BlockSerializer(object):
             "title": ar.user_title,
         } for ar in block.get_user_actions()]
 
-        result["out"] = block.out_manager.to_dict()
+        result["out"] = block.out_manager.to_dict(block)
         result["inputs"] = block.input_manager.to_dict()
 
 
@@ -338,8 +338,14 @@ class OutManager(object):
     def get_fields_by_data_type(self, data_type):
         return self.fields_by_data_type[data_type]
 
-    def to_dict(self):
-        return {}
+    def to_dict(self, block):
+        result = {}
+        for fname, _ in self.data_type_by_name.iteritems():
+            var = block.get_out_var(fname)
+            if var and hasattr(var, "to_dict"):
+                result[fname] = var.to_dict()
+
+        return result
 
 
 class InputManager(object):

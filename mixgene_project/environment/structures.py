@@ -399,12 +399,21 @@ class TableResult(GenericStoreStructure):
         self.table_storage = None
         self.metadata = dict()
 
+    def to_dict(self):
+        df = self.get_table()
+        return {
+            "head": df.head().to_dict()
+        }
+
     def store_table(self, df):
         if self.table_storage is None:
             self.table_storage = DataFrameStorage(self.form_filepath("result_table"))
         self.table_storage.store(df)
 
     def get_table(self):
+        """
+            @rtype: pd.DataFrame
+        """
         if self.table_storage is None:
             raise RuntimeError("Result table data wasn't stored prior")
         return self.table_storage.load()
