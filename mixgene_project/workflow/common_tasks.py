@@ -14,6 +14,7 @@ from environment.structures import ExpressionSet, PlatformAnnotation, \
     GeneSets, GS, FileInputVar
 import sys
 import traceback
+from webapp.scope import ScopeRunner
 
 
 @task(name="workflow.common_tasks.fetch_GEO_gse")

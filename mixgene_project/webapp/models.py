@@ -14,9 +14,9 @@ from mixgene.util import get_redis_instance
 from mixgene.redis_helper import ExpKeys
 from mixgene.util import dyn_import
 from environment.structures import GmtStorage, GeneSets
-from webapp.scope import Scope
+from webapp.scope import Scope, ScopeRunner
 from workflow.execution import ScopeState
-
+from webapp.scope import auto_exec_task
 
 class CachedFile(models.Model):
     uri = models.TextField(default="")
@@ -80,9 +80,7 @@ class Experiment(models.Model):
         return Experiment.objects.get(pk=_pk)
 
     def execute(self):
-        root_scope = Scope(self, "root")
-        root_scope.load()
-        root_scope.run()
+        auto_exec_task.s(self, "root").apply_async()
 
     def init_ctx(self, ctx, redis_instance=None):
         ## TODO: RENAME TO init experiment and invoke on first save
@@ -383,7 +381,7 @@ class Experiment(models.Model):
             if block.scope_name != scope_name:
                 continue
             else:
-                dependencies[block.uuid] = block.get_input_blocks()
+                dependencies[str(block.uuid)] = map(str, block.get_input_blocks())
 
         return dependencies
 

@@ -3,6 +3,7 @@ import copy
 import itertools
 from webapp.models import Experiment
 from webapp.scope import Scope, ScopeVar
+from webapp.scope import auto_exec_task
 from workflow.execution import ExecStatus
 
 from uuid import uuid1
@@ -12,10 +13,10 @@ from workflow.ports import BoundVar
 
 from collections import defaultdict
 from uuid import uuid1
-
+from webapp.scope import ScopeRunner
 
 class ActionRecord(object):
-    def __init__(self, name, src_states, dst_state, user_title=None, **kwargs):
+    def __init__(self, name, src_states, dst_state, user_title=None,**kwargs):
         self.name = name
         self.src_states = src_states
         self.dst_state = dst_state
@@ -421,6 +422,13 @@ class GenericBlock(BaseBlock):
         self.out_manager = OutManager()
         self.input_manager = InputManager()
 
+        # Automatic execution status map
+        self.auto_exec_status_ready = set(["ready"])
+        self.auto_exec_status_done = set(["done"])
+        self.auto_exec_status_error = set(["execution_error"])
+        self.is_block_supports_auto_execution = False
+
+
         # Init blo1ck fields
         for f_name, f in itertools.chain(
                 self._block_serializer.fields.iteritems(),
@@ -440,6 +448,16 @@ class GenericBlock(BaseBlock):
 
         for f_name, f in self._block_serializer.inputs.iteritems():
             self.input_manager.register(f)
+
+    def get_exec_status(self):
+        if self.state in self.auto_exec_status_done:
+            return "done"
+        if self.state in self.auto_exec_status_error:
+            return "error"
+        if self.state in self.auto_exec_status_ready:
+            return "ready"
+
+        return "not_ready"
 
     def bind_input_var(self, input_name, bound_var):
         print "bound input %s to %s" % (input_name, bound_var)
@@ -483,11 +501,19 @@ class GenericBlock(BaseBlock):
         self.out_manager.register(scope_var.var_name, scope_var.data_type)
         scope.register_variable(scope_var)
 
-    def do_action(self, action_name, *args, **kwargs):
+    def do_action(self, action_name, exp, *args, **kwargs):
         next_state = self._trans.next_state(self.state, action_name)
         if next_state is not None:
             self.state = next_state
-            getattr(self, action_name)(*args, **kwargs)
+            exp.store_block(self)
+            getattr(self, action_name)(exp, *args, **kwargs)
+
+            # TODO: Check if self.scope_name is actually set to auto execution
+            #
+            if self.is_block_supports_auto_execution:
+                if self.get_exec_status() == "done":
+                    auto_exec_task.s(exp, self.scope_name).apply_async()
+
         else:
             raise RuntimeError("Action %s isn't available" % action_name)
 
@@ -539,7 +565,7 @@ save_params_actions_list = ActionsList([
 execute_block_actions_list = ActionsList([
     ActionRecord("execute", ["ready"], "working", user_title="Run block"),
     ActionRecord("success", ["working"], "done"),
-    ActionRecord("error", ["ready", "working"], "ready"),
+    ActionRecord("error", ["ready", "working"], "execution_error"),
 ])
 
 

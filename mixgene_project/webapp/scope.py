@@ -2,10 +2,16 @@ from collections import defaultdict
 import copy
 import cPickle as pickle
 from pprint import pprint
+from celery.task import task
 
 from mixgene.redis_helper import ExpKeys
 from mixgene.util import get_redis_instance
 
+
+@task(name="workflow.common_tasks.auto_exec")
+def auto_exec_task(exp, scope_name):
+    sr = ScopeRunner(exp, scope_name)
+    sr.execute()
 
 class ScopeVar(object):
     def __init__(self, block_uuid, var_name, data_type=None, block_alias=None):
@@ -50,19 +56,43 @@ class ScopeVar(object):
 
 class DAG(object):
     def __init__(self):
-        self.graph = defaultdict(list) # parent -> children list
-        self.parents = defaultdict(list) # child -> parent
+        self.graph = defaultdict(list)  # parent -> [children list]
+        self.parents = defaultdict(list)  # child -> [parents list]
         self.roots = set()
 
+        self.topological_order = None
+        self.marks = {}
+
     def reverse_add(self, node, parents=None):
-        self.graph[node].append([])
+        if node not in self.graph:
+            self.graph[node] = []
         if not parents:
             self.parents[node] = []
         else:
             self.parents[node].extend(parents)
             for parent in parents:
                 self.graph[parent].append(node)
-                self.parents[parent].append([])
+                if parent not in self.parents.keys():
+                    self.parents[parent] = []
+
+    def get_children(self, node):
+        return self.graph[node]
+
+    def get_parents(self, node):
+        return self.parents[node]
+
+    @staticmethod
+    def from_deps(dependencies):
+        dag = DAG()
+        for node, parents in dependencies.iteritems():
+            dag.reverse_add(node, parents)
+
+        dag.update_roots()
+
+        dag.sort_graph()
+        dag.p1()
+
+        return dag
 
     def update_roots(self):
         for node, parents in self.parents.iteritems():
@@ -75,10 +105,11 @@ class DAG(object):
                 return node
         return None
 
-    def check_loops(self):
+    def sort_graph(self):
         # http://en.wikipedia.org/wiki/Topological_sorting
-        self.L = []
-        self.marks = {node: "unmarked" for node in  self.graph.keys()}
+        # TODO( low priority): change to iterative version
+        self.topological_order = []
+        self.marks = {node: "unmarked" for node in self.graph.keys()}
         while self.get_unmarked():
             n = self.get_unmarked()
             self.visit(n)
@@ -91,14 +122,50 @@ class DAG(object):
             for child in self.graph[n]:
                 self.visit(child)
             self.marks[n] = "perm"
-            self.L.insert(0, n)
+            self.topological_order.insert(0, n)
 
-    def p1(self):
-        pprint(("ROOTS:", self.roots))
-        pprint(dict(self.graph))
-        pprint(dict(self.parents))
-        pprint(("TOPO SORT:", self.L))
 
+class ScopeRunner(object):
+    def __init__(self, exp, scope_name):
+        """
+            @type exp: webapp.models.Experiment
+            @type scope_name: str
+        """
+        self.exp = exp
+        self.scope_name = scope_name
+        self.dag = None
+
+    def execute(self):
+        self.build_dag(self.exp.build_block_dependencies_by_scope(self.scope_name))
+
+        blocks_to_execute = []
+        blocks_dict = dict(self.exp.get_blocks(self.dag.topological_order))
+        for block_uuid in self.dag.topological_order:
+            block = blocks_dict[block_uuid]
+            if block.get_exec_status() == "ready" and \
+                all([blocks_dict[p_uuid].get_exec_status() == "done"
+                    for p_uuid in self.dag.get_parents(block_uuid)]):
+                blocks_to_execute.append(block)
+
+        if not blocks_to_execute:
+            print "Nothing to execute"
+        else:
+            for block in blocks_to_execute:
+                print "Block %s can be executed" % block.name
+                block.do_action("execute", self.exp)
+
+    def build_dag(self, block_dependencies):
+        """
+            @type block_dependencies: dict
+            @param block_dependencies: {block -> parents}
+        """
+        self.dag = DAG()
+        for node, parents in block_dependencies.iteritems():
+            self.dag.reverse_add(node, parents)
+
+        self.dag.update_roots()
+        self.dag.sort_graph()
+        # self.dag.p1()
 
 
 class Scope(object):
@@ -112,22 +179,6 @@ class Scope(object):
         self.name = scope_name
 
         self.scope_vars = set()
-        self.dag = None
-
-    def run(self):
-        self.build_dag()
-
-    def build_dag(self):
-        self.dag = DAG()
-        for uuid, block in self.exp.get_blocks(self.exp.get_all_block_uuids()):
-            if block.scope_name != self.name:
-                continue
-            else:
-                self.dag.reverse_add(block.uuid, block.get_input_blocks())
-
-        self.dag.update_roots()
-        self.dag.check_loops()
-        self.dag.p1()
 
     @property
     def vars_by_data_type(self):
@@ -190,6 +241,3 @@ class Scope(object):
             print "REGISTERED"
             self.scope_vars.add(scope_var)
             self.vars_by_data_type[scope_var.data_type].add(scope_var)
-
-
-

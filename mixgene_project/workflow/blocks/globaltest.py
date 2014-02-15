@@ -29,10 +29,10 @@ class GlobalTest(GenericBlock):
     def __init__(self, *args, **kwargs):
         super(GlobalTest, self).__init__("Global test", *args, **kwargs)
 
+        self.is_block_supports_auto_execution = True
         self.celery_task = None
-        self.result = None # TODO: move to output variables
 
-    def execute(self, exp, request, *args, **kwargs):
+    def execute(self, exp, *args, **kwargs):
         self.clean_errors()
         self.celery_task = global_test_task.s(
             exp, self,
