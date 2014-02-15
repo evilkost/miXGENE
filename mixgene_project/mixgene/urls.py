@@ -15,7 +15,6 @@ urlpatterns = patterns('',
     url(r'^constructor/(?P<exp_id>\d+)', 'webapp.views.constructor', name='constructor'),
     url(r'^update_block', 'webapp.views.update_block', name='update_block'),
 
-
     url(r'^experiments/(?P<exp_id>\d+)/blocks/?$', 'webapp.views.blocks_resource', name="blocks_resource"),
     url(r'^experiments/(?P<exp_id>\d+)/blocks/(?P<block_uuid>[\w|\d]+)(/actions/(?P<action_code>[\w|\d]+))?',
         'webapp.views.block_resource', name="block_resource"),
@@ -24,19 +23,16 @@ urlpatterns = patterns('',
         'webapp.views.block_sub_page', name="block_sub_page"),
 
     url(r'^experiments$', 'webapp.views.experiments', name='experiments'),
-    # url(r'^experiment/(?P<exp_id>\d+)/$', 'webapp.views.exp_details', name='exp_details'),
     url(r'^experiment/(?P<exp_id>\d+)/(?P<action>\w+)/$', 'webapp.views.alter_exp', name='alter_exp'),
 
     url(r'^add_experiment$', 'webapp.views.add_experiment', name='add_experiment'),
-
-
 
     url(r'^upload_data/', 'webapp.views.upload_data', name='upload_data'),
 
     url(r'^auth/login/$', 'django.contrib.auth.views.login', {'template_name': 'auth/login.html'}),
     url(r'^auth/logout/$', 'django.contrib.auth.views.logout', {}),
-    url(r'^auth/create_user/$', 'webapp.views.create_user', {}),
 
+    url(r'^auth/create_user/$', 'webapp.views.create_user', {}),
 
     url(r'^get_flot_2d_scatter/(?P<exp_id>\d+)/(?P<filename>.*)$', 'webapp.views.get_flot_2d_scatter', name='get_flot_2d_scatter'),
     url(r'^get_csv_as_table/(?P<exp_id>\d+)/(?P<filename>.*)$', 'webapp.views.get_csv_as_table', name='get_csv_as_table'),

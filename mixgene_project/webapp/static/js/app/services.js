@@ -60,7 +60,9 @@ Constructor.factory("blockAccess", function($http, $log){
         })
     }
 
-    access.send_action = function(block, action_code){
+    access.send_action = function(block, action_code, do_reload_all){
+        if(typeof(do_reload_all)==='undefined'){ do_reload_all = false };
+
         block.is_block_updating = true;
         $http({
             method: 'POST',
@@ -68,7 +70,13 @@ Constructor.factory("blockAccess", function($http, $log){
                 '/blocks/' + block.uuid + "/actions/" + action_code,
             data:  angular.toJson(block)
         }).success(function(data, status, headers, config){
-            access.block_bodies[data.uuid] = data;
+            if(do_reload_all){
+                access.fetch_blocks();
+            } else {
+                // TODO: add a special field in block to indicate
+                //          that we need to reload all blocks
+                access.block_bodies[data.uuid] = data;
+            }
         })
     }
 

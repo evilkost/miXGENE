@@ -501,6 +501,14 @@ class GenericBlock(BaseBlock):
         self.out_manager.register(scope_var.var_name, scope_var.data_type)
         scope.register_variable(scope_var)
 
+    def apply_action_from_js(self, action_name, *args, **kwargs):
+        if self._trans.is_action_available(self.state, action_name):
+            self.do_action(action_name, *args, **kwargs)
+        elif hasattr(self, action_name) and hasattr(getattr(self, action_name), "__call__"):
+            getattr(self, action_name)(*args, **kwargs)
+        else:
+            raise RuntimeError("Block %s doesn't have action: %s" % (self.name, action_name))
+
     def do_action(self, action_name, exp, *args, **kwargs):
         next_state = self._trans.next_state(self.state, action_name)
         if next_state is not None:
@@ -516,6 +524,13 @@ class GenericBlock(BaseBlock):
 
         else:
             raise RuntimeError("Action %s isn't available" % action_name)
+
+    def change_base_name(self, exp, received_block, *args, **kwargs):
+        # TODO: check if the name is correct
+        new_name = received_block.get("base_name")
+
+        if new_name:
+            exp.change_block_alias(self, new_name)
 
     def save_params(self, exp, request, received_block=None, *args, **kwargs):
         self._block_serializer.save_params(self, received_block)

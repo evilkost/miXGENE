@@ -1,4 +1,4 @@
-<div>
+<div xmlns="http://www.w3.org/1999/html">
     <div id="{$ block.uuid $}" class="row constructor-block" ng-controller="BlockCtrl">
         <div class="panel panel-default">
             <div class="panel-heading">
@@ -7,9 +7,12 @@
                 {$ block.name $}
                 <!--<span class="label label-warning">Scope: {$ block.scope $}</span>-->
 
-
-                [ {$ block.base_name $}
-                <a class="block-reload glyphicon glyphicon-pencil"></a>
+                [ <span ng-hide="edit_base_name">{$ block.base_name $}</span>
+                <span ng-show="edit_base_name">
+                    <input type="text" name="base_name" ng-model="block.base_name"> </input>
+                    <button class="btn btn-small" ng-click="changeBaseName()">Rename</button>
+                </span>
+                <a ng-hide="edit_base_name" class="block-reload glyphicon glyphicon-pencil" ng-click="toggleEditBaseName()"></a>
                 ]
                 <i>State: {$ block.state $}</i>
 

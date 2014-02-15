@@ -121,12 +121,9 @@ def blocks_resource(request, exp_id):
         try:
             received_block = json.loads(request.body)
         except Exception, e:
-            #import ipdb; ipdb.set_trace()
-            print "BODY: X%sX " % request.body
+            # print "BODY: X%sX " % request.body
             return HttpResponseBadRequest()
-
-        #print received_block
-        block = add_block_to_exp_from_dict(exp, received_block)
+        add_block_to_exp_from_dict(exp, received_block)
 
 
     # TODO: Move to model logic
@@ -142,17 +139,6 @@ def blocks_resource(request, exp_id):
         blocks_by_bscope[block.scope].append(uuid)
 
     aliases_map = exp.get_block_aliases_map(redis_instance=r)
-
-    # vars = exp.get_registered_variables(redis_instance=r)
-    # vars_by_bscope = defaultdict(lambda: defaultdict(list))
-    # for scope, uuid, var_name, var_data_type in vars:
-    #     vars_by_bscope[scope][var_data_type].append(
-    #         {
-    #             "block_uuid": uuid,
-    #             "block_alias": aliases_map[uuid],
-    #             "var_name": var_name
-    #         }
-    #     )
 
     root_blocks = [block.to_dict() for
                 uuid, block in blocks if block.scope == "root"]
@@ -192,7 +178,7 @@ def block_resource(request, exp_id, block_uuid, action_code=None):
     block = exp.get_block(str(block_uuid))
 
     import random
-    import time; time.sleep(random.uniform(0, 0.3))
+    import time; time.sleep(random.uniform(0, 0.05))
     if request.method == "POST":
         try:
             received_block = json.loads(request.body)
@@ -200,7 +186,7 @@ def block_resource(request, exp_id, block_uuid, action_code=None):
         except Exception, e:
             # TODO log errors
             received_block = {}
-        block.do_action(action_code, exp=exp, request=request, received_block=received_block)
+        block.apply_action_from_js(action_code, exp=exp, request=request, received_block=received_block)
 
     if request.method == "GET" or request.method == "POST":
         block_dict = exp.get_block(block_uuid).to_dict()
@@ -253,31 +239,6 @@ def upload_data(request):
                     print "var_name %s was already uploaded " % (var_name, )
     return redirect(request.POST['next'])
 
-"""
-@csrf_protect
-@never_cache
-def geo_fetch_data(request):
-    if request.method == "POST":
-        exp_id = int(request.POST['exp_id'])
-        exp = Experiment.objects.get(pk=exp_id)
-
-        var_name = request.POST['var_name']
-        geo_uid = request.POST['geo_uid']
-        file_format = request.POST['file_format']
-
-        ctx = exp.get_ctx()
-        ctx["input_vars"][var_name].is_being_fetched = True
-        exp.update_ctx(ctx)
-
-        #TODO: check "GSE" prefix
-
-        #st = fetch_geo_gse.s(exp, var_name, geo_uid, file_format)
-        #st.apply_async()
-        return redirect(request.POST['next'])
-
-    else:
-        return redirect("/")
-"""
 
 @csrf_protect
 @never_cache
@@ -322,40 +283,6 @@ def experiments(request):
     })
     return HttpResponse(template.render(context))
 
-#@login_required(login_url='/auth/login/')
-#
-# @never_cache
-# def exp_details(request, exp_id):
-#     exp = Experiment.objects.get(pk = exp_id)
-#     layout = exp.workflow
-#     wf = layout.get_class_instance()
-#
-#     if exp.status in ['done', 'failed']:
-#         template = loader.get_template(wf.template_result)
-#     else:
-#         template = loader.get_template(wf.template)
-#
-#     ctx = exp.get_ctx()
-#     if 'results' not in ctx.keys():
-#         ctx['results'] = {}
-#     for res_var in ctx['result_vars']:
-#         if res_var in ctx:
-#             ctx['results'][res_var] = ctx[res_var]
-#
-#     context = RequestContext(request, {
-#         "exp_page_active": True,
-#
-#         "data_files_url_prefix": "/media/data/%s/%s/" % (exp.author.id, exp.pk),
-#         "exp": exp,
-#         "layout": layout,
-#         "wf": wf,
-#         "ctx": ctx,
-#         "next": "/experiment/%s" % exp.pk,
-#         "runnable": exp.status == "configured",
-#         "configurable": exp.status in ["initiated", "configured"],
-#     })
-#     return HttpResponse(template.render(context))
-
 
 @login_required(login_url='/auth/login/')
 @csrf_protect
@@ -388,7 +315,6 @@ def add_experiment(request):
         status='initiated',  # TODO: until layout configuration will be implemented
     )
 
-
     # TODO: move all init stuff to the model
     exp.save()
     ctx = {
@@ -400,7 +326,6 @@ def add_experiment(request):
     exp.init_ctx(ctx)
 
     mkdir(exp.get_data_folder())
-
     return redirect("/constructor/%s" % exp.pk) # TODO use reverse
 
 #@login_required(login_url='/auth/login/')

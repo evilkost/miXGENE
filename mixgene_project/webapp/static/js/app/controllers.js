@@ -22,10 +22,21 @@ Constructor.controller('BlockCtrl', function BlockCtrl($scope, blockAccess){
     $scope.has_errors = $scope.block.errors.length > 0;
 
     $scope.show_panel_body = true;
+
     $scope.bscope = $scope.block.sub_scope;
     $scope.toggleBodyVisibility = function(){
         $scope.show_panel_body = !$scope.show_panel_body;
     };
+
+    $scope.edit_base_name = false;
+    $scope.toggleEditBaseName = function(){
+        $scope.edit_base_name =!$scope.edit_base_name;
+
+    }
+    $scope.changeBaseName = function(){
+        $scope.access.send_action($scope.block, "change_base_name", true);
+        $scope.edit_base_name = false;
+    }
 
 })
 

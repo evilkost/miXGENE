@@ -209,6 +209,7 @@ class Experiment(models.Model):
         if new_block:
             pipe.rpush(ExpKeys.get_exp_blocks_list_key(self.pk), block.uuid)
             pipe.sadd(ExpKeys.get_all_exp_keys_key(self.pk), block_key)
+            pipe.hset(ExpKeys.get_blocks_uuid_by_alias(self.pk), block.base_name, block.uuid)
 
             # # TODO: refactor to scope.py
             # for var_name, data_type in block.provided_output.iteritems():
@@ -235,12 +236,22 @@ class Experiment(models.Model):
                                  dont_execute_pipe=True)
 
         pipe.set(block_key, pickle.dumps(block))
-        pipe.hset(ExpKeys.get_blocks_uuid_by_alias(self.pk), block.base_name, block.uuid)
 
         if not dont_execute_pipe:
             pipe.execute()
 
         print "block %s was stored with state: %s" % (block.uuid, block.state)
+
+    def change_block_alias(self, block, new_base_name):
+        r = get_redis_instance()
+
+        key = ExpKeys.get_blocks_uuid_by_alias(self.pk)
+        pipe = r.pipeline()
+        pipe.hdel(key, block.base_name)
+        pipe.hset(key, new_base_name, block.uuid)
+        pipe.execute()
+        block.base_name = new_base_name
+        self.store_block(block, redis_instance=r)
 
     @staticmethod
     def get_exp_from_request(request):

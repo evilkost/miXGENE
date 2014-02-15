@@ -13,6 +13,7 @@ def auto_exec_task(exp, scope_name):
     sr = ScopeRunner(exp, scope_name)
     sr.execute()
 
+
 class ScopeVar(object):
     def __init__(self, block_uuid, var_name, data_type=None, block_alias=None):
         self.block_uuid = block_uuid
@@ -39,7 +40,6 @@ class ScopeVar(object):
         result = copy.deepcopy(self.__dict__)
         result["pk"] = self.pk
         result["title"] = self.title
-
         return result
 
     def __hash__(self):
