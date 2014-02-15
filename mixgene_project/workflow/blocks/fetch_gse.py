@@ -39,7 +39,8 @@ class FetchGSE(GenericBlock):
             "widget": "widgets/fetch_gse/assign_sample_classes.html"
         },
     })
-    _is_sub_pages_visible = BlockField("is_sub_pages_visible", FieldType.RAW, False)
+    _is_sub_pages_visible = BlockField("is_sub_pages_visible", FieldType.RAW,
+                                       init_val=False, is_a_property=True)
 
     ### PARAMETERS
     geo_uid = ParamField("geo_uid", "Geo accession id",

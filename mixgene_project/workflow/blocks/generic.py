@@ -1,5 +1,6 @@
 import collections
 import copy
+import itertools
 from webapp.models import Experiment
 from webapp.scope import Scope, ScopeVar
 from workflow.execution import ExecStatus
@@ -117,16 +118,17 @@ class FieldType(object):
 
 class BlockField(object):
     def __init__(self, name, field_type=FieldType.HIDDEN, init_val=None,
-                 is_immutable=False, required=False,
+                 is_immutable=False, required=False, is_a_property=False,
                  *args, **kwargs):
         self.name = name
         self.field_type = field_type
         self.init_val = init_val
         self.is_immutable = is_immutable
         self.required = required
+        self.is_a_property = is_a_property
 
     def contribute_to_class(self, cls, name):
-        setattr(cls, name, self.init_val)
+        #setattr(cls, name, self.init_val)
         getattr(cls, "_block_serializer").register(self)
 
 
@@ -173,14 +175,19 @@ class ParamField(object):
         self.init_val = init_val
         self.validator = validator
         self.select_provider = select_provider
+        self.is_a_property = False
 
     def contribute_to_class(self, cls, name):
-        setattr(cls, name, self.init_val)
+        #setattr(cls, name, self.init_val)
         getattr(cls, "_block_serializer").register(self)
 
     def to_dict(self):
         return {k: str(v) for k, v in  self.__dict__.iteritems()}
 
+
+# class BoundInputs(dict):
+#     def to_dict(self):
+#         print list(self.iteritems())
 
 class BlockSerializer(object):
     def __init__(self):
@@ -268,7 +275,6 @@ class BlockSerializer(object):
 
         result["out"] = block.out_manager.to_dict(block)
         result["inputs"] = block.input_manager.to_dict()
-
 
         return result
 
@@ -409,17 +415,21 @@ class GenericBlock(BaseBlock):
         self.name = name
         self.exp_id = exp_id
         self.scope_name = scope_name
-
         self.base_name = ""
 
-        self.ports = {}  # {group_name -> [BlockPort1, BlockPort2]}
-        self.params = {}
-
         self._out_data = dict()
-
         self.out_manager = OutManager()
-
         self.input_manager = InputManager()
+
+        # Init blo1ck fields
+        for f_name, f in itertools.chain(
+                self._block_serializer.fields.iteritems(),
+                self._block_serializer.params.iteritems()):
+
+            #if f_name not in self.__dict__ and not f.is_a_property:
+            if not hasattr(self, f_name):
+                setattr(self, f_name, f.init_val)
+
 
         # TODO: Hmm maybe more metaclass magic can be applied here
         scope = self.get_scope()
@@ -429,8 +439,6 @@ class GenericBlock(BaseBlock):
         scope.store()
 
         for f_name, f in self._block_serializer.inputs.iteritems():
-            # if f.name not in self.bound_inputs:
-            #     self.bound_inputs[f.name] = None
             self.input_manager.register(f)
 
     def bind_input_var(self, input_name, bound_var):
@@ -468,7 +476,6 @@ class GenericBlock(BaseBlock):
         return self._trans.user_visible(self.state)
 
     def to_dict(self):
-        # import ipdb; ipdb.set_trace()
         result = self._block_serializer.to_dict(self)
         return result
 
@@ -477,7 +484,6 @@ class GenericBlock(BaseBlock):
         scope.register_variable(scope_var)
 
     def do_action(self, action_name, *args, **kwargs):
-        # import ipdb; ipdb.set_trace()
         next_state = self._trans.next_state(self.state, action_name)
         if next_state is not None:
             self.state = next_state

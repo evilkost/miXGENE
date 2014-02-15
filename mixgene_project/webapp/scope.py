@@ -69,26 +69,6 @@ class DAG(object):
             if not parents:
                 self.roots.add(node)
 
-    # def check_loops(self):
-    #     for root in self.roots:
-    #         visited = set([])
-    #         closed = set([])
-    #         open_list = [root, ]
-    #         # TODO: USE REAL ALGO!!!!!
-    #
-    #         while open_list:
-    #             wn = open_list.pop(0)
-    #             if wn in closed:
-    #                 raise RuntimeError("Loop detected")
-    #             else:
-    #                 visited.add(wn)
-    #                 for new_node in self.graph[wn]:
-    #                     if new_node not in open_list:
-    #                         open_list.append(new_node)
-    #
-    #             if all([n in visited for n in self.parents[wn]]):
-    #                 closed.add(wn)
-
     def get_unmarked(self):
         for node, mark in self.marks.iteritems():
             if mark == "unmarked":

@@ -393,6 +393,7 @@ class ClassifierResult(GenericStoreStructure):
             "scores": str(self.scores),
         }
 
+
 class TableResult(GenericStoreStructure):
     def __init__(self, base_dir, base_filename):
         super(TableResult, self).__init__(base_dir, base_filename)

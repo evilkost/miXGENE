@@ -39,7 +39,7 @@ class GetBroadInstituteGeneSet(GenericBlock):
 
     # TODO: maybe create more general solution ?
     _all_gene_sets = BlockField("all_gene_sets", title="", input_type=InputType.HIDDEN,
-                               field_type=FieldType.RAW)
+                               field_type=FieldType.RAW, is_a_property=True)
 
     msigdb_id = ParamField(name="msigdb_id", title="MSigDB gene set", input_type=InputType.SELECT,
                            field_type=FieldType.INT, init_val=0,  # TODO: fix hardcoded value

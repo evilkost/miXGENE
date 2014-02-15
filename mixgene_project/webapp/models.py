@@ -14,6 +14,7 @@ from mixgene.util import get_redis_instance
 from mixgene.redis_helper import ExpKeys
 from mixgene.util import dyn_import
 from environment.structures import GmtStorage, GeneSets
+from webapp.scope import Scope
 from workflow.execution import ScopeState
 
 
@@ -77,6 +78,11 @@ class Experiment(models.Model):
     @staticmethod
     def get_exp_by_id(_pk):
         return Experiment.objects.get(pk=_pk)
+
+    def execute(self):
+        root_scope = Scope(self, "root")
+        root_scope.load()
+        root_scope.run()
 
     def init_ctx(self, ctx, redis_instance=None):
         ## TODO: RENAME TO init experiment and invoke on first save
@@ -189,7 +195,6 @@ class Experiment(models.Model):
             r = redis_instance
 
         return r.hgetall(ExpKeys.get_scope_creating_block_uuid_keys(self.pk))
-
 
     def store_block(self, block, new_block=False, redis_instance=None, dont_execute_pipe=False):
         if redis_instance is None:
@@ -367,6 +372,23 @@ class Experiment(models.Model):
             (uuid, alias)
             for alias, uuid in orig_map.iteritems()
         ])
+
+    def build_block_dependencies_by_scope(self, scope_name):
+        """
+            @return: { block: [ dependencies] }, root blocks have empty list as dependency
+        """
+        dependencies = {}
+        # TODO: store in redis block uuids by scope
+        for uuid, block in self.get_blocks(self.get_all_block_uuids()):
+            if block.scope_name != scope_name:
+                continue
+            else:
+                dependencies[block.uuid] = block.get_input_blocks()
+
+        return dependencies
+
+
+
 
     def get_registered_variables(self, redis_instance=None):
         """
