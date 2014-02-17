@@ -1,122 +1,162 @@
 from collections import defaultdict
 import json
 
-from django import forms
-from fysom import Fysom
-import pandas as pd
-
 from webapp.models import Experiment
 from environment.structures import SequenceContainer
+from webapp.scope import ScopeRunner
 
 from workflow.common_tasks import generate_cv_folds
 from workflow.ports import BlockPort
 
-from generic import GenericBlock
+from generic import GenericBlock, InnerOutputField
+
+from workflow.blocks.generic import GenericBlock, ActionsList, save_params_actions_list, BlockField, FieldType, \
+    ActionRecord, ParamField, InputType, execute_block_actions_list, OutputBlockField, InputBlockField
+
+from converters.gene_set_tools import merge_gs_with_platform_annotation
 
 
+# class CrossValidationForm(forms.Form):
+#     folds_num = forms.IntegerField(min_value=2, max_value=100)
+#     #split_ratio = forms.FloatField(min_value=0, max_value=1)
+#
 
-class CrossValidationForm(forms.Form):
-    folds_num = forms.IntegerField(min_value=2, max_value=100)
-    #split_ratio = forms.FloatField(min_value=0, max_value=1)
+
+class IteratedInnerFieldManager(object):
+    def __init__(self):
+        self.fields = {}
+        self.sequence = []
+        self.iterator = -1
+
+    def register(self, field):
+        """
+            @type field: BlockField
+        """
+        self.fields[field.name] = field
+
+    def next(self):
+        self.iterator += 1
+        if self.iterator >= len(self.sequence):
+            raise StopIteration()
+
+    def reset(self):
+        self.iterator = -1
+
+    def get_var(self, fname):
+        if self.iterator < 0:
+            return RuntimeError("Iteration wasn't started")
+        elif self.iterator >= len(self.sequence):
+            return StopIteration()
+        else:
+            return self.sequence[self.iterator][fname]
+
+
+class CollectorSpecification(object):
+    def __init__(self):
+        self.bound = {}  # name -> scope_var
+
+    def add(self, name, scope_var):
+        """
+            @type scope_var: ScopeVar
+        """
+        self.bound[name] = scope_var
+
+    def to_dict(self, *args, **kwargs):
+        return {name: scope_var.to_dict() for name, scope_var in self.bound}
+
+
 
 class CrossValidation(GenericBlock):
-    fsm = Fysom({
-        'events': [
-            {'name': 'bind_variables', 'src': 'created', 'dst': 'variable_bound'},
-            {'name': 'bind_variables', 'src': 'finished', 'dst': 'variable_bound'},
-            {'name': 'bind_variables', 'src': 'variable_bound', 'dst': 'variable_bound'},
+    block_base_name = "CROSS_VALID"
+    create_new_scope = True
 
-            {'name': 'bind_variables', 'src': 'form_modified', 'dst': 'variable_bound'},
+    _block_actions = ActionsList([])
+    _block_actions.extend(save_params_actions_list)
 
-            {'name': 'save_form', 'src': 'variable_bound', 'dst': 'form_modified'},
-            {'name': 'save_form', 'src': 'form_modified', 'dst': 'form_modified'},
+    _block_actions.extend(ActionsList([
+        ActionRecord("execute", ["ready"], "generating_folds", user_title="Run block"),
 
-            {'name': 'on_form_is_valid', 'src': 'form_modified', 'dst': 'form_valid'},
-            {'name': 'on_form_not_valid', 'src': 'form_modified', 'dst': 'form_modified'},
+        ActionRecord("on_folds_generation_success", ["generating_folds"], "ready_to_run_sub_scope"),
 
-            {'name': 'reset_form', 'src': 'form_modified', 'dst': 'variable_bound'},
-            {'name': 'reset_form', 'src': 'form_valid', 'dst': 'variable_bound'},
+        ActionRecord("run_sub_scope", ["ready_to_run_sub_scope"], "sub_scope_executing"),
+        ActionRecord("on_sub_scope_done", ["sub_scope_executing"], "ready_to_run_sub_scope"),
 
-            {'name': 'show_form', 'src': 'form_valid', 'dst': 'form_modified'},
+        ActionRecord("success", ["working", "ready_to_run_sub_scope"], "done"),
+        ActionRecord("error", ["ready", "working", "sub_scope_executing", "generating_folds"], "execution_error"),
 
+        ActionRecord("reset_execution", ['done'], "ready"),
+    ]))
 
-            {'name': 'generate_folds', 'src': 'form_valid', 'dst': 'generating_folds'},
-            {'name': 'generate_folds', 'src': 'generated_folds', 'dst': 'generating_folds'},
-            {'name': 'on_generate_folds_done', 'src': 'generating_folds', 'dst': 'generated_folds'},
-            {'name': 'on_generate_folds_error', 'src': 'generating_folds', 'dst': 'form_valid'},
-
-
-            {'name': 'push_next_fold', 'src': 'generated_folds', 'dst': 'processing_fold'},
-            {'name': 'push_next_fold', 'src': 'fold_result_collected', 'dst': 'processing_fold'},
-
-            {'name': 'collect_fold_result', 'src': 'processing_fold', 'dst': 'fold_result_collected'},
-
-            {'name': 'all_folds_processed', 'src': 'fold_result_collected', 'dst': 'cv_done'},
-
-
-            {'name': 'run_sub_blocks', 'src': 'split_dataset', 'dst': 'split_dataset'},
-            {'name': 'run_sub_blocks', 'src': 'split_dataset', 'dst': 'finished'},
-
-        ]
-    })
-    widget = "widgets/cross_validation_base.html"
     elements = [
         "cv_info.html"
     ]
-    form_cls = CrossValidationForm
-    block_base_name = "CROSS_VALID"
-    all_actions = [
-        ("bind_variables", "Select input ports", True),
-        ("bind_inner_variables", "Select inner ports", True),
-        ("save_form", "Save parameters", True),
 
-        ("on_form_is_valid", "", False),
-        ("on_form_not_valid", "", False),
+    folds_num = ParamField(name="folds_num", title="Folds number",
+                           input_type=InputType.TEXT, field_type=FieldType.INT, init_val=10)
+    _input_es = InputBlockField(name="es",
+                                required_data_type="ExpressionSet", required=True)
 
-        ("reset_form", "Reset parameters", True),
+    _es_train_i = InnerOutputField(name="es_train_i", provided_data_type="ExpressionSet")
+    _es_test_i = InnerOutputField(name="es_test_i", provided_data_type="ExpressionSet")
+
+    _cv_res_seq = OutputBlockField(name="cv_res_seq", provided_data_type="SequenceContainer")
+    _collector_spec = ParamField(name="collector_spec", title="", field_type=FieldType.CUSTOM,
+                                 input_type=InputType.HIDDEN)
+
+    def __init__(self, *args, **kwargs):
+        super(CrossValidation, self).__init__("Cross Validation", *args, **kwargs)
+        self.auto_exec_status_working.update(["sub_scope_executing", "ready_to_run_sub_scope",
+                                              "generating_folds"])
+
+        self.celery_task = None
+
+        self.inner_output_manager = IteratedInnerFieldManager()
+        for f_name, f in self._block_serializer.inner_outputs.iteritems():
+            self.inner_output_manager.register(f)
+
+    def get_inner_out_var(self, name):
+        return self.inner_output_manager.get_var(name)
+
+    def run_sub_scope(self, exp, *args, **kwargs):
+        self.reset_execution_for_sub_blocks()
+        sr = ScopeRunner(exp, self.sub_scope_name)
+        sr.execute()
+
+    def on_sub_scope_done(self, exp, *args, **kwargs):
+        """
+            This action should be called by ScopeRunner
+            when all blocks in sub-scope have exec status == done
+        """
+
+        print "Collecting fold results ...."
+
+        try:
+            self.inner_output_manager.next()
+            self.do_action("run_sub_scope", exp)
+        except StopIteration, e:
+            # All folds was processed without errors
+            self.do_action("success", exp)
+
+    def execute(self, exp, request, *args, **kwargs):
+        self.clean_errors()
+
+        es = self.get_input_var("es")
+        # ann = self.get_var_by_bound_key_str(exp, self.ports["input"]["ann"].bound_key)
+        # TODO: keep actual BoundVar object
+        self.celery_task = generate_cv_folds.s(
+            exp, self,
+            self.folds_num, es,
+            success_action="on_folds_generation_success",
+        )
+        exp.store_block(self)
+        self.celery_task.apply_async()
+
+    def on_folds_generation_success(self, exp, *args, **kwargs):
+        self.do_action("run_sub_scope", exp)
 
 
-        ("generate_folds", "Generate folds", True),
-        ("on_generate_folds_done", "", False),
-        ("on_generate_folds_error", "", False),
 
-        ("push_next_fold", "Process next fold", True),
-        ("collect_fold_result", "Collect fold result", True),
-        ("all_folds_processed", "", False),
-
-
-        ("success", "", False),
-        ("error", "", False)
-
-    ]
-    create_new_scope = True
-
-    provided_objects = {}
-    provided_objects_inner = {
-        "es_train_i": "ExpressionSet",
-        "es_test_i": "ExpressionSet",
-        }
-
-    params_prototype = {
-        "folds_num": {
-            "name": "folds_num",
-            "title": "Folds number",
-            "input_type": "text",
-            "validation": None,
-            "default": 10,
-            },
-        # "split_ratio": {
-        #     "name": "split_ratio",
-        #     "title": "Train/Test ratio",
-        #     "input_type": "slider",
-        #     "min_value": 0,
-        #     "max_value": 1,
-        #     "step": 0.01,
-        #     "default": 0.7,
-        #     "validation": None
-        # }
-    }
-
+    ### old code down
     @property
     def sub_blocks(self):
         uuids_blocks = Experiment.get_blocks(self.children_blocks)
@@ -128,49 +168,16 @@ class CrossValidation(GenericBlock):
 
         return result
 
-    @property
-    def sub_scope(self):
-        return "%s_%s" % (self.scope, self.uuid)
 
-    def __init__(self, *args, **kwargs):
-        super(CrossValidation, self).__init__("Cross Validation", *args, **kwargs)
-        self.bound_variable_field = None
-        self.bound_variable_block = None
-        self.bound_variable_block_alias = None
-
-        self.children_blocks = []
-
-        self.ports = {
-            "input": {
-                "es": BlockPort(name="es", title="Choose expression set",
-                                data_type="ExpressionSet", scopes=[self.scope]),
-                # "ann": BlockPort(name="ann", title="Choose annotation",
-                #                  data_type="PlatformAnnotation", scopes=[self.scope])
-
-            },
-            "collect_internal": {
-                "result": BlockPort(name="result", title="Choose classifier result",
-                                    data_type="mixML", scopes=[self.scope, self.sub_scope]),
-
-            }
-        }
-
-        #  TODO: fix by introducing register_var method to class / metaclass
-        #   or at least method to look through params_prototype and popultions params with default values
-        # self.params["split_ratio"] = self.params_prototype["split_ratio"]["default"]
-        self.params["folds_num"] = self.params_prototype["folds_num"]["default"]
-
-        self.sequence = SequenceContainer(fields=self.provided_objects_inner)
-        self.results = []
 
     ### inner variables provider
-    @property
-    def es_train_i(self):
-        return self.sequence.get_field("es_train_i")
-
-    @property
-    def es_test_i(self):
-        return self.sequence.get_field("es_test_i")
+    # @property
+    # def es_train_i(self):
+    #     return self.sequence.get_field("es_train_i")
+    #
+    # @property
+    # def es_test_i(self):
+    #     return self.sequence.get_field("es_test_i")
 
     ### end inner variables
 
@@ -204,19 +211,7 @@ class CrossValidation(GenericBlock):
         self.clean_errors()
         exp.store_block(self)
 
-    def generate_folds(self, exp, request, *args, **kwargs):
-        self.clean_errors()
 
-        es = self.get_var_by_bound_key_str(exp, self.ports["input"]["es"].bound_key)
-        # ann = self.get_var_by_bound_key_str(exp, self.ports["input"]["ann"].bound_key)
-        # TODO: keep actual BoundVar object
-
-        self.celery_task = generate_cv_folds.s(exp, self,
-                                               self.params["folds_num"],
-                                               # self.params["split_ratio"],
-                                               es)
-        exp.store_block(self)
-        self.celery_task.apply_async()
 
     def push_next_fold(self, exp, *args, **kwargs):
         self.sequence.apply_next()
@@ -224,7 +219,7 @@ class CrossValidation(GenericBlock):
 
     def collect_fold_result(self, exp, *args, **kwargs):
         ml_res = self.get_var_by_bound_key_str(exp,
-                                               self.ports["collect_internal"]["result"].bound_key
+           self.ports["collect_internal"]["result"].bound_key
         )
         self.results.append(ml_res.acc)
         exp.store_block(self)

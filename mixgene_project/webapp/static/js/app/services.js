@@ -30,7 +30,7 @@ Constructor.factory("blockAccess", function($http, $log){
         console.log("adding to "+ bscope + " block " + block_name);
         var request_body = angular.toJson({
             "block_name": block_name,
-            "scope": bscope
+            "scope_name": bscope
         });
         console.log(request_body)
         $http({

@@ -1,3 +1,4 @@
+from pprint import pprint
 import collections
 import copy
 import itertools
@@ -128,6 +129,23 @@ class BlockField(object):
         self.required = required
         self.is_a_property = is_a_property
 
+    def value_to_dict(self, raw_val, block):
+        val = str(raw_val)
+        if raw_val is None:
+            val = None
+        else:
+            if self.field_type in [FieldType.RAW, FieldType.INT, FieldType.FLOAT] :
+                val = raw_val
+            if self.field_type == FieldType.CUSTOM:
+                val = raw_val.to_dict(block)
+            if self.field_type in [FieldType.STR, FieldType.BOOLEAN]:
+                val = str(raw_val)
+            if self.field_type == FieldType.SIMPLE_DICT:
+                val = {str(k): str(v) for k, v in raw_val.iteritems()}
+            if self.field_type == FieldType.SIMPLE_LIST:
+                val = map(str, raw_val)
+        return val
+
     def contribute_to_class(self, cls, name):
         #setattr(cls, name, self.init_val)
         getattr(cls, "_block_serializer").register(self)
@@ -140,6 +158,10 @@ class OutputBlockField(BlockField):
 
     def contribute_to_class(self, cls, name):
         getattr(cls, "_block_serializer").register(self)
+
+
+class InnerOutputField(OutputBlockField):
+    pass
 
 
 class InputBlockField(BlockField):
@@ -164,6 +186,7 @@ class InputType(object):
     HIDDEN = "hidden"
 
 
+
 # TODO: maybe more use of django form fields?
 # TODO: or join ParamField and BlockField?
 class ParamField(object):
@@ -185,6 +208,23 @@ class ParamField(object):
     def to_dict(self):
         return {k: str(v) for k, v in  self.__dict__.iteritems()}
 
+    def value_to_dict(self, raw_val, block):
+        val = str(raw_val)
+        if raw_val is None:
+            val = None
+        else:
+            if self.field_type in [FieldType.RAW, FieldType.INT, FieldType.FLOAT] :
+                val = raw_val
+            if self.field_type == FieldType.CUSTOM:
+                val = raw_val.to_dict(block)
+            if self.field_type in [FieldType.STR, FieldType.BOOLEAN]:
+                val = str(raw_val)
+            if self.field_type == FieldType.SIMPLE_DICT:
+                val = {str(k): str(v) for k, v in raw_val.iteritems()}
+            if self.field_type == FieldType.SIMPLE_LIST:
+                val = map(str, raw_val)
+        return val
+
 
 # class BoundInputs(dict):
 #     def to_dict(self):
@@ -195,9 +235,14 @@ class BlockSerializer(object):
         self.fields = dict()
         self.params = dict()
         self.outputs = dict()
+        self.inner_outputs = dict()
         self.inputs = dict()
 
     def register(self, field):
+        if isinstance(field, InnerOutputField):
+            self.inner_outputs[field.name] = field
+            return
+
         if isinstance(field, OutputBlockField):
             self.outputs[field.name] = field
             return
@@ -226,48 +271,15 @@ class BlockSerializer(object):
         for f_name, f in self.fields.iteritems():
             if f.field_type == FieldType.HIDDEN:
                 continue
-
-            ### TODO: remove repetition
             raw_val = getattr(block, f_name)
-            if raw_val is None:
-                val = None
-            else:
-                if f.field_type in [FieldType.RAW, FieldType.INT, FieldType.FLOAT] :
-                    val = raw_val
-                if f.field_type == FieldType.CUSTOM:
-                    val = raw_val.to_dict(block)
-                if f.field_type in [FieldType.STR, FieldType.BOOLEAN]:
-                    val = str(raw_val)
-                if f.field_type == FieldType.SIMPLE_DICT:
-                    val = {str(k): str(v) for k, v in raw_val.iteritems()}
-                if f.field_type == FieldType.SIMPLE_LIST:
-                    val = map(str, raw_val)
-
-            result[f_name] = val
-
+            result[f_name] = f.value_to_dict(raw_val, block)
 
         result["_params_prototype"] = dict([(str(param_name), param_field.to_dict())
                                    for param_name, param_field in self.params.iteritems()])
 
         for f_name, f in self.params.iteritems():
-            ### TODO: remove repetition
             raw_val = getattr(block, f.name)
-            if raw_val is None:
-                val = None
-            else:
-                if f.field_type in [FieldType.RAW, FieldType.INT, FieldType.FLOAT] :
-                    val = raw_val
-                if f.field_type == FieldType.CUSTOM:
-                    val = raw_val.to_dict(block)
-                if f.field_type in [FieldType.STR, FieldType.BOOLEAN]:
-                    val = str(raw_val)
-                if f.field_type == FieldType.SIMPLE_DICT:
-                    val = {str(k): str(v) for k, v in raw_val.iteritems()}
-                if f.field_type == FieldType.SIMPLE_LIST:
-                    val = map(str, raw_val)
-
-            result[f.name] = val
-
+            result[f_name] = f.value_to_dict(raw_val, block)
 
         result["actions"] = [{
             "code": ar.name,
@@ -346,6 +358,12 @@ class OutManager(object):
         self.data_type_by_name = {}
         self.fields_by_data_type = defaultdict(list)
 
+    def contains(self, var_name):
+        if var_name in self.data_type_by_name:
+            return True
+        else:
+            return False
+
     def register(self, name, data_type):
         if name in self.data_type_by_name.keys():
             raise KeyError("Field with name %s already exists" % name)
@@ -399,10 +417,13 @@ class GenericBlock(BaseBlock):
     base_name = BlockField("base_name", FieldType.STR, "", is_immutable=True)
     exp_id = BlockField("exp_id", FieldType.STR, None, is_immutable=True)
 
-    scope = BlockField("scope", FieldType.STR, "root", is_immutable=True)
+    scope_name = BlockField("scope_name", FieldType.STR, "root", is_immutable=True)
+    _sub_scope_name = BlockField("sub_scope_name", FieldType.STR, None, is_immutable=True)
+
     state = BlockField("state", FieldType.STR, "created")
 
-    create_new_scope = BlockField("create_new_scope", FieldType.BOOLEAN, False)
+    _create_new_scope = BlockField("create_new_scope", FieldType.BOOLEAN, False)
+    create_new_scope = False
 
     errors = BlockField("errors", FieldType.SIMPLE_LIST, list())
     warnings = BlockField("warnings", FieldType.SIMPLE_LIST, list())
@@ -418,18 +439,24 @@ class GenericBlock(BaseBlock):
         self.scope_name = scope_name
         self.base_name = ""
 
+        # Used only be meta-blocks
+        self.children_blocks = []
+        # End
+
+
         self._out_data = dict()
         self.out_manager = OutManager()
+
         self.input_manager = InputManager()
 
         # Automatic execution status map
         self.auto_exec_status_ready = set(["ready"])
         self.auto_exec_status_done = set(["done"])
+        self.auto_exec_status_working = set(["working"])
         self.auto_exec_status_error = set(["execution_error"])
         self.is_block_supports_auto_execution = False
 
-
-        # Init blo1ck fields
+        # Init block fields
         for f_name, f in itertools.chain(
                 self._block_serializer.fields.iteritems(),
                 self._block_serializer.params.iteritems()):
@@ -438,13 +465,22 @@ class GenericBlock(BaseBlock):
             if not hasattr(self, f_name):
                 setattr(self, f_name, f.init_val)
 
-
         # TODO: Hmm maybe more metaclass magic can be applied here
         scope = self.get_scope()
         scope.load()
         for f_name, f in self._block_serializer.outputs.iteritems():
+            print "Registering normal outputs: ", f_name
             self.register_provided_objects(scope, ScopeVar(self.uuid, f_name, f.provided_data_type))
         scope.store()
+
+        if hasattr(self, "create_new_scope") and self.create_new_scope:
+            print "Trying to add inner outputs"
+            scope = self.get_sub_scope()
+            scope.load()
+            for f_name, f in self._block_serializer.inner_outputs.iteritems():
+                print "Registering inner outputs: ", f_name
+                scope.register_variable(ScopeVar(self.uuid, f_name, f.provided_data_type))
+            scope.store()
 
         for f_name, f in self._block_serializer.inputs.iteritems():
             self.input_manager.register(f)
@@ -469,7 +505,13 @@ class GenericBlock(BaseBlock):
         return exp.get_scope_var_value(scope_var)
 
     def get_out_var(self, name):
-        return self._out_data.get(name)
+        if self.out_manager.contains(name):
+            return self._out_data.get(name)
+        else:
+            return self.get_inner_out_var(name)
+
+    def get_inner_out_var(self, name):
+        raise NotImplementedError("Not implemented in the base class")
 
     def set_out_var(self, name, value):
         self._out_data[name] = value
@@ -477,6 +519,22 @@ class GenericBlock(BaseBlock):
     def get_scope(self):
         exp = Experiment.get_exp_by_id(self.exp_id)
         return Scope(exp, self.scope_name)
+
+    @property
+    def sub_scope_name(self):
+        if hasattr(self, "create_new_scope") and self.create_new_scope:
+            return "%s_%s" % (self.scope_name, self.uuid)
+        else:
+            return ""
+
+    def get_sub_scope(self):
+        exp = Experiment.get_exp_by_id(self.exp_id)
+        return Scope(exp, self.sub_scope_name)
+
+    def reset_execution_for_sub_blocks(self):
+        exp = Experiment.get_exp_by_id(self.exp_id)
+        for block_uuid, block in exp.get_blocks(self.children_blocks):
+            block.do_action("reset_execution", exp)
 
     def get_input_blocks(self):
         required_blocks = []
@@ -495,6 +553,8 @@ class GenericBlock(BaseBlock):
 
     def to_dict(self):
         result = self._block_serializer.to_dict(self)
+        #pprint(result)
+        #import ipdb; ipdb.set_trace()
         return result
 
     def register_provided_objects(self, scope, scope_var):
@@ -557,7 +617,7 @@ class GenericBlock(BaseBlock):
         exp.store_block(self)
 
     def on_params_not_valid(self, exp):
-        exp.store_block(self)
+        pass
 
     def clean_errors(self):
         self.errors = []
@@ -570,6 +630,9 @@ class GenericBlock(BaseBlock):
 
         exp.store_block(self)
 
+    def reset_execution(self, exp):
+        pass
+
 save_params_actions_list = ActionsList([
     ActionRecord("save_params", ["created", "valid_params", "done", "ready"], "validating_params",
                  user_title="Save parameters"),
@@ -581,6 +644,7 @@ execute_block_actions_list = ActionsList([
     ActionRecord("execute", ["ready"], "working", user_title="Run block"),
     ActionRecord("success", ["working"], "done"),
     ActionRecord("error", ["ready", "working"], "execution_error"),
+    ActionRecord("reset_execution", ['done'], "ready")
 ])
 
 

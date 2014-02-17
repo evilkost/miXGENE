@@ -150,10 +150,11 @@ def preprocess_soft(exp, block,
 
 
 @task(name="workflow.common_tasks.generate_cv_folds")
-def generate_cv_folds(exp, block,
-                      folds_num,
-                      # split_ratio,
-                      es):
+def generate_cv_folds(
+        exp, block,
+        folds_num, es,
+        success_action="success", error_action="error",
+    ):
     """
         On success populate block.sequence with correct folds and
          call action #on_generate_folds_done otherwise calls
@@ -164,7 +165,7 @@ def generate_cv_folds(exp, block,
 
         #print folds_num
         #print split_ratio
-
+        sequence = []
         assay_df = es.get_assay_data_frame()
         pheno_df = es.get_pheno_data_frame()
 
@@ -176,7 +177,6 @@ def generate_cv_folds(exp, block,
             raise RuntimeError("Phenotype doesn't have user assigned classes")
 
         classes_vector = pheno_df["User_class"].values
-        i = 0
         # for train_idx, test_idx in cross_validation.StratifiedShuffleSplit(
         #         classes_vector,
         #         n_iter=folds_num,
@@ -187,7 +187,6 @@ def generate_cv_folds(exp, block,
             n_iter=folds_num
         ):
 
-
             train_es = es.clone( "%s_train_%s" % (es.base_filename ,i))
             train_es.store_assay_data_frame(assay_df[train_idx])
             train_es.store_pheno_data_frame(pheno_df.iloc[train_idx])
@@ -196,12 +195,12 @@ def generate_cv_folds(exp, block,
             test_es.store_assay_data_frame(assay_df[test_idx])
             test_es.store_pheno_data_frame(pheno_df.iloc[test_idx])
 
-            block.sequence.append({
+            sequence.append({
                 "es_train_i": train_es,
                 "es_test_i": test_es
             })
 
-            i += 1
+
 
         block.do_action("on_generate_folds_done", exp)
     except Exception, e:

@@ -5,10 +5,10 @@
                 <label class="col-sm-3 control-label">
                     {$ input.name $} <small>[{$ input.required_data_type $}]</small>
                 </label>
-                <div class="col-sm-9">
+                <div class="col-sm-4">
                     <select class="form-control"
                         ng-model="block.bound_inputs[input.name]"
-                        ng-options="option.pk as option.title for option in access.scopes[block.scope].by_data_type[input.required_data_type]" >
+                        ng-options="option.pk as option.title for option in access.scopes[block.scope_name].by_data_type[input.required_data_type]" >
                     </select>
                 </div>
             </div>

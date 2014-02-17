@@ -2,6 +2,7 @@ Constructor.controller('MainCtrl', function($scope, blockAccess){
     $scope.show_old_worktable = false;
     $scope.access = blockAccess;
     $scope.exp_id = $scope.access.exp_id;
+    $scope.root_scope_name = "root";
 
     $scope.toggle_show_old_worktable = function(){
         $scope.show_old_worktable = !$scope.show_old_worktable;
@@ -58,7 +59,8 @@ Constructor.controller('PortCtrl', function PortCtrl($scope, blockAccess){
             return "--error--"
         }
     }
-    $scope.options = blockAccess.scopes[$scope.block.scope].by_data_type[$scope.input.required_data_type];
+    $scope.options = blockAccess.scopes[$scope.block.scope_name]
+        .by_data_type[$scope.input.required_data_type];
 })
 
 
@@ -79,8 +81,21 @@ Constructor.controller('PalletCtrl', function($scope, blockAccess){
     $scope.toggle_pallet = function(){
         $scope.show_pallet = !$scope.show_pallet;
     }
-    $scope.add_block = function(bscope, block_name){
-        $scope.access.add_block(bscope, block_name);
+    $scope.add_block = function(scopeName, block_name){
+        $scope.access.add_block(scopeName, block_name);
         $scope.toggle_pallet();
     }
+})
+
+Constructor.controller('CollectorCtrl', function($scope, blockAccess){
+    //$scope.access = blockAccess;
+    $scope.new_collector = {
+        "name": "",
+        "var": undefined
+    }
+
+    $scope.add_var = function(){
+        alert($scope.new_collector.name);
+    }
+
 })

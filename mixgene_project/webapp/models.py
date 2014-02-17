@@ -221,14 +221,17 @@ class Experiment(models.Model):
                 #     self.register_variable(block.sub_scope, block.uuid, var_name, data_type, pipe)
 
                 pipe.hset(ExpKeys.get_scope_creating_block_uuid_keys(self.pk),
-                          block.sub_scope, block.uuid)
+                          block.sub_scope_name, block.uuid)
 
-            if block.scope != "root":
+            if block.scope_name != "root":
                 # need to register in parent block
-                parent_uuid = r.hget(ExpKeys.get_scope_creating_block_uuid_keys(self.pk),
-                                     block.scope)
+                parent_uuid = r.hget(ExpKeys.get_scope_creating_block_uuid_keys(self.pk), block.scope_name)
+                #import ipdb; ipdb.set_trace()
+                print r.hgetall(ExpKeys.get_scope_creating_block_uuid_keys(self.pk)), block.scope_name
                 parent = self.get_block(parent_uuid, r)
                 #import ipdb; ipdb.set_trace()
+
+                # TODO: remove code dependency here
                 parent.children_blocks.append(block.uuid)
                 self.store_block(parent,
                                  new_block=False,
@@ -396,53 +399,63 @@ class Experiment(models.Model):
 
         return dependencies
 
-
-
-
-    def get_registered_variables(self, redis_instance=None):
-        """
-        @type  redis_instance: Redis
-        @param redis_instance: Redis
-
-        @return: All register to experiment variables
-        @rtype: list # of  [scope, uuid, var_name, var_data_type]
-        """
-
+    def get_meta_block_by_sub_scope(self, scope_name, redis_instance=None):
         if redis_instance is None:
             r = get_redis_instance()
         else:
             r = redis_instance
 
-        variables = []
-        for key, val in r.hgetall(ExpKeys.get_scope_vars_keys(self.pk)).iteritems():
-            #scope, uuid, var_name, var_data_type = pickle.loads(val)
-            variables.append(pickle.loads(val))
-
-        return variables
-
-    def get_visible_variables(self, scopes=None, data_types=None, redis_instance=None):
-        if scopes is None:
-            scopes = ["root"]
-
-        scopes = set(scopes)
-        scopes.add("root")
-
-        if redis_instance is None:
-            r = get_redis_instance()
+        block_uuid = r.hget(ExpKeys.get_scope_creating_block_uuid_keys(self.pk), scope_name)
+        if not block_uuid:
+            raise KeyError("Doesn't have a scope with name %s" % scope_name)
         else:
-            r = redis_instance
+            return self.get_block(block_uuid, r)
 
-        all_variables = r.hgetall(ExpKeys.get_scope_vars_keys(self.pk))
-        visible = []
-        for key, val in all_variables.iteritems():
-            scope, uuid, var_name, var_data_type = pickle.loads(val)
-            if scope not in scopes:
-                continue
 
-            if data_types is None or var_data_type in data_types:
-                visible.append((uuid, var_name))
-
-        return visible
+    # def get_registered_variables(self, redis_instance=None):
+    #     """
+    #     @type  redis_instance: Redis
+    #     @param redis_instance: Redis
+    #
+    #     @return: All register to experiment variables
+    #     @rtype: list # of  [scope, uuid, var_name, var_data_type]
+    #     """
+    #
+    #     if redis_instance is None:
+    #         r = get_redis_instance()
+    #     else:
+    #         r = redis_instance
+    #
+    #     variables = []
+    #     for key, val in r.hgetall(ExpKeys.get_scope_vars_keys(self.pk)).iteritems():
+    #         #scope, uuid, var_name, var_data_type = pickle.loads(val)
+    #         variables.append(pickle.loads(val))
+    #
+    #     return variables
+    #
+    # def get_visible_variables(self, scopes=None, data_types=None, redis_instance=None):
+    #     if scopes is None:
+    #         scopes = ["root"]
+    #
+    #     scopes = set(scopes)
+    #     scopes.add("root")
+    #
+    #     if redis_instance is None:
+    #         r = get_redis_instance()
+    #     else:
+    #         r = redis_instance
+    #
+    #     all_variables = r.hgetall(ExpKeys.get_scope_vars_keys(self.pk))
+    #     visible = []
+    #     for key, val in all_variables.iteritems():
+    #         scope, uuid, var_name, var_data_type = pickle.loads(val)
+    #         if scope not in scopes:
+    #             continue
+    #
+    #         if data_types is None or var_data_type in data_types:
+    #             visible.append((uuid, var_name))
+    #
+    #     return visible
 
     # def register_variable(self, scope, block_uuid, var_name, data_type, redis_instance=None):
     #     if redis_instance is None:

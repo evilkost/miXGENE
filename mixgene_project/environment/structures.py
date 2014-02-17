@@ -331,7 +331,7 @@ class PlatformAnnotation(object):
 
 
 class SequenceContainer(object):
-    def __init__(self, fields, sequence=None):
+    def __init__(self, fields=None, sequence=None):
         self.sequence = sequence or []
         self.fields = fields
         self.iterator = -1

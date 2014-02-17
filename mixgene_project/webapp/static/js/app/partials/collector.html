@@ -1,0 +1,27 @@
+<div ng-controller="CollectorCtrl">
+    <div class="row">
+        <div class="form-group">
+            <label class="col-sm-1 control-label">
+                Output name  {$ new_collector.name $}
+            </label>
+
+
+            <div class="col-sm-2">
+                <input type="text" class="form-control" ng-model="new_collector.name" />
+            </div>
+
+
+            <label class="col-sm-1 control-label">
+                Variable to bind
+            </label>
+
+            <div class="col-sm-2">
+                <select class="form-control"
+                    ng-model="new_collector.var"
+                    ng-options="option.pk as option.title for option in access.scopes[block.sub_scope_name].vars" >
+                </select>
+            </div>
+            <button class="btn btn-primary" ng-click="add_var()"> Add variable to result collection </button>
+        </div>
+    </div>
+</div>

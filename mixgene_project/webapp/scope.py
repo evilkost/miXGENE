@@ -149,9 +149,12 @@ class ScopeRunner(object):
 
         if not blocks_to_execute:
             print "Nothing to execute"
+            if self.scope_name != "root":
+                block = self.exp.get_meta_block_by_sub_scope(self.scope_name)
+                block.do_action("on_sub_scope_done", self.exp)
         else:
             for block in blocks_to_execute:
-                print "Block %s can be executed" % block.name
+                print "Block %s will be executed" % block.name
                 block.do_action("execute", self.exp)
 
     def build_dag(self, block_dependencies):
@@ -238,6 +241,6 @@ class Scope(object):
             pass
             #raise KeyError("Scope var %s already registered" % scope_var)
         else:
-            print "REGISTERED"
+            print "REGISTERED to %s variable %s" % (self.name, scope_var)
             self.scope_vars.add(scope_var)
             self.vars_by_data_type[scope_var.data_type].add(scope_var)

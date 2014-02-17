@@ -2,7 +2,7 @@ Constructor.directive("pallet", function () {
     return {
         restrict: 'AE',
         scope: {
-            bscope: "="
+            scopeName: "="
         },
         templateUrl: "/static/js/app/partials/pallet.html"
     }

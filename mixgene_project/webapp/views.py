@@ -136,12 +136,12 @@ def blocks_resource(request, exp_id):
     }
     blocks_by_bscope = defaultdict(list)
     for uuid, block in blocks:
-        blocks_by_bscope[block.scope].append(uuid)
+        blocks_by_bscope[block.scope_name].append(uuid)
 
     aliases_map = exp.get_block_aliases_map(redis_instance=r)
 
     root_blocks = [block.to_dict() for
-                uuid, block in blocks if block.scope == "root"]
+                uuid, block in blocks if block.scope_name == "root"]
 
     scopes = {}
     for scope_name, _ in exp.get_all_scopes_with_block_uuids(redis_instance=r).iteritems():
