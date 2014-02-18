@@ -15,12 +15,10 @@
                 &nbsp;
                 {$ block.name $}
                 <!--<span class="label label-warning">Scope: {$ block.scope $}</span>-->
-
-
-
+                <i>State: {$ block.state $} </i>
 
                 <div class="pull-right">
-                    <i>State: {$ block.state $} </i>
+
 
                     <a class="block-reload glyphicon glyphicon-repeat"
                        ng-click="access.reload_block(block)"></a>
@@ -35,8 +33,6 @@
                     &nbsp;&nbsp;&nbsp;&nbsp;
                     <a class="block-remove text-danger glyphicon glyphicon-trash"></a>
                 </div>
-
-
             </div>
             <div class="panel-body" ng-show="block.is_block_updating">
                 <div class="alert alert-success" style="text-align:center">
@@ -60,7 +56,7 @@
 
                     <div class="col-xs-4">
 
-                        <h4 style="text-align: center"> <span class="label label-default"> Input variables </span> </h4>
+                        <!--<h4 style="text-align: center"> <span class="label label-default"> Input variables </span> </h4>-->
                         <div class="row">
                             <div ports-group block="block" group-name="input">
                             </div>
@@ -68,7 +64,7 @@
 
                     </div>
                     <div class="col-xs-4">
-                        <h4 style="text-align: center"> <span class="label label-default"> Parameters </span> </h4>
+                        <!--<h4 style="text-align: center"> <span class="label label-default"> Parameters </span> </h4>-->
                         <div class="row">
                             <form class="form-horizontal" ng-repeat="param_proto in block._params_prototype"
                                   ng-controller="formFieldCtrl">
@@ -82,7 +78,7 @@
 
 
                     <div class="col-xs-2">
-                        <h4 style="text-align: center"> <span class="label label-default"> Available actions </span> </h4>
+                        <!--<h4 style="text-align: center"> <span class="label label-default"> Available actions </span> </h4>-->
                         <div class="btn-group-vertical center-block">
                             <button type="button" class="btn btn-default"
                                     ng-repeat="action in block.actions"
@@ -98,7 +94,7 @@
 
                     </div>
                     <div class="cols-xs-2" ng-if="block.is_sub_pages_visible">
-                        <h4 style="text-align: center"> <span class="label label-default"> Sub pages </span> </h4>
+                        <!--<h4 style="text-align: center"> <span class="label label-default"> Sub pages </span> </h4>-->
                         <ul>
                             <li ng-repeat="(res, page) in block.pages">
                                 <a href="/block_sub_page/{$ exp_id $}/{$ block.uuid$}/{$ page.resource$}">

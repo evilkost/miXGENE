@@ -1,4 +1,5 @@
 from collections import defaultdict
+from copy import deepcopy
 import json
 from pprint import pprint
 
@@ -71,12 +72,14 @@ class CrossValidation(GenericBlock):
         ActionRecord("success", ["working", "ready_to_run_sub_scope"], "done"),
         ActionRecord("error", ["ready", "working", "sub_scope_executing", "generating_folds"], "execution_error"),
 
-        ActionRecord("reset_execution", ['done', "sub_scope_executing", "generating_folds"], "ready"),
+        ActionRecord("reset_execution", ['done', "sub_scope_executing",
+                                         "generating_folds", "execution_error"], "ready",
+                     user_title="Reset execution"),
     ]))
 
-    elements = [
+    elements = BlockField(name="elements", field_type=FieldType.SIMPLE_LIST, init_val=[
         "cv_info.html"
-    ]
+    ])
 
     folds_num = ParamField(name="folds_num", title="Folds number",
                            input_type=InputType.TEXT, field_type=FieldType.INT, init_val=10)
@@ -86,7 +89,8 @@ class CrossValidation(GenericBlock):
     _es_train_i = InnerOutputField(name="es_train_i", provided_data_type="ExpressionSet")
     _es_test_i = InnerOutputField(name="es_test_i", provided_data_type="ExpressionSet")
 
-    _cv_res_seq = OutputBlockField(name="cv_res_seq", provided_data_type="SequenceContainer")
+    _cv_res_seq = OutputBlockField(name="cv_res_seq", provided_data_type="SequenceContainer",
+                                   field_type=FieldType.CUSTOM)
 
     def __init__(self, *args, **kwargs):
         super(CrossValidation, self).__init__("Cross Validation", *args, **kwargs)
@@ -105,15 +109,29 @@ class CrossValidation(GenericBlock):
     def run_sub_scope(self, exp, *args, **kwargs):
         self.reset_execution_for_sub_blocks()
 
+
+        exp.store_block(self)
         sr = ScopeRunner(exp, self.sub_scope_name)
         sr.execute()
 
     def on_sub_scope_done(self, exp, *args, **kwargs):
         """
+            @type exp: Experiment
+
             This action should be called by ScopeRunner
             when all blocks in sub-scope have exec status == done
         """
-        print "Collecting fold results ...."
+        cv_res_seq = self.get_out_var("cv_res_seq")
+        cell = {}
+        for name, scope_var in self.collector_spec.bound.iteritems():
+            cell[name] = deepcopy(exp.get_scope_var_value(scope_var))
+
+        cv_res_seq.append(cell)
+        self.set_out_var("cv_res_seq", cv_res_seq)
+        exp.store_block(self)
+
+        print "Collected fold results: "
+        pprint(cell)
 
         try:
             self.inner_output_manager.next()
@@ -140,6 +158,11 @@ class CrossValidation(GenericBlock):
     def on_folds_generation_success(self, exp, sequence, *args, **kwargs):
         self.inner_output_manager.sequence = sequence
         self.inner_output_manager.next()
+
+        cv_res_seq = SequenceContainer()
+        cv_res_seq.fields = self.collector_spec.bound.keys()
+        self.set_out_var("cv_res_seq", cv_res_seq)
+
         exp.store_block(self)
         self.do_action("run_sub_scope", exp)
 

@@ -333,7 +333,7 @@ class PlatformAnnotation(object):
 class SequenceContainer(object):
     def __init__(self, fields=None, sequence=None):
         self.sequence = sequence or []
-        self.fields = fields
+        self.fields = fields  # TODO: Just names, or contains some meta info ?
         self.iterator = -1
 
     def is_end(self):
@@ -366,6 +366,19 @@ class SequenceContainer(object):
 
     def reset_iterator(self):
         self.iterator = -1
+
+    def to_dict(self):
+        res = []
+        for cell in self.sequence:
+            cell_dict = {}
+            for field in self.fields:
+                obj = cell[field]
+                if hasattr(obj, "to_dict"):
+                    cell_dict[field] = obj.to_dict()
+                else:
+                    cell_dict[field] = str(obj)
+            res.append(cell_dict)
+        return res
 
 
 class ClassifierResult(GenericStoreStructure):

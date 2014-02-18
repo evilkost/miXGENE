@@ -686,6 +686,7 @@ class GenericBlock(BaseBlock):
         exp.store_block(self)
 
     def reset_execution(self, exp, *args, **kwargs):
+        self.clean_errors()
         pass
 
 save_params_actions_list = ActionsList([
