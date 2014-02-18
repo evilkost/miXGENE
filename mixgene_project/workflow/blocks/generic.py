@@ -210,21 +210,25 @@ class ParamField(object):
 
     def value_to_dict(self, raw_val, block):
         val = str(raw_val)
-        if raw_val is None:
-            val = None
-        else:
-            if self.field_type in [FieldType.RAW, FieldType.INT, FieldType.FLOAT] :
-                val = raw_val
-            if self.field_type == FieldType.CUSTOM:
-                val = raw_val.to_dict(block)
-            if self.field_type in [FieldType.STR, FieldType.BOOLEAN]:
-                val = str(raw_val)
-            if self.field_type == FieldType.SIMPLE_DICT:
-                val = {str(k): str(v) for k, v in raw_val.iteritems()}
-            if self.field_type == FieldType.SIMPLE_LIST:
-                val = map(str, raw_val)
-        return val
-
+        try:
+            if raw_val is None:
+                val = None
+            else:
+                if self.field_type in [FieldType.RAW, FieldType.INT, FieldType.FLOAT] :
+                    val = raw_val
+                if self.field_type == FieldType.CUSTOM:
+                    val = raw_val.to_dict(block)
+                if self.field_type in [FieldType.STR, FieldType.BOOLEAN]:
+                    val = str(raw_val)
+                if self.field_type == FieldType.SIMPLE_DICT:
+                    val = {str(k): str(v) for k, v in raw_val.iteritems()}
+                if self.field_type == FieldType.SIMPLE_LIST:
+                    val = map(str, raw_val)
+            return val
+        except Exception, e:
+            pprint(e)
+            # TODO: fix it
+            return ""
 
 # class BoundInputs(dict):
 #     def to_dict(self):
@@ -306,8 +310,11 @@ class BlockSerializer(object):
                 val = float(raw_val)
             elif p.field_type == FieldType.INT:
                 val = int(raw_val)
+            elif p.field_type == FieldType.STR:
+                val = str(raw_val)
             else:
-                val = raw_val
+                continue
+                #val = raw_val
 
             setattr(block, p_name, val)
 
@@ -318,6 +325,28 @@ class BlockSerializer(object):
                 if key:
                     var = ScopeVar.from_key(key)
                     block.bind_input_var(input_field.name, var)
+
+
+class CollectorSpecification(object):
+    def __init__(self):
+        self.bound = {}  # name -> scope_var
+
+    def register(self, name, scope_var):
+        """
+            @type scope_var: ScopeVar
+        """
+        # if not isinstance(scope_var, ScopeVar):
+        #     pprint(scope_var)
+        #     import  ipdb; ipdb.set_trace()
+
+        self.bound[name] = scope_var
+
+    def to_dict(self, *args, **kwargs):
+        return {
+            "bound": {str(name): scope_var.to_dict()
+                      for name, scope_var in self.bound.iteritems()},
+            "new": {"name": "", "scope_var": ""}
+        }
 
 
 class BlockMeta(type):
@@ -423,7 +452,14 @@ class GenericBlock(BaseBlock):
     state = BlockField("state", FieldType.STR, "created")
 
     _create_new_scope = BlockField("create_new_scope", FieldType.BOOLEAN, False)
+    _collector_spec = ParamField(name="collector_spec", title="",
+                                 field_type=FieldType.CUSTOM,
+                                 input_type=InputType.HIDDEN,
+                                 init_val=CollectorSpecification()
+    )
     create_new_scope = False
+
+    is_block_supports_auto_execution = False
 
     errors = BlockField("errors", FieldType.SIMPLE_LIST, list())
     warnings = BlockField("warnings", FieldType.SIMPLE_LIST, list())
@@ -454,7 +490,7 @@ class GenericBlock(BaseBlock):
         self.auto_exec_status_done = set(["done"])
         self.auto_exec_status_working = set(["working"])
         self.auto_exec_status_error = set(["execution_error"])
-        self.is_block_supports_auto_execution = False
+
 
         # Init block fields
         for f_name, f in itertools.chain(
@@ -557,6 +593,9 @@ class GenericBlock(BaseBlock):
         #import ipdb; ipdb.set_trace()
         return result
 
+    def register_collector_bind(self, name, scope_var):
+        self.collector_spec.register(name, scope_var)
+
     def register_provided_objects(self, scope, scope_var):
         self.out_manager.register(scope_var.var_name, scope_var.data_type)
         scope.register_variable(scope_var)
@@ -592,10 +631,26 @@ class GenericBlock(BaseBlock):
         if new_name:
             exp.change_block_alias(self, new_name)
 
-    def save_params(self, exp, request, received_block=None, *args, **kwargs):
+    def save_params(self, exp, received_block=None, *args, **kwargs):
         self._block_serializer.save_params(self, received_block)
         exp.store_block(self)
         self.validate_params(exp)
+
+    def add_collector_var(self, exp, received_block, *args, **kwargs):
+        rec_new = received_block.get("collector_spec", {}).get("new", {})
+        if rec_new:
+            name = str(rec_new.get("name"))
+            scope_var_key = rec_new.get("scope_var")
+            if name and scope_var_key:
+                scope_var = ScopeVar.from_key(scope_var_key)
+                self.register_collector_bind(name, scope_var)
+                exp.store_block(self)
+
+
+
+        #import ipdb; ipdb.set_trace()
+        #self._block_serializer
+        a = 2
 
     def validate_params(self, exp):
         is_valid = True
@@ -630,7 +685,7 @@ class GenericBlock(BaseBlock):
 
         exp.store_block(self)
 
-    def reset_execution(self, exp):
+    def reset_execution(self, exp, *args, **kwargs):
         pass
 
 save_params_actions_list = ActionsList([
@@ -644,7 +699,7 @@ execute_block_actions_list = ActionsList([
     ActionRecord("execute", ["ready"], "working", user_title="Run block"),
     ActionRecord("success", ["working"], "done"),
     ActionRecord("error", ["ready", "working"], "execution_error"),
-    ActionRecord("reset_execution", ['done'], "ready")
+    ActionRecord("reset_execution", ['done', 'execution_error', 'ready'], "ready")
 ])
 
 

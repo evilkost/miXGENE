@@ -89,13 +89,17 @@ Constructor.controller('PalletCtrl', function($scope, blockAccess){
 
 Constructor.controller('CollectorCtrl', function($scope, blockAccess){
     //$scope.access = blockAccess;
-    $scope.new_collector = {
-        "name": "",
-        "var": undefined
-    }
+//    $scope.new_collector = {
+//        "name": "",
+//        "var": undefined
+//    }
 
     $scope.add_var = function(){
-        alert($scope.new_collector.name);
+        $scope.access.send_action($scope.block, "add_collector_var", true);
     }
 
+})
+Constructor.controller('LiCollectorOutputsCtrl', function($scope, blockAccess){
+    $scope.bound_var_fixed =
+        blockAccess.scopes[$scope.block.sub_scope_name].by_var_key[$scope.bound_var.pk];
 })

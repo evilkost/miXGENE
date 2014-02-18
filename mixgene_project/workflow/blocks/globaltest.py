@@ -7,6 +7,7 @@ from wrappers.gt import global_test_task
 
 class GlobalTest(GenericBlock):
     block_base_name = "GLOBAL_TEST"
+    is_block_supports_auto_execution = True
 
     _block_actions = ActionsList([
         ActionRecord("save_params", ["created", "valid_params", "done", "ready"], "validating_params",

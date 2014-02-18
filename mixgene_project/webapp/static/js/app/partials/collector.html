@@ -1,27 +1,57 @@
 <div ng-controller="CollectorCtrl">
     <div class="row">
-        <div class="form-group">
-            <label class="col-sm-1 control-label">
-                Output name  {$ new_collector.name $}
-            </label>
+        <div class="col-xs-10">
+            <h3>
+                Collect results to:
+            </h3>
+        </div>
+    </div>
 
-
-            <div class="col-sm-2">
-                <input type="text" class="form-control" ng-model="new_collector.name" />
+    <div class="row">
+        <div class="col-xs-3">
+            <div class="form-group">
+                <label class="control-label">
+                    Output name
+                    <!--{$ block.collector_spec.new.name $}-->
+                </label>
+                <input type="text" class="form-control"
+                       ng-model="block.collector_spec.new.name" />
             </div>
 
 
-            <label class="col-sm-1 control-label">
-                Variable to bind
-            </label>
+            <div class="form-group">
+                <label class="control-label">
+                    Variable to bind
+                </label>
 
-            <div class="col-sm-2">
+
                 <select class="form-control"
-                    ng-model="new_collector.var"
-                    ng-options="option.pk as option.title for option in access.scopes[block.sub_scope_name].vars" >
+                        ng-model="block.collector_spec.new.scope_var"
+                        ng-options="option.pk as option.title for option in access.scopes[block.sub_scope_name].vars" >
                 </select>
             </div>
-            <button class="btn btn-primary" ng-click="add_var()"> Add variable to result collection </button>
+
+            <button class="btn btn-primary btn-block" ng-click="add_var()">
+                <span class="glyphicon glyphicon-plus"></span>
+                Add variable to result collection
+            </button>
+
         </div>
+
+
+        <div class="col-xs-8">
+            <h4> <b>Bound inner variables</b></h4>
+            <ul class="list-group">
+                <li  class="list-group-item"
+                     ng-repeat="(name, bound_var) in block.collector_spec.bound"
+                        ng-controller="LiCollectorOutputsCtrl">
+                    <b>[{$ bound_var_fixed.data_type $}] {$ name $}</b>: {$ bound_var_fixed.title $}
+                </li>
+            </ul>
+        </div>
+
+    </div>
+    <div class="row">
+
     </div>
 </div>

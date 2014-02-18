@@ -144,6 +144,7 @@ def blocks_resource(request, exp_id):
                 uuid, block in blocks if block.scope_name == "root"]
 
     scopes = {}
+
     for scope_name, _ in exp.get_all_scopes_with_block_uuids(redis_instance=r).iteritems():
         scope = Scope(exp, scope_name)
         scope.load(redis_instance=r)
@@ -177,8 +178,7 @@ def block_resource(request, exp_id, block_uuid, action_code=None):
     exp = Experiment.objects.get(pk=exp_id)
     block = exp.get_block(str(block_uuid))
 
-    import random
-    import time; time.sleep(random.uniform(0, 0.05))
+    import time; time.sleep( 0.05)
     if request.method == "POST":
         try:
             received_block = json.loads(request.body)

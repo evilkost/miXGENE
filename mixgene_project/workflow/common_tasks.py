@@ -182,12 +182,13 @@ def generate_cv_folds(
         #         n_iter=folds_num,
         #         train_size=split_ratio, test_size= 1- split_ratio):
         #
+        i = 0
         for train_idx, test_idx in cross_validation.StratifiedKFold(
             classes_vector,
-            n_iter=folds_num
+            n_folds=folds_num
         ):
 
-            train_es = es.clone( "%s_train_%s" % (es.base_filename ,i))
+            train_es = es.clone("%s_train_%s" % (es.base_filename ,i))
             train_es.store_assay_data_frame(assay_df[train_idx])
             train_es.store_pheno_data_frame(pheno_df.iloc[train_idx])
 
@@ -200,9 +201,10 @@ def generate_cv_folds(
                 "es_test_i": test_es
             })
 
+            i += 1
 
 
-        block.do_action("on_generate_folds_done", exp)
+        block.do_action(success_action, exp, sequence)
     except Exception, e:
 
         ex_type, ex, tb = sys.exc_info()
@@ -210,7 +212,7 @@ def generate_cv_folds(
         print e
         #TODO: LOG ERROR AND TRACEBACK OR WE LOSE IT!
         block.errors.append(e)
-        block.do_action("on_generate_folds_error", exp)
+        block.do_action(error_action, exp)
 
 
 @task(name="workflow.common_tasks.gt_pval_cut")

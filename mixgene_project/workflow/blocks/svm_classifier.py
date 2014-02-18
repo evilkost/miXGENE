@@ -7,6 +7,7 @@ from wrappers.svm import lin_svm_task
 
 class SvmClassifier(GenericBlock):
     block_base_name = "LIN_SVM"
+    is_block_supports_auto_execution = True
 
     # Block behavior
     _block_actions = ActionsList([])

@@ -6,6 +6,7 @@ from converters.gene_set_tools import merge_gs_with_platform_annotation
 
 class MergeGeneSetWithPlatformAnnotation(GenericBlock):
     block_base_name = "MERGE_GS_GPL_ANN"
+    is_block_supports_auto_execution = True
 
     _block_actions = ActionsList([
         ActionRecord("save_params", ["created", "valid_params", "done", "ready"], "validating_params",

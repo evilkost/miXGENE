@@ -2,16 +2,23 @@ from collections import defaultdict
 import copy
 import cPickle as pickle
 from pprint import pprint
+import traceback
 from celery.task import task
+import sys
 
 from mixgene.redis_helper import ExpKeys
 from mixgene.util import get_redis_instance
 
 
-@task(name="workflow.common_tasks.auto_exec")
+@task(name="webapp.scope.auto_exec")
 def auto_exec_task(exp, scope_name):
-    sr = ScopeRunner(exp, scope_name)
-    sr.execute()
+    try:
+        sr = ScopeRunner(exp, scope_name)
+        sr.execute()
+    except Exception, e:
+        ex_type, ex, tb = sys.exc_info()
+        traceback.print_tb(tb)
+        print e
 
 
 class ScopeVar(object):
@@ -56,8 +63,8 @@ class ScopeVar(object):
 
 class DAG(object):
     def __init__(self):
-        self.graph = defaultdict(list)  # parent -> [children list]
-        self.parents = defaultdict(list)  # child -> [parents list]
+        self.graph = defaultdict(set)  # parent -> [children list]
+        self.parents = defaultdict(set)  # child -> [parents list]
         self.roots = set()
 
         self.topological_order = None
@@ -65,15 +72,15 @@ class DAG(object):
 
     def reverse_add(self, node, parents=None):
         if node not in self.graph:
-            self.graph[node] = []
+            self.graph[node] = set()
         if not parents:
-            self.parents[node] = []
+            self.parents[node] = set()
         else:
-            self.parents[node].extend(parents)
+            self.parents[node].update(parents)
             for parent in parents:
-                self.graph[parent].append(node)
+                self.graph[parent].add(node)
                 if parent not in self.parents.keys():
-                    self.parents[parent] = []
+                    self.parents[parent] = set()
 
     def get_children(self, node):
         return self.graph[node]
@@ -90,7 +97,6 @@ class DAG(object):
         dag.update_roots()
 
         dag.sort_graph()
-        dag.p1()
 
         return dag
 
@@ -135,6 +141,21 @@ class ScopeRunner(object):
         self.scope_name = scope_name
         self.dag = None
 
+    def is_block_inputs_are_satisfied(self, block_uuid, blocks_dict):
+        result = True
+        for p_uuid in self.dag.get_parents(block_uuid):
+            # TODO: Fix this add hoc code to ignore meta block status
+            #  is will certainly produce bags on two nested meta blocks
+            if blocks_dict[p_uuid].sub_scope_name == self.scope_name:
+                continue
+
+            parent_status = blocks_dict[p_uuid].get_exec_status()
+            if parent_status != "done":
+                result = False
+                break
+
+        return result
+
     def execute(self):
         self.build_dag(self.exp.build_block_dependencies_by_scope(self.scope_name))
 
@@ -143,8 +164,7 @@ class ScopeRunner(object):
         for block_uuid in self.dag.topological_order:
             block = blocks_dict[block_uuid]
             if block.get_exec_status() == "ready" and \
-                all([blocks_dict[p_uuid].get_exec_status() == "done"
-                    for p_uuid in self.dag.get_parents(block_uuid)]):
+                self.is_block_inputs_are_satisfied(block_uuid, blocks_dict):
                 blocks_to_execute.append(block)
 
         if not blocks_to_execute:
@@ -221,6 +241,10 @@ class Scope(object):
             "by_data_type": {
                 data_type: [var.to_dict() for var in vars]
                 for data_type, vars in self.vars_by_data_type.iteritems()
+            },
+            "by_var_key": {
+                var.pk: var.to_dict()
+                for var in self.scope_vars
             }
         }
 
