@@ -1,13 +1,30 @@
 <div ng-controller="CollectorCtrl">
+    <hr >
     <div class="row">
-        <div class="col-xs-10">
-            <h3>
-                Collect results to:
-            </h3>
+        <div class="col-xs-6">
+
         </div>
     </div>
 
     <div class="row">
+        <!--<h3 >-->
+            <!--<span class="label label-default"> Collect results </span>-->
+        <!--</h3>-->
+        <div class="col-xs-8 col-lg-4">
+            <h3 style="text-align: center"> <span class="label label-default"> Outputs to collect</span></h3>
+
+            <ul class="list-group">
+                <li  class="list-group-item"
+                     ng-repeat="(name, bound_var) in block.collector_spec.bound"
+                     ng-controller="LiCollectorOutputsCtrl">
+                    <b>[{$ bound_var_fixed.data_type $}] {$ name $}</b>:
+                    {$ bound_var_fixed.title $}
+
+                </li>
+            </ul>
+        </div>
+
+
         <div class="col-xs-3">
             <div class="form-group">
                 <label class="control-label">
@@ -33,22 +50,12 @@
 
             <button class="btn btn-primary btn-block" ng-click="add_var()">
                 <span class="glyphicon glyphicon-plus"></span>
-                Add variable to result collection
+                Add output to result collection
             </button>
 
         </div>
 
 
-        <div class="col-xs-8">
-            <h4> <b>Bound inner variables</b></h4>
-            <ul class="list-group">
-                <li  class="list-group-item"
-                     ng-repeat="(name, bound_var) in block.collector_spec.bound"
-                        ng-controller="LiCollectorOutputsCtrl">
-                    <b>[{$ bound_var_fixed.data_type $}] {$ name $}</b>: {$ bound_var_fixed.title $}
-                </li>
-            </ul>
-        </div>
 
     </div>
     <div class="row">

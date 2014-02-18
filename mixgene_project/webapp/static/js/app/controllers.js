@@ -7,6 +7,8 @@ Constructor.controller('MainCtrl', function($scope, blockAccess){
     $scope.toggle_show_old_worktable = function(){
         $scope.show_old_worktable = !$scope.show_old_worktable;
     }
+
+
 })
 
 Constructor.controller('WorktableCtrl', function WorktableCtrl($scope, blockAccess){

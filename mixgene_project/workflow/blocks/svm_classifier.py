@@ -15,7 +15,7 @@ class SvmClassifier(GenericBlock):
     _block_actions.extend(execute_block_actions_list)
 
     # User defined parameters
-    C = ParamField(name="C", title="Penalty parameter C",
+    C = ParamField(name="C", title="Penalty",
                    input_type=InputType.TEXT, field_type=FieldType.FLOAT, init_val=1.0)
     tol = ParamField(name="tol", title="Tolerance for stopping criteria",
                      input_type=InputType.TEXT, field_type=FieldType.FLOAT, init_val=0.0001)
