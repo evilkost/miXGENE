@@ -2,7 +2,9 @@ from pprint import pprint
 import collections
 import copy
 import itertools
-from webapp.models import Experiment
+import random
+
+from webapp.models import Experiment, UploadedData, UploadedFileWrapper
 from webapp.scope import Scope, ScopeVar
 from webapp.scope import auto_exec_task
 
@@ -178,14 +180,16 @@ class InputType(object):
     CHOICE = "choice"
     CHECKBOX = "checkbox"
     HIDDEN = "hidden"
-
+    FILE_INPUT = "file_input"
 
 
 # TODO: maybe more use of django form fields?
 # TODO: or join ParamField and BlockField?
 class ParamField(object):
     def __init__(self, name, title, input_type, field_type, init_val=None,
-                 validator=None, select_provider=None, *args, **kwargs):
+                 validator=None, select_provider=None,
+                 required=True, order_num=None,
+                 *args, **kwargs):
         self.name = name
         self.title = title
         self.input_type = input_type
@@ -194,6 +198,11 @@ class ParamField(object):
         self.validator = validator
         self.select_provider = select_provider
         self.is_a_property = False
+        self.required = required
+        if order_num is None:
+            self.order_num = random.randint(0, 1000)
+        else:
+            self.order_num = order_num
 
     def contribute_to_class(self, cls, name):
         #setattr(cls, name, self.init_val)
@@ -272,8 +281,12 @@ class BlockSerializer(object):
             raw_val = getattr(block, f_name)
             result[f_name] = f.value_to_dict(raw_val, block)
 
-        result["_params_prototype"] = dict([(str(param_name), param_field.to_dict())
-                                   for param_name, param_field in self.params.iteritems()])
+        params_protype = {
+            str(param_name): param_field.to_dict()
+            for param_name, param_field in self.params.iteritems()
+        }
+        result["_params_prototype"] = params_protype
+        result["_params_prototype_list"] = params_protype.values()
 
         for f_name, f in self.params.iteritems():
             raw_val = getattr(block, f.name)
@@ -630,6 +643,26 @@ class GenericBlock(BaseBlock):
         exp.store_block(self)
         self.validate_params(exp)
 
+    def save_file_input(self, exp, field_name, file_obj, upload_meta=None):
+        if upload_meta is None:
+            upload_meta = {}
+
+        if not hasattr(self, field_name):
+            raise Exception("Block doesn't have field: %s" % field_name)
+
+        ud, is_created = UploadedData.objects.get_or_create(
+            exp=exp, block_uuid=self.uuid, var_name=field_name)
+        # import ipdb; ipdb.set_trace()
+        ud.filename = "%s_%s_%s" % (self.uuid[:8], field_name, file_obj.name)
+        ud.data = file_obj;
+        ud.save()
+
+        ufw = UploadedFileWrapper(ud.pk)
+        ufw.orig_name = file_obj.name
+        setattr(self, field_name, ufw)
+
+        exp.store_block(self)
+
     def add_collector_var(self, exp, received_block, *args, **kwargs):
         rec_new = received_block.get("collector_spec", {}).get("new", {})
         if rec_new:
@@ -639,12 +672,6 @@ class GenericBlock(BaseBlock):
                 scope_var = ScopeVar.from_key(scope_var_key)
                 self.register_collector_bind(name, scope_var)
                 exp.store_block(self)
-
-
-
-        #import ipdb; ipdb.set_trace()
-        #self._block_serializer
-        a = 2
 
     def validate_params(self, exp):
         is_valid = True

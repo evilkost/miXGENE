@@ -1,0 +1,28 @@
+<div class="form-group"  ng-controller="UploadFieldCtrl" >
+
+    <div class="row">
+        <label class="col-sm-4 control-label">
+            {$ field.title $}
+
+
+        </label>
+        <div class="col-sm-6">
+            <input type="file" class="form-control" name="{{ field.name }}"
+                   ng-file-select="onFileSelect($files)"
+                   ng-model="block[field.name]"
+                   >
+            </input>
+        </div>
+    </div>
+
+    <div class="row" ng-if="stored_file">
+        Uploaded: {$ stored_file.filename $} size: {$ stored_file.size $}
+    </div>
+    <div class="row">
+        <div ng-repeat="error in block.form_errors[field.name]" class="col-sm-9 col-sm-offset-3">
+            <span class="label label-danger">
+                {$ error $}
+            </span>
+        </div>
+    </div>
+</div>

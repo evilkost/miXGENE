@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 from django import forms
 
+
 class UploadForm(forms.Form):
-    data = forms.FileField(
-        label='Select a file',
-        help_text='max. 42 megabytes',
-        required=False,
-    )
+    file = forms.FileField()
     exp_id = forms.IntegerField()
-    var_name = forms.CharField()
+    block_uuid = forms.CharField()
+    field_name = forms.CharField()

@@ -17,7 +17,7 @@
 
         <!-- jquery -->
         <!--<script type="text/javascript" src="//cdn.jsdelivr.net/jquery/2.0.3/jquery-2.0.3.min.js"></script>-->
-        <script type="text/javascript" src="{% static 'common/jquery/jquery.js' %}"></script>
+        <script type="text/javascript" src="{% static 'common/jquery/dist/jquery.js' %}"></script>
         <!-- jquery plugins -->
         <!--<script type="text/javascript" src="//cdn.jsdelivr.net/jquery.form/3.36/jquery.form.min.js"></script>-->
         <script type="text/javascript" src="{% static 'common/jquery-form/jquery.form.js' %}"></script>
@@ -90,7 +90,7 @@
             {% include "common_js.js" %} // TODO: pack js to static
         </script>
 
-
+        <script src="{% static 'common/ng-file-upload/angular-file-upload-shim.js' %}"></script>
 
         <!-- Angular JS-->
         <script src="{% static 'common/angular/angular.js'%}"></script>
@@ -98,7 +98,7 @@
         <script src="{% static 'common/angular-cookies/angular-cookies.js'%}"></script>
         <!--<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.4/angular.js"></script>-->
         <!--<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.4/angular-cookies.js"></script>-->
-
+        <script src="{% static 'common/ng-file-upload/angular-file-upload.js' %}"></script>
 
 
         <!--<link rel="stylesheet" href="{% static 'common/angular-slider/angular-slider.css'%}">-->

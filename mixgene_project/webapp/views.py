@@ -167,36 +167,22 @@ def block_sub_page(request, exp_id, block_uuid, sub_page):
     context = RequestContext(request, context)
     return HttpResponse(template.render(context))
 
-
 @csrf_protect
 @never_cache
 def upload_data(request):
-    return redirect(request.POST['next'])
-    # if request.method == "POST":
-    #     form = UploadForm(request.POST, request.FILES)
-    #     if form.is_valid():
-    #         exp_id = form.cleaned_data['exp_id']
-    #         exp = Experiment.objects.get(pk=exp_id)
-    #         ctx = exp.get_ctx()
-    #         var_name = form.cleaned_data['var_name']
-    #         inp_var = ctx["input_vars"][var_name]
-    #         if inp_var is None:
-    #             print "var_name %s isn't used by exp %s " % (var_name, exp_id )
-    #             #TODO: hmm shouldn't actually happen
-    #         else:
-    #             uploaded_before = UploadedData.objects.filter(exp=exp, var_name=var_name)
-    #             if len(uploaded_before) == 0:
-    #                 ud = UploadedData(exp=exp, var_name=var_name)
-    #                 ud.data = form.cleaned_data['data']
-    #                 ud.save()
-    #
-    #                 inp_var.is_done = True
-    #                 inp_var.set_file_type("user")
-    #                 inp_var.filename = ud.data.name.split("/")[-1]
-    #                 exp.update_ctx(ctx)
-    #             else:
-    #                 print "var_name %s was already uploaded " % (var_name, )
-    # return redirect(request.POST['next'])
+    if request.method == "POST":
+        form = UploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            exp_id = form.cleaned_data['exp_id']
+            block_uuid = form.cleaned_data['block_uuid']
+            field_name = form.cleaned_data['field_name']
+            file_obj = form.cleaned_data['file']
+
+            exp = Experiment.get_exp_by_id(exp_id)
+            block = exp.get_block(block_uuid)
+            block.save_file_input(exp, field_name, file_obj, request.POST["upload_meta"])
+
+    return HttpResponse(status=204)
 
 
 @csrf_protect

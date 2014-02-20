@@ -66,13 +66,14 @@
                     <div class="col-xs-4">
                         <!--<h4 style="text-align: center"> <span class="label label-default"> Parameters </span> </h4>-->
                         <div class="row">
-                            <form class="form-horizontal" ng-repeat="param_proto in block._params_prototype"
-                                  ng-controller="formFieldCtrl">
+                            <div ng-repeat="param_proto in block._params_prototype_list | orderBy:'order_num' "
+                                 ng-controller="formFieldCtrl">
 
+                                <!--{$ field.order_num $}-->
                                 <div ng-include="template">
                                 </div>
 
-                            </form>
+                            </div>
                         </div>
                     </div>
 

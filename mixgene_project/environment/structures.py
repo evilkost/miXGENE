@@ -116,6 +116,8 @@ class ExpressionSet(GenericStoreStructure):
         self.pheno_data_storage = None
         self.pheno_metadata = {}
 
+        self.working_unit = None
+
         self.annotation = None
 
         # Have no idea about 3 following variables
@@ -484,3 +486,5 @@ class FileInputVar(AbsInputVar):
             self.file_type = file_type
         else:
             raise Exception("file type should be in [`user`, `ncbi_geo`, `gmt`], not %s" % type)
+
+

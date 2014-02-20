@@ -15,6 +15,7 @@
     "tests"
   ],
   "dependencies": {
+    "angular-resource": "~1.2.13",
     "angular-cookies": "~1.2.4",
     "angular-slider": "~0.1.6",
     "angular": "~1.2.13",
@@ -23,6 +24,7 @@
     "flot": "~0.8.2",
     "jquery-form": "~3.46.0",
     "jquery-ui": "~1.10.x",
-    "jquery.tablesorter": "~2.14.3"
+    "jquery.tablesorter": "~2.14.3",
+    "ng-file-upload": "~1.2.8"
   }
 }

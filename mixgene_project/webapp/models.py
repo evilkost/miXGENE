@@ -363,14 +363,32 @@ class UploadedData(models.Model):
     exp = models.ForeignKey(Experiment)
     var_name = models.CharField(max_length=255)
     filename = models.CharField(max_length=255, default="default")
+    block_uuid = models.CharField(max_length=127, default="")
+
     data = models.FileField(null=True, upload_to=content_file_name)
 
     def __unicode__(self):
-        return u"%s:%s" % (self.exp.pk, self.var_name)
+        return u":".join(map(str, [self.exp.pk, self.block_uuid, self.var_name]))
 
 
 def gene_sets_file_name(instance, filename):
     return "broad_institute/%s" % filename
+
+
+class UploadedFileWrapper(object):
+    def __init__(self, uploaded_pk):
+        self.uploaded_pk = uploaded_pk
+        self.orig_name = ""
+
+    def get_file(self):
+        ud = UploadedData.objects.get(pk=self.uploaded_pk)
+        return ud.data
+
+    def to_dict(self, *args, **kwargs):
+        return {
+            "filename": self.orig_name,
+            "size": self.get_file().size,
+        }
 
 
 class BroadInstituteGeneSet(models.Model):

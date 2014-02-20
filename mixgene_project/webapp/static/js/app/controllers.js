@@ -70,6 +70,8 @@ Constructor.controller('formFieldCtrl', function($scope, $log){
     $scope.template = "/static/js/app/forms/field_" +
         $scope.$parent.param_proto.input_type + ".html";
 
+    $scope.predicate = "order_num";
+
     $scope.field = $scope.param_proto;
 })
 
@@ -104,4 +106,40 @@ Constructor.controller('CollectorCtrl', function($scope, blockAccess){
 Constructor.controller('LiCollectorOutputsCtrl', function($scope, blockAccess){
     $scope.bound_var_fixed =
         blockAccess.scopes[$scope.block.sub_scope_name].by_var_key[$scope.bound_var.pk];
+})
+
+Constructor.controller('UploadFieldCtrl', function($scope, $upload){
+    $scope.upload_meta = {
+        "exp_id": $scope.access.exp_id,
+        "block_uuid": $scope.block.uuid,
+        "field_name": $scope.field.name,
+        "upload_meta": {}
+    }
+    $scope.stored_file = $scope.block[$scope.field.name];
+
+    $scope.onFileSelect = function($files){
+        for (var i = 0; i < $files.length; i++) {
+            var file = $files[i];
+            $scope.upload = $upload.upload({
+                url: '/upload_data/', //upload.php script, node.js route, or servlet url
+                // method: POST or PUT,
+                // headers: {'headerKey': 'headerValue'},
+                // withCredentials: true,
+                data: $scope.upload_meta,
+                file: file
+                // file: $files, //upload multiple files, this feature only works in HTML5 FromData browsers
+                /* set file formData name for 'Content-Desposition' header. Default: 'file' */
+                //fileFormDataName: myFile, //OR for HTML5 multiple upload only a list: ['name1', 'name2', ...]
+                /* customize how data is added to formData. See #40#issuecomment-28612000 for example */
+                //formDataAppender: function(formData, key, val){} //#40#issuecomment-28612000
+            }).progress(function(evt) {
+                console.log('percent: ' + parseInt(100.0 * evt.loaded / evt.total));
+            }).success(function(data, status, headers, config) {
+                // file is uploaded successfully
+                console.log(data);
+            });
+            //.error(...)
+            //.then(success, error, progress);
+        }
+    }
 })

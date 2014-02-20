@@ -1,6 +1,7 @@
 'use strict';
 
-var Constructor = angular.module("Constructor", ['ngCookies'],
+var Constructor = angular.module("Constructor",
+        ['ngCookies', 'angularFileUpload'],
     function ($interpolateProvider) {
         $interpolateProvider.startSymbol("{$");
         $interpolateProvider.endSymbol("$}");
