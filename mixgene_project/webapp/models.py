@@ -12,11 +12,10 @@ from redis.client import StrictPipeline
 from mixgene.settings import MEDIA_ROOT
 from mixgene.util import get_redis_instance
 from mixgene.redis_helper import ExpKeys
-from mixgene.util import dyn_import
+
 from environment.structures import GmtStorage, GeneSets
-from webapp.scope import Scope, ScopeRunner
-from workflow.execution import ScopeState
 from webapp.scope import auto_exec_task
+
 
 class CachedFile(models.Model):
     uri = models.TextField(default="")
@@ -82,34 +81,22 @@ class Experiment(models.Model):
     def execute(self):
         auto_exec_task.s(self, "root").apply_async()
 
-    def init_ctx(self, ctx, redis_instance=None):
+    def post_init(self, redis_instance=None):
         ## TODO: RENAME TO init experiment and invoke on first save
         if redis_instance is None:
             r = get_redis_instance()
         else:
             r = redis_instance
 
-        key_context = ExpKeys.get_context_store_key(self.pk)
-        key_context_version = ExpKeys.get_context_version_key(self.pk)
-
         pipe = r.pipeline()
 
-        # FIXME: replace with MSET
-        pipe.set(key_context, pickle.dumps(ctx))
-        pipe.set(key_context_version, 0)
-
         pipe.hset(ExpKeys.get_scope_creating_block_uuid_keys(self.pk), "root", None)
-
-        pipe.sadd(ExpKeys.get_all_exp_keys_key(self.pk),
-                  [key_context,
-                   key_context_version,
-                   ExpKeys.get_exp_blocks_list_key(self.pk),
-                   ExpKeys.get_blocks_uuid_by_alias(self.pk),
-                   ExpKeys.get_scope_vars_keys(self.pk),
-                   ExpKeys.get_scope_creating_block_uuid_keys(self.pk),
-                   ExpKeys.get_scope_key(self.pk, "root")
+        pipe.sadd(ExpKeys.get_all_exp_keys_key(self.pk),[
+            ExpKeys.get_exp_blocks_list_key(self.pk),
+            ExpKeys.get_blocks_uuid_by_alias(self.pk),
+            ExpKeys.get_scope_creating_block_uuid_keys(self.pk),
+            ExpKeys.get_scope_key(self.pk, "root")
         ])
-
         pipe.execute()
 
     def get_ctx(self, redis_instance=None):
@@ -126,53 +113,6 @@ class Experiment(models.Model):
             raise KeyError("Context wasn't found for exp_id: %s" % self.pk)
         return ctx
 
-    def update_ctx(self, new_ctx, redis_instance=None):
-        if redis_instance is None:
-            r = get_redis_instance()
-        else:
-            r = redis_instance
-
-        key_context = ExpKeys.get_context_store_key(self.pk)
-        key_context_version = ExpKeys.get_context_version_key(self.pk)
-
-        result = None
-        lua = """
-        local ctx_version = tonumber(ARGV[1])
-        local actual_version = redis.call('GET', KEYS[1])
-        actual_version = tonumber(actual_version)
-        local result = "none"
-        if ctx_version == actual_version then
-            redis.call('SET', KEYS[1], actual_version + 1)
-            redis.call('SET', KEYS[2], ARGV[2])
-            result = "ok"
-        else
-            result = "fail"
-        end
-        return result
-        """
-        safe_update = r.register_script(lua)
-        # TODO: checkpoint for repeat if lua check version fails
-        retried = 0
-        while result != "ok" and retried < 4:
-            retried = 1
-            ctx_version, pickled_ctx = r.mget(key_context_version, key_context)
-            if pickled_ctx is not None:
-                ctx = pickle.loads(pickled_ctx)
-            else:
-                raise KeyError("Context wasn't found for exp_id: %s" % self.pk)
-
-            ctx.update(new_ctx)
-            # TODO: move lua to dedicated module or singletone load in redis helper
-            #  keys: ctx_version_key, ctx_key
-            #  args: ctx_version,     ctx
-
-            result = safe_update(
-                keys=[key_context_version, key_context],
-                args=[ctx_version, pickle.dumps(ctx)])
-
-        if result != "ok":
-            raise Exception("Failed to update context")
-
     def get_data_folder(self):
         return '/'.join(map(str, [MEDIA_ROOT, 'data', self.author.id, self.pk]))
 
@@ -181,10 +121,6 @@ class Experiment(models.Model):
             return self.get_data_folder() + "/" + filename + "." + file_extension
         else:
             return self.get_data_folder() + "/" + filename
-
-    def validate(self, request):
-        self.update_ctx({})
-        self.save()
 
     def get_all_scopes_with_block_uuids(self, redis_instance=None):
         if redis_instance is None:
@@ -216,20 +152,13 @@ class Experiment(models.Model):
             #     self.register_variable(block.scope, block.uuid, var_name, data_type, pipe)
 
             if block.create_new_scope:
-                #import ipdb; ipdb.set_trace()
-                # for var_name, data_type in block.provided_objects_inner.iteritems():
-                #     self.register_variable(block.sub_scope, block.uuid, var_name, data_type, pipe)
-
                 pipe.hset(ExpKeys.get_scope_creating_block_uuid_keys(self.pk),
                           block.sub_scope_name, block.uuid)
 
             if block.scope_name != "root":
                 # need to register in parent block
                 parent_uuid = r.hget(ExpKeys.get_scope_creating_block_uuid_keys(self.pk), block.scope_name)
-                #import ipdb; ipdb.set_trace()
-                print r.hgetall(ExpKeys.get_scope_creating_block_uuid_keys(self.pk)), block.scope_name
                 parent = self.get_block(parent_uuid, r)
-                #import ipdb; ipdb.set_trace()
 
                 # TODO: remove code dependency here
                 parent.children_blocks.append(block.uuid)
@@ -331,26 +260,6 @@ class Experiment(models.Model):
         return [(uuid, pickle.loads(r.get(ExpKeys.get_block_key(uuid))))
                 for uuid in block_uuid_list]
 
-    def group_blocks_by_provided_type(self, included_inner_blocks=None, redis_instance=None):
-        if self._blocks_grouped_by_provided_type is not None:
-            return self._blocks_grouped_by_provided_type
-        if redis_instance is None:
-            r = get_redis_instance()
-        else:
-            r = redis_instance
-
-        uuid_list = self.get_all_block_uuids(included_inner_blocks, r);
-
-        self._blocks_grouped_by_provided_type = defaultdict(list)
-        for uuid in uuid_list:
-            block = self.get_block(uuid, r)
-            provided = block.get_provided_objects()
-            for data_type, field_name in provided.iteritems():
-                self._blocks_grouped_by_provided_type[data_type].append(
-                    (uuid, block.base_name, field_name)
-                )
-        return self._blocks_grouped_by_provided_type
-
     def get_all_block_uuids(self, redis_instance=None):
         """
         @type included_inner_blocks: list of str
@@ -410,61 +319,6 @@ class Experiment(models.Model):
             raise KeyError("Doesn't have a scope with name %s" % scope_name)
         else:
             return self.get_block(block_uuid, r)
-
-
-    # def get_registered_variables(self, redis_instance=None):
-    #     """
-    #     @type  redis_instance: Redis
-    #     @param redis_instance: Redis
-    #
-    #     @return: All register to experiment variables
-    #     @rtype: list # of  [scope, uuid, var_name, var_data_type]
-    #     """
-    #
-    #     if redis_instance is None:
-    #         r = get_redis_instance()
-    #     else:
-    #         r = redis_instance
-    #
-    #     variables = []
-    #     for key, val in r.hgetall(ExpKeys.get_scope_vars_keys(self.pk)).iteritems():
-    #         #scope, uuid, var_name, var_data_type = pickle.loads(val)
-    #         variables.append(pickle.loads(val))
-    #
-    #     return variables
-    #
-    # def get_visible_variables(self, scopes=None, data_types=None, redis_instance=None):
-    #     if scopes is None:
-    #         scopes = ["root"]
-    #
-    #     scopes = set(scopes)
-    #     scopes.add("root")
-    #
-    #     if redis_instance is None:
-    #         r = get_redis_instance()
-    #     else:
-    #         r = redis_instance
-    #
-    #     all_variables = r.hgetall(ExpKeys.get_scope_vars_keys(self.pk))
-    #     visible = []
-    #     for key, val in all_variables.iteritems():
-    #         scope, uuid, var_name, var_data_type = pickle.loads(val)
-    #         if scope not in scopes:
-    #             continue
-    #
-    #         if data_types is None or var_data_type in data_types:
-    #             visible.append((uuid, var_name))
-    #
-    #     return visible
-
-    # def register_variable(self, scope, block_uuid, var_name, data_type, redis_instance=None):
-    #     if redis_instance is None:
-    #         r = get_redis_instance()
-    #     else:
-    #         r = redis_instance
-    #
-    #     record = pickle.dumps((scope, block_uuid, var_name, data_type))
-    #     r.hset(ExpKeys.get_scope_vars_keys(self.pk), "%s:%s" % (block_uuid, var_name), record)
 
 
 def delete_exp(exp):

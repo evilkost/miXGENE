@@ -5,7 +5,6 @@ Constructor.factory("blockAccess", function($http, $log){
 
     access.blocks_by_bscope = {};
     access.block_bodies = {};
-    access.vars_by_bscope = {};
     access.scopes = {}
 
     access.blocks_by_group_json = {};
@@ -17,7 +16,6 @@ Constructor.factory("blockAccess", function($http, $log){
         }).success(function(data, status, headers, config){
             access.block_bodies = data.block_bodies;
             access.blocks_by_bscope = data.blocks_by_bscope;
-            access.vars_by_bscope = data.vars_by_bscope;
 
             access.blocks_by_group = data.blocks_by_group;
             access.scopes = data.scopes;
@@ -40,7 +38,6 @@ Constructor.factory("blockAccess", function($http, $log){
         }).success(function(data, status, headers, config){
             access.block_bodies = data.block_bodies;
             access.blocks_by_bscope = data.blocks_by_bscope;
-            access.vars_by_bscope = data.vars_by_bscope;
             access.scopes = data.scopes;
 
             document.access = access;

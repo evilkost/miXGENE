@@ -8,9 +8,8 @@ from environment.structures import SequenceContainer
 from webapp.scope import ScopeRunner
 
 from workflow.common_tasks import generate_cv_folds
-from workflow.ports import BlockPort
 
-from generic import GenericBlock, InnerOutputField
+from generic import InnerOutputField
 
 from workflow.blocks.generic import GenericBlock, ActionsList, save_params_actions_list, BlockField, FieldType, \
     ActionRecord, ParamField, InputType, execute_block_actions_list, OutputBlockField, InputBlockField
@@ -145,8 +144,7 @@ class CrossValidation(GenericBlock):
 
         es = self.get_input_var("es")
         self.inner_output_manager.reset()
-        # ann = self.get_var_by_bound_key_str(exp, self.ports["input"]["ann"].bound_key)
-        # TODO: keep actual BoundVar object
+
         self.celery_task = generate_cv_folds.s(
             exp, self,
             self.folds_num, es,
@@ -169,85 +167,3 @@ class CrossValidation(GenericBlock):
     def success(self, exp, *args, **kwargs):
         pprint(args)
         pprint(kwargs)
-
-
-    ### old code down
-    @property
-    def sub_blocks(self):
-        uuids_blocks = Experiment.get_blocks(self.children_blocks)
-        exp = Experiment.objects.get(e_id=self.exp_id)
-        result = []
-        for uuid, block in uuids_blocks:
-            block.before_render(exp)
-            result.append((uuid, block))
-
-        return result
-
-
-
-    ### inner variables provider
-    # @property
-    # def es_train_i(self):
-    #     return self.sequence.get_field("es_train_i")
-    #
-    # @property
-    # def es_test_i(self):
-    #     return self.sequence.get_field("es_test_i")
-
-    ### end inner variables
-
-
-    # #TODO: debug
-    # @property
-    # def current_fold_idx(self):
-    #     return self.sequence.iterator
-    #
-    # def serialize(self, exp, to="dict"):
-    #     hash = super(CrossValidation, self).serialize(exp, to)
-    #     hash["current_fold_idx"] = self.current_fold_idx
-    #     hash["results"] = self.results
-    #
-    #     return hash
-
-    # def before_render(self, exp, *args, **kwargs):
-    #     context_add = super(CrossValidation, self).before_render(exp, *args, **kwargs)
-    #     available = exp.get_visible_variables(scopes=[self.scope], data_types=["ExpressionSet"])
-    #
-    #     self.variable_options = prepare_bound_variable_select_input(
-    #         available, exp.get_block_aliases_map(),
-    #         self.bound_variable_block_alias, self.bound_variable_field)
-    #
-    #     if len(self.variable_options) == 0:
-    #         self.errors.append(Exception("There is no blocks which provides Expression Set"))
-    #
-    #     return context_add
-
-    # def reset_form(self, exp, *args, **kwargs):
-    #     self.clean_errors()
-    #     exp.store_block(self)
-    #
-    #
-    # def push_next_fold(self, exp, *args, **kwargs):
-    #     self.sequence.apply_next()
-    #     exp.store_block(self)
-    #
-    # def collect_fold_result(self, exp, *args, **kwargs):
-    #     ml_res = self.get_var_by_bound_key_str(exp,
-    #        self.ports["collect_internal"]["result"].bound_key
-    #     )
-    #     self.results.append(ml_res.acc)
-    #     exp.store_block(self)
-    #     if self.sequence.is_end():
-    #         self.do_action("all_folds_processed", exp)
-    #     else:
-    #         self.do_action("push_next_fold", exp)
-    #
-    # def on_generate_folds_error(self, exp, *args, **kwargs):
-    #     exp.store_block(self)
-    #
-    # def on_generate_folds_done(self, exp, *args, **kwargs):
-    #     self.clean_errors()
-    #     exp.store_block(self)
-    #
-    # def all_folds_processed(self, exp, *args, **kwargs):
-    #     exp.store_block(self)

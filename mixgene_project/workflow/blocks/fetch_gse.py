@@ -1,11 +1,7 @@
 import json
 
 import pandas as pd
-
-
-from webapp.models import Experiment
 from workflow.common_tasks import fetch_geo_gse, preprocess_soft
-from workflow.execution import ExecStatus
 
 from workflow.blocks.generic import GenericBlock, ActionsList, save_params_actions_list, BlockField, FieldType, \
     ActionRecord, ParamField, InputType, execute_block_actions_list, OutputBlockField
@@ -116,6 +112,7 @@ class FetchGSE(GenericBlock):
 
     def assign_sample_classes(self, exp, request, *args, **kwargs):
         #TODO: Shift to celery
+        print " assign ///"
         es = self.get_out_var("expression_set")
         pheno_df = es.get_pheno_data_frame()
         sample_classes = json.loads(request.POST['sample_classes'])

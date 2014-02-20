@@ -5,16 +5,10 @@ import itertools
 from webapp.models import Experiment
 from webapp.scope import Scope, ScopeVar
 from webapp.scope import auto_exec_task
-from workflow.execution import ExecStatus
-
-from uuid import uuid1
-from workflow.ports import BoundVar
-
-
 
 from collections import defaultdict
 from uuid import uuid1
-from webapp.scope import ScopeRunner
+
 
 class ActionRecord(object):
     def __init__(self, name, src_states, dst_state, user_title=None,**kwargs):

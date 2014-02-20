@@ -81,7 +81,6 @@ $(function() {
     var $header_row = $("#{{ input_var.uuid}}_main_table thead tr");
     var $table_body = $("#{{ input_var.uuid}}_main_table tbody");
 
-
     $('#assign_to_class').click(function(){
         var class_idx =  $('#active_class_provider').val() ;
         var class_name = $('#available_classes li[value=' + class_idx + '] a').text()
@@ -107,7 +106,7 @@ $(function() {
         $table.trigger("update");
 
         $.ajax({
-            url: "{% url 'webapp.views.update_block' %}",
+            url: "{% url 'webapp.views.block_resource' exp_id=block_.exp_id block_uuid=block_.uuid action_code='assign_sample_classes' %}",
             type: "POST",
             data: {
                 'sample_classes': JSON.stringify(sample_classes),

@@ -13,11 +13,12 @@ urlpatterns = patterns('',
     url(r'^contact$', 'webapp.views.contact', name='contact'),
 
     url(r'^constructor/(?P<exp_id>\d+)', 'webapp.views.constructor', name='constructor'),
-    url(r'^update_block', 'webapp.views.update_block', name='update_block'),
 
     url(r'^experiments/(?P<exp_id>\d+)/blocks/?$', 'webapp.views.blocks_resource', name="blocks_resource"),
-    url(r'^experiments/(?P<exp_id>\d+)/blocks/(?P<block_uuid>[\w|\d]+)(/actions/(?P<action_code>[\w|\d]+))?',
+    url(r'^experiments/(?P<exp_id>\d+)/blocks/(?P<block_uuid>[\w|\d]+)$',
         'webapp.views.block_resource', name="block_resource"),
+    url(r'^experiments/(?P<exp_id>\d+)/blocks/(?P<block_uuid>[\w|\d]+)/actions/(?P<action_code>\w+)$',
+        'webapp.views.block_resource', name="block_resource_with_action"),
 
     url(r'^block_sub_page/(?P<exp_id>\d+)/(?P<block_uuid>[\w|\d]+)/(?P<sub_page>\w+)/',
         'webapp.views.block_sub_page', name="block_sub_page"),
@@ -35,12 +36,12 @@ urlpatterns = patterns('',
     url(r'^auth/create_user/$', 'webapp.views.create_user', {}),
 
     url(r'^get_flot_2d_scatter/(?P<exp_id>\d+)/(?P<filename>.*)$', 'webapp.views.get_flot_2d_scatter', name='get_flot_2d_scatter'),
-    url(r'^get_csv_as_table/(?P<exp_id>\d+)/(?P<filename>.*)$', 'webapp.views.get_csv_as_table', name='get_csv_as_table'),
 
     url(r'^get_gse_samples_info/(?P<exp_id>\d+)/(?P<block_uuid>.*)$', 'webapp.views.get_gse_samples_info',
         name='get_gse_samples_info'),
     # Examples:
     # url(r'^$', 'mixgene.views.home', name='home'),
+
     # url(r'^mixgene/', include('mixgene.foo.urls')),
 
     # Uncomment the admin/doc line below to enable admin documentation:

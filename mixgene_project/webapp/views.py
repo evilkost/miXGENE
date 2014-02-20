@@ -22,8 +22,6 @@ from webapp.scope import Scope
 from webapp.store import add_block_to_exp_from_dict
 from workflow.blocks import blocks_by_group
 
-from workflow.execution import ScopeState
-
 from mixgene.util import dyn_import, get_redis_instance, mkdir
 
 
@@ -53,16 +51,6 @@ def contact(request):
 
 def constructor(request, exp_id):
     exp = Experiment.objects.get(pk=exp_id)
-    r = get_redis_instance()
-
-    ctx = exp.get_ctx()
-    blocks_uuids = exp.get_all_block_uuids(redis_instance=r)
-    # TODO: remove blocks from direct rendering
-    # all of them should be loaded by ajax
-    #  than block wouldnt contain temporary data
-
-    blocks = [(block_uuid, exp.get_block(block_uuid)) for
-              block_uuid in blocks_uuids]
 
     context = {
         "next": "/",
@@ -71,41 +59,11 @@ def constructor(request, exp_id):
         "exp_json": json.dumps({
             "exp_id": exp_id,
         }),
-        "ctx": ctx,
     }
-    # for _, block in blocks:
-    #     context.update(block.before_render(exp))
 
     template = loader.get_template('constructor.html')
-    #pprint(context)
     context = RequestContext(request, context)
     return HttpResponse(template.render(context))
-
-
-def _render_block(request, exp, block):
-    # block.before_render(exp)
-    template = loader.get_template(block.widget)
-    context = {
-        "exp_block": block,
-        "exp": exp,
-        # "ctx": exp.get_ctx(),
-    }
-    context = RequestContext(request, context)
-    return HttpResponse(template.render(context))
-
-#TODO: remove used only by "assign gse sample classes"
-@csrf_protect
-def update_block(request):
-    if request.method == "POST":
-        exp = Experiment.get_exp_from_request(request)
-        #ctx = exp.get_ctx()
-        #import ipdb; ipdb.set_trace()
-        action = request.POST['action']
-        block = exp.get_block(request.POST["block_uuid"])
-        block.do_action(action, exp=exp, request=request)
-        return _render_block(request, exp, block)
-    return HttpResponse("")
-
 
 
 @csrf_protect
@@ -157,7 +115,6 @@ def blocks_resource(request, exp_id):
 
         "blocks_by_bscope": blocks_by_bscope,
         "block_bodies": block_bodies,
-        # "vars_by_bscope": vars_by_bscope,
 
         "blocks_by_group": blocks_by_group,
         "scopes": scopes,
@@ -176,6 +133,7 @@ def block_resource(request, exp_id, block_uuid, action_code=None):
     @type request: HttpRequest
     """
     exp = Experiment.objects.get(pk=exp_id)
+    # import ipdb; ipdb.set_trace()
     block = exp.get_block(str(block_uuid))
 
     import time; time.sleep( 0.05)
@@ -213,31 +171,32 @@ def block_sub_page(request, exp_id, block_uuid, sub_page):
 @csrf_protect
 @never_cache
 def upload_data(request):
-    if request.method == "POST":
-        form = UploadForm(request.POST, request.FILES)
-        if form.is_valid():
-            exp_id = form.cleaned_data['exp_id']
-            exp = Experiment.objects.get(pk=exp_id)
-            ctx = exp.get_ctx()
-            var_name = form.cleaned_data['var_name']
-            inp_var = ctx["input_vars"][var_name]
-            if inp_var is None:
-                print "var_name %s isn't used by exp %s " % (var_name, exp_id )
-                #TODO: hmm shouldn't actually happen
-            else:
-                uploaded_before = UploadedData.objects.filter(exp=exp, var_name=var_name)
-                if len(uploaded_before) == 0:
-                    ud = UploadedData(exp=exp, var_name=var_name)
-                    ud.data = form.cleaned_data['data']
-                    ud.save()
-
-                    inp_var.is_done = True
-                    inp_var.set_file_type("user")
-                    inp_var.filename = ud.data.name.split("/")[-1]
-                    exp.update_ctx(ctx)
-                else:
-                    print "var_name %s was already uploaded " % (var_name, )
     return redirect(request.POST['next'])
+    # if request.method == "POST":
+    #     form = UploadForm(request.POST, request.FILES)
+    #     if form.is_valid():
+    #         exp_id = form.cleaned_data['exp_id']
+    #         exp = Experiment.objects.get(pk=exp_id)
+    #         ctx = exp.get_ctx()
+    #         var_name = form.cleaned_data['var_name']
+    #         inp_var = ctx["input_vars"][var_name]
+    #         if inp_var is None:
+    #             print "var_name %s isn't used by exp %s " % (var_name, exp_id )
+    #             #TODO: hmm shouldn't actually happen
+    #         else:
+    #             uploaded_before = UploadedData.objects.filter(exp=exp, var_name=var_name)
+    #             if len(uploaded_before) == 0:
+    #                 ud = UploadedData(exp=exp, var_name=var_name)
+    #                 ud.data = form.cleaned_data['data']
+    #                 ud.save()
+    #
+    #                 inp_var.is_done = True
+    #                 inp_var.set_file_type("user")
+    #                 inp_var.filename = ud.data.name.split("/")[-1]
+    #                 exp.update_ctx(ctx)
+    #             else:
+    #                 print "var_name %s was already uploaded " % (var_name, )
+    # return redirect(request.POST['next'])
 
 
 @csrf_protect
@@ -301,9 +260,9 @@ def alter_exp(request, exp_id, action):
     if action == 'update':
         exp.validate(request)
 
-    if action == 'save_gse_classes':
-        factors = json.loads(request.POST['factors'])
-        exp.update_ctx({"gse_factors": factors})
+    # if action == 'save_gse_classes':
+    #     factors = json.loads(request.POST['factors'])
+    #     exp.update_ctx({"gse_factors": factors})
 
     return redirect(request.POST.get("next") or "/constructor/%s" % exp.pk) # TODO use reverse
 
@@ -317,13 +276,7 @@ def add_experiment(request):
 
     # TODO: move all init stuff to the model
     exp.save()
-    ctx = {
-        "exp_id": exp.pk,
-        "scope_state": {
-            "root": ScopeState.HALT,
-        }
-    }
-    exp.init_ctx(ctx)
+    exp.post_init()
 
     mkdir(exp.get_data_folder())
     return redirect("/constructor/%s" % exp.pk) # TODO use reverse
@@ -403,47 +356,3 @@ def get_gse_samples_info(request, exp_id, block_uuid):
 
     #TODO: cache this
     return resp
-
-
-def get_csv_as_table(request, exp_id, filename):
-    exp = Experiment.objects.get(pk = exp_id)
-    ctx = exp.get_ctx()
-    filepath = exp.get_data_file_path(filename)
-    template = loader.get_template('elements/table.html')
-
-    has_row_names = bool(request.POST.get('has_row_names', False)) # if has_row_names and has_col_names
-    has_col_names = bool(request.POST.get('has_col_names', False)) # than first column has no value!
-    row_names_header = request.POST.get('row_names_header', '')
-
-    get_header_from_ctx = bool(request.POST.get('get_header_from_ctx', False))
-    ctx_header_key = request.POST.get('ctx_header_key')
-
-    csv_delimiter = str(request.POST.get('delimiter', ' '))
-    csv_quotechar = str(request.POST.get('quotechar', '"'))
-
-    rows_num_limit = int(request.POST.get('rows_num_limit', 100))
-
-    rows = []
-    header = None
-    with open(filepath) as inp:
-        cr = csv.reader(inp, delimiter=csv_delimiter, quotechar=csv_quotechar)
-        if has_col_names:
-            header = cr.next()
-            if has_row_names:
-                header.insert(0, row_names_header)
-        if get_header_from_ctx:
-            header = ctx[ctx_header_key]
-        row_num = 0
-        while row_num <= rows_num_limit:
-            try:
-                rows.append(cr.next())
-            except:
-                break
-            row_num += 1
-
-    context = RequestContext(request, {
-        "rows": rows,
-        "header": header,
-    })
-
-    return HttpResponse(template.render(context))
