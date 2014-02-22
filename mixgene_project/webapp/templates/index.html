@@ -2,51 +2,39 @@
 
 {% block inner %}
     <div class="container">
+        <div class="jumbotron">
+            <h1>miXGENE</h1>
+            <p></p>
+            <!--<p><a class="btn btn-primary btn-lg" role="button">Learn more</a></p>-->
+        </div>
+    </div>
+    <div class="row">
+         <div class="col-xs-10 col-xs-offset-1 col-lg-6 col-lg-offset-3">
 
 
-        <h1>miXGENE web app main page</h1>
-        {% if  user.is_authenticated %}
-            <h2>Welcome back <b>{{user.username}}</b> ! </h2>
-        {% endif %}
-        <h4>TODO list:</h4>
-        <ul>
-            <li>
-                Creating experiments without configuration
-            </li>
-            <li>
-                <strike>File upload input &amp; linking with experiments </strike>
-            </li>
-            <li>
-                <strike> Execute R by means of rpy2 and store results to files and/or to redis or db. </strike>
-            </li>
-            <li>
-                Use requirements.txt to pip install
-            </li>
-            <li>
-                <strike> Be able to delete experiments with status != running </strike>
-            </li>
-            <li>
-                <strike>Rename workflow task to action, to avoid confusion with celery tasks
-                [github #11]</strike>
-            </li>
-            <li>
-                Make experiments table sortable
-            </li>
-        </ul>
+
+        <!--{% if  user.is_authenticated %}-->
+            <!--<h2>Welcome back <b>{{user.username}}</b> ! </h2>-->
+        <!--{% endif %}-->
 
 
-        <h4>Ideas list:</h4>
-        <ul>
-            <li>
-                Be able to use results from one experiment in another
-            </li>
-            <li>
-                Download datasets from NCBI
-            </li>
-            <li>
-                http://biopython.org
-            </li>
-        </ul>
+
+            <h2>Main features</h2>
+            <ul class="list-group">
+
+                <li class="list-group-item">Integrated analysis of mRNA, miRNA and epigenetic data.</li>
+                <li class="list-group-item">Development of predictive models (support vector machines, decision trees, nearest neighbour search) that best distinguish among user-supplied sample classes.</li>
+                <li class="list-group-item">Detection of markers (biological modules based on prior knowledge such as miRNA regulations, pathways or gene ontology terms).</li>
+                <li class="list-group-item">Automated utilization of genomic knowledge during model creation and generation of biomarkers.</li>
+                <li class="list-group-item">Visualization and data understanding in terms of principal component analysis.</li>
+                <li class="list-group-item">Automated integration of heterogeneous measurement platforms.</li>
+                <li class="list-group-item">Smooth search and import of expression samples from NCBI GEO as well as the import of user data.</li>
+                <li class="list-group-item">Free and easy registration and further utilization.</li>
+                <li class="list-group-item">The results are all yours, the computational burden is all ours.</li>
+            </ul>
+        </div>
+    </div>
+
 
     </div>
 

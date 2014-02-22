@@ -26,5 +26,8 @@
     "jquery-ui": "~1.10.x",
     "jquery.tablesorter": "~2.14.3",
     "ng-file-upload": "~1.2.8"
+  },
+  "resolutions": {
+    "jquery": ">= 1.9.0"
   }
 }

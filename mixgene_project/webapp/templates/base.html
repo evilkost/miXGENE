@@ -20,10 +20,11 @@
             </ul>
 
             {% if  user.is_authenticated %}
+
             <form class="navbar-form navbar-right" action="{% url 'django.contrib.auth.views.logout' %}"  method=POST>
                 {% csrf_token %}
                 <div class="form-group">
-                    <button  class="btn btn-warning pull-right" type="submit">Logout</button>
+                    <button  class="btn btn-warning pull-right" type="submit">Logout user <b>{{user.username}}</b></button>
                     <input type="hidden" name="next" id="next" value="{{ next}}" >
                 </div>
             </form>

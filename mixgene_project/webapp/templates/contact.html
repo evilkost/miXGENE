@@ -1,11 +1,42 @@
 {% extends "base.html" %}
 
 {% block inner %}
-    <div class="row">
-        <div class="span6 offset1">
-            <h1> Contact </h1>
-            <p>
-            Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. </p>
+    <div class="container">
+        <div class="col-xs-8 col-xs-offset-1">
+            <h1> Contacts: </h1>
+
+            <div class="panel panel-default">
+                <div class="panel-heading big">
+                    <h1> Project leader: <strong>Jiří Kléma</strong></h1>
+                </div>
+                <div class="panel-body">
+                    <!--<div class="well">-->
+                        <address>
+                            <strong>Faculty of Electrical Engineering, Czech Technical University, Prague</strong><br>
+                            Karlovo náměstí 13, Office KN:E-432 <br />
+                            121 35 Prague <br />
+
+                            <a href="http://ida.felk.cvut.cz/klema/">http://ida.felk.cvut.cz/klema/</a>
+                        </address>
+
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-addon">@</span>
+                            <input disabled="true" type="text" class="form-control" value="klema@fel.cvut.cz"/>
+                        </div>
+                        <div class="input-group input-group-lg">
+                        <span class="input-group-addon">
+                            <span class="glyphicon glyphicon-phone-alt"></span>
+                        </span>
+                            <input disabled="true" type="text" class="form-control" value="+ 420 224 357 608"/>
+                        </div>
+                    <!--</div>-->
+
+                </div>
+
+            </div>
+
+
+
         </div>
     </div>
 {% endblock %}
