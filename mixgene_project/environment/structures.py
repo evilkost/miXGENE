@@ -54,19 +54,27 @@ class DataFrameStorage(object):
         """
         if not isinstance(df, pd.DataFrame):
             raise TypeError("Given object isn't of DataFrame class: %s" % df)
-        with gzip.open(self.filepath, "wb") as output:
-            df.to_csv(
-                output,
-                sep=self.sep,
-                index_col=self.index_col,
-            )
+        if self.compression == "gzip":
+            with gzip.open(self.filepath, "wb") as output:
+                df.to_csv(
+                    output,
+                    sep=self.sep,
+                    index_col=self.index_col,
+                )
+        elif self.compression is None:
+            with open(self.filepath, "wb") as output:
+                df.to_csv(
+                    output,
+                    sep=self.sep,
+                    index_col=self.index_col,
+                )
 
-    def to_r_obj(self):
-        """
-            @rtype  : R data frame
-            @return : Stored matrix converted to R object
-        """
-        return R.r["read.table"](self.filepath, sep=self.sep, header=self.header)
+    # def to_r_obj(self):
+    #     """
+    #         @rtype  : R data frame
+    #         @return : Stored matrix converted to R object
+    #     """
+    #     return R.r["read.table"](self.filepath, sep=self.sep, header=self.header)
 
 
 class GenericStoreStructure(object):
@@ -92,6 +100,24 @@ class PcaResult(GenericStoreStructure):
         if self.pca_storage is None:
             raise RuntimeError("PCA data wasn't stored prior")
         return self.pca_storage.load()
+
+
+class BinaryInteraction(GenericStoreStructure):
+    def __init__(self, *args, **kwargs):
+        super(BinaryInteraction, self).__init__(*args, **kwargs)
+        self.storage = None
+        self.row_units = ""
+        self.col_units = ""
+
+    def store_matrix(self, df):
+        if self.storage is None:
+            self.storage = DataFrameStorage(self.form_filepath("interaction"))
+        self.storage.store(df)
+
+    def load_matrix(self):
+        if self.storage is None:
+            raise RuntimeError("Interaction data wasn't stored prior")
+        return self.storage.load()
 
 
 class ExpressionSet(GenericStoreStructure):

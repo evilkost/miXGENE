@@ -1,6 +1,9 @@
 DB_ROOT_PASSWORD = ""
 
-DATABASE_NAME = 'django_miGENEX'
+# TODO: configure this correct
+ALLOWED_HOSTS = ['*']
+
+DATABASE_NAME = 'django_miXGENE'
 DATABASE_USER = 'mixgene_app'
 DATABASE_PASSWORD = ''
 

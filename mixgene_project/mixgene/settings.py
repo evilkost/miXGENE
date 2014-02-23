@@ -45,6 +45,7 @@ CELERY_IMPORTS = (
     "wrappers.gt",
     "wrappers.pca",
     "wrappers.svm",
+    "wrappers.aggregation",
 )
 
 ## End celery settings
@@ -60,7 +61,7 @@ R_LIB_CUSTOM_PATH = BASE_DIR + '/data/R'
 
 # Hosts/domain names that are valid for this site; required if DEBUG is False
 # See https://docs.djangoproject.com/en/1.5/ref/settings/#allowed-hosts
-ALLOWED_HOSTS = []
+# ALLOWED_HOSTS = []
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
@@ -177,6 +178,7 @@ INSTALLED_APPS = (
 # the site admins on every HTTP 500 error when DEBUG=False.
 # See http://docs.djangoproject.com/en/dev/topics/logging for
 # more details on how to customize your logging configuration.
+LOG_DIR = BASE_DIR + "/logs"
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -186,16 +188,16 @@ LOGGING = {
         }
     },
     'handlers': {
-        'mail_admins': {
-            'level': 'ERROR',
-            'filters': ['require_debug_false'],
-            'class': 'django.utils.log.AdminEmailHandler'
-        }
+        'file_info': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': LOG_DIR + '/info.log',
+        },
     },
     'loggers': {
         'django.request': {
-            'handlers': ['mail_admins'],
-            'level': 'ERROR',
+            'handlers': ['file_info'],
+            'level': 'INFO',
             'propagate': True,
         },
     }

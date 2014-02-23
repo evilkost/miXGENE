@@ -27,8 +27,6 @@ class MergeGeneSetWithPlatformAnnotation(GenericBlock):
             "Merge GeneSet with platform annotation", *args, **kwargs)
         self.celery_task = None
 
-        self.is_block_supports_auto_execution = True
-
     def execute(self, exp, *args, **kwargs):
         self.clean_errors()
         gs, ann = self.get_input_var("gs"), self.get_input_var("ann")

@@ -1,9 +1,12 @@
 from __builtin__ import staticmethod
 from collections import defaultdict
+import gzip
 import os
 import shutil
 import cPickle as pickle
 import hashlib
+
+import pandas as pd
 
 from django.db import models
 from django.contrib.auth.models import User
@@ -380,9 +383,22 @@ class UploadedFileWrapper(object):
         self.uploaded_pk = uploaded_pk
         self.orig_name = ""
 
+    @property
+    def ud(self):
+        return UploadedData.objects.get(pk=self.uploaded_pk)
+
     def get_file(self):
-        ud = UploadedData.objects.get(pk=self.uploaded_pk)
-        return ud.data
+        return self.ud.data
+
+    def get_as_data_frame(self):
+        path = self.ud.data.path
+        if self.orig_name[-2:] == "gz":
+            with gzip.open(path) as inp:
+                res = pd.DataFrame.from_csv(inp)
+        else:
+            res = pd.DataFrame.from_csv(path)
+
+        return res
 
     def to_dict(self, *args, **kwargs):
         return {

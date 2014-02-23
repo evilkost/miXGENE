@@ -209,7 +209,7 @@ class ParamField(object):
         getattr(cls, "_block_serializer").register(self)
 
     def to_dict(self):
-        return {k: str(v) for k, v in  self.__dict__.iteritems()}
+        return {k: unicode(v) for k, v in self.__dict__.iteritems()}
 
     def value_to_dict(self, raw_val, block):
         val = str(raw_val)
@@ -301,6 +301,19 @@ class BlockSerializer(object):
         result["inputs"] = block.input_manager.to_dict()
 
         return result
+
+    def validate_params(self, block, exp):
+        is_valid = True
+        for p_name, p in self.params.iteritems():
+            if p.validator is not None and hasattr(p.validator, '__call__'):
+                val = getattr(block, p.name)
+                try:
+                    p.validator(val, block)
+                except Exception, e:
+                    is_valid = False
+                    block.error(exp, e)
+
+        return is_valid
 
     def save_params(self, block, received_block):
         """
@@ -653,12 +666,15 @@ class GenericBlock(BaseBlock):
         ud, is_created = UploadedData.objects.get_or_create(
             exp=exp, block_uuid=self.uuid, var_name=field_name)
         # import ipdb; ipdb.set_trace()
-        ud.filename = "%s_%s_%s" % (self.uuid[:8], field_name, file_obj.name)
-        ud.data = file_obj;
+        orig_name = file_obj.name
+
+        local_filename = "%s_%s_%s" % (self.uuid[:8], field_name, file_obj.name)
+        file_obj.name = local_filename
+        ud.data = file_obj
         ud.save()
 
         ufw = UploadedFileWrapper(ud.pk)
-        ufw.orig_name = file_obj.name
+        ufw.orig_name = orig_name
         setattr(self, field_name, ufw)
 
         exp.store_block(self)
@@ -675,14 +691,16 @@ class GenericBlock(BaseBlock):
 
     def validate_params(self, exp):
         is_valid = True
-        #if self.form.is_valid():
 
         # check required inputs
         if not self.input_manager.validate_inputs(
                 self.bound_inputs, self.errors, self.warnings):
             is_valid = False
+        # check user provided values
+        if not self._block_serializer.validate_params(self, exp):
+            is_valid = False
 
-        if True:
+        if is_valid:
             self.errors = []
             self.do_action("on_params_is_valid", exp)
         else:
@@ -708,7 +726,7 @@ class GenericBlock(BaseBlock):
 
     def reset_execution(self, exp, *args, **kwargs):
         self.clean_errors()
-        pass
+
 
 save_params_actions_list = ActionsList([
     ActionRecord("save_params", ["created", "valid_params", "done", "ready"], "validating_params",
@@ -721,7 +739,7 @@ execute_block_actions_list = ActionsList([
     ActionRecord("execute", ["ready"], "working", user_title="Run block"),
     ActionRecord("success", ["working"], "done"),
     ActionRecord("error", ["ready", "working"], "execution_error"),
-    ActionRecord("reset_execution", ['done', 'execution_error', 'ready'], "ready")
+    ActionRecord("reset_execution", ['done', 'execution_error', 'ready'], "ready", user_title="Reset execution")
 ])
 
 
