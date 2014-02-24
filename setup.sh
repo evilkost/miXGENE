@@ -3,10 +3,12 @@
 #TODO: move pip install to requirements.txt
 
 ## For debian stable we need to add repo for R 3.0
-
+apt-key adv --keyserver pgp.mit.edu --recv-key 381BA480
 echo "deb http://cran.r-mirror.de/bin/linux/debian wheezy-cran3/" >> /etc/apt/sources.list
 
-
+## Newer nginx
+wget http://nginx.org/keys/nginx_signing.key &&  apt-key add nginx_signing.key
+echo "deb http://nginx.org/packages/debian/ wheezy nginx" >> /etc/apt/sources.list
 
 
 sudo apt-get update
@@ -81,10 +83,13 @@ cd notify_server/
 node install
 cd ..
 
+sudo ln -s `pwd`/nginx/mixgene.production /etc/nginx/conf.d/mixgene.conf
+sudo /etc/init.d/nginx restart
 
 mkdir -p $BASE_DIR/logs/
 mkdir -p $BASE_DIR/media/data/cache/
 mkdir -p $BASE_DIR/media/data/broad_institute/
+
 
 # run server
 sh run_all.sh
