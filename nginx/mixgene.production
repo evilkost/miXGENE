@@ -2,6 +2,10 @@ upstream gunicorn {
     server 127.0.0.1:9431;
 }
 
+upstream nodejs {
+    server 127.0.0.1:9999;
+}
+
 server {
     listen 80 default;
     server_name  147.32.80.211;
@@ -14,6 +18,20 @@ server {
     }
     location /media/ {
         alias /home/kost/res/media/;
+    }
+
+    location /subscribe {
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host $http_host;
+        proxy_set_header X-NginX-Proxy true;
+
+        proxy_pass http://nodejs/;
+        proxy_redirect off;
+
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
     }
 
     location / {

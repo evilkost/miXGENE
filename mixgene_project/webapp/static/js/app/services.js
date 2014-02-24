@@ -10,7 +10,7 @@ Constructor.factory("blockAccess", function($http, $log){
 
     access.blocks_by_group_json = {};
 
-    var sockjs = new SockJS('http://127.0.0.1:9999/subscribe');
+    var sockjs = new SockJS('/subscribe');
     sockjs.onopen = function(){
         console.log('[*] open sockjs, protocol: ' + sockjs.protocol);
 
