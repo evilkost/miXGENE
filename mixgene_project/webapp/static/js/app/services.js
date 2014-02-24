@@ -1,13 +1,31 @@
 Constructor.factory("blockAccess", function($http, $log){
-    var access = {
-        exp_id: document.exp.exp_id
-    }
+    var access = {}
+
+    access.exp = document.exp;
+    access.exp_id = document.exp.exp_id;
 
     access.blocks_by_bscope = {};
     access.block_bodies = {};
     access.scopes = {}
 
     access.blocks_by_group_json = {};
+
+    var sockjs = new SockJS('http://127.0.0.1:9999/subscribe');
+    sockjs.onopen = function(){
+        console.log('[*] open sockjs, protocol: ' + sockjs.protocol);
+
+        // TODO: export publich key in exp object from server
+        sockjs.send(angular.toJson({type: "init", content: "ENPK-" + access.exp_id}));
+    };
+    toastr.options["timeOut"] = 0;
+    toastr.options["extendedTimeOut"] = 0;
+    toastr.options["closeButton"] = true;
+
+    sockjs.onmessage = function(raw){
+        toastr.info(raw.data);
+    }
+
+    access.sockjs = sockjs;
 
     access.fetch_blocks = function(){
         $http({

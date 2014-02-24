@@ -1,0 +1,13 @@
+{
+    "name": "mixgene-notify-server",
+    "description": "Proxy to send notifications from django or celery tasks to js web application",
+    "version": "0.0.1",
+    "private": true,
+    "dependencies": {
+        "express": "3.x",
+        "redis": "*",
+        "hiredis": "*",
+        "sockjs": "*",
+        "json-stringify-safe": "*"
+    }
+}

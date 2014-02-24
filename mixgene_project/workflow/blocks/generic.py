@@ -629,16 +629,21 @@ class GenericBlock(BaseBlock):
             raise RuntimeError("Block %s doesn't have action: %s" % (self.name, action_name))
 
     def do_action(self, action_name, exp, *args, **kwargs):
+        old_exec_state = self.get_exec_status()
         next_state = self._trans.next_state(self.state, action_name)
         if next_state is not None:
             self.state = next_state
             exp.store_block(self)
+            if old_exec_state != "done" and self.get_exec_status() == "done":
+                if self.is_block_supports_auto_execution:
+                    exp.send_user_notification("Block %s was done" % self.base_name)
+
             getattr(self, action_name)(exp, *args, **kwargs)
 
             # TODO: Check if self.scope_name is actually set to auto execution
             #
-            if self.is_block_supports_auto_execution:
-                if self.get_exec_status() == "done":
+            if old_exec_state != "done" and self.get_exec_status() == "done":
+                if self.is_block_supports_auto_execution:
                     auto_exec_task.s(exp, self.scope_name).apply_async()
 
         else:

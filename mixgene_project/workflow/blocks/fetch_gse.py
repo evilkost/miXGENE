@@ -85,6 +85,7 @@ class FetchGSE(GenericBlock):
         self.source_file = source_file
         self.do_action("start_preprocess", exp)
         exp.store_block(self)
+        exp.send_user_notification("Dataset %s was downloaded" % self.geo_uid)
 
     def start_preprocess(self, exp, *args, **kwargs):
         self.celery_task_preprocess = preprocess_soft.s(
@@ -109,6 +110,7 @@ class FetchGSE(GenericBlock):
         # print "OUT_DATA: ", self._out_data
         self.clean_errors()
         exp.store_block(self)
+        exp.send_user_notification("Dataset %s was preprocessed" % self.geo_uid)
 
     def assign_sample_classes(self, exp, request, *args, **kwargs):
         #TODO: Shift to celery

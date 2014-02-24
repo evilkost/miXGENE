@@ -323,6 +323,15 @@ class Experiment(models.Model):
         else:
             return self.get_block(block_uuid, r)
 
+    def send_user_notification(self, msg, redis_instance=None):
+        if redis_instance is None:
+            r = get_redis_instance()
+        else:
+            r = redis_instance
+
+        key = ExpKeys.get_exp_notify_publish_key(self.pk)
+        r.publish(key, msg)
+
 
 def delete_exp(exp):
     """

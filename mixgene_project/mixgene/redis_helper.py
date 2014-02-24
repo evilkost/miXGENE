@@ -3,6 +3,10 @@ from mixgene.util import get_redis_instance
 
 class ExpKeys(object):
     @staticmethod
+    def get_exp_notify_publish_key(exp_id):
+        return "ENPK-%s" % exp_id
+
+    @staticmethod
     def get_blocks_uuid_by_alias(exp_id):
         # redis hash set
         return "GBUIA-%s" % exp_id

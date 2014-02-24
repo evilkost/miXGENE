@@ -1,6 +1,8 @@
 # coding: utf-8
+import traceback
 
 import pandas as pd
+import sys
 
 from environment.structures import ExpressionSet, BinaryInteraction
 from workflow.blocks.generic import GenericBlock, ActionsList, save_params_actions_list, BlockField, FieldType, \
@@ -173,6 +175,7 @@ class UserUploadComplex(GenericBlock):
         """
             @param exp: Experiment
         """
+        # TODO: move to celery
         self.clean_errors()
         try:
             if not self.pheno_matrix:
@@ -217,6 +220,8 @@ class UserUploadComplex(GenericBlock):
 
             self.do_action("success", exp)
         except Exception as e:
+            ex_type, ex, tb = sys.exc_info()
+            traceback.print_tb(tb)
             self.do_action("error", exp, e)
         # self.celery_task_fetch.apply_async()
 
