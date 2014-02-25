@@ -5,6 +5,7 @@ import itertools
 import random
 
 from webapp.models import Experiment, UploadedData, UploadedFileWrapper
+from webapp.notification import Notification, NotifyType, BlockUpdated
 from webapp.scope import Scope, ScopeVar
 from webapp.scope import auto_exec_task
 
@@ -13,11 +14,16 @@ from uuid import uuid1
 
 
 class ActionRecord(object):
-    def __init__(self, name, src_states, dst_state, user_title=None,**kwargs):
+    def __init__(self, name, src_states, dst_state, user_title=None,
+                 propagate_auto_execution=False,
+                 reload_block_in_client=False,
+                 **kwargs):
         self.name = name
         self.src_states = src_states
         self.dst_state = dst_state
         self.user_title = user_title
+        self.propagate_auto_execution = propagate_auto_execution
+        self.reload_block_in_client = reload_block_in_client
         self.show_to_user = user_title is not None
         self.kwargs = kwargs
 
@@ -444,7 +450,7 @@ class InputManager(object):
         is_valid = True
         for f in self.input_fields:
             if bound_inputs.get(f.name) is None:
-                exception = Exception("Input %s hasn't bound variable")
+                exception = Exception("Input %s hasn't bound variable" % f.name)
                 if f.required:
                     is_valid = False
                     errors.append(exception)
@@ -629,25 +635,36 @@ class GenericBlock(BaseBlock):
             raise RuntimeError("Block %s doesn't have action: %s" % (self.name, action_name))
 
     def do_action(self, action_name, exp, *args, **kwargs):
+        # if action_name == "success" and self.block_base_name == "CROSS_VALID":
+        #     from celery.contrib import rdb; rdb.set_trace()
+        ar = self._trans.action_records_by_name[action_name]
         old_exec_state = self.get_exec_status()
         next_state = self._trans.next_state(self.state, action_name)
+        print "Do action: " + action_name + " in block " + self.base_name + " from state " + self.state + " -> " + next_state
         if next_state is not None:
             self.state = next_state
-            exp.store_block(self)
+
             if old_exec_state != "done" and self.get_exec_status() == "done":
                 if self.is_block_supports_auto_execution:
-                    exp.send_user_notification("Block %s was done" % self.base_name)
-
+                    BlockUpdated(self.exp_id,
+                                 block_uuid=self.uuid, block_alias=self.base_name,
+                                 silent=True).send()
+            exp.store_block(self)
             getattr(self, action_name)(exp, *args, **kwargs)
+
+            if ar.reload_block_in_client:
+                BlockUpdated(self.exp_id, self.uuid, self.base_name).send()
 
             # TODO: Check if self.scope_name is actually set to auto execution
             #
-            if old_exec_state != "done" and self.get_exec_status() == "done":
-                if self.is_block_supports_auto_execution:
-                    auto_exec_task.s(exp, self.scope_name).apply_async()
+            if old_exec_state != "done" and self.get_exec_status() == "done" \
+                    and ar.propagate_auto_execution \
+                    and self.is_block_supports_auto_execution:
+                print "Propagate execution: %s " % self.base_name
+                auto_exec_task.s(exp, self.scope_name).apply_async()
 
         else:
-            raise RuntimeError("Action %s isn't available" % action_name)
+            raise RuntimeError("Action %s isn't available for block %s " % (action_name, self.base_name))
 
     def change_base_name(self, exp, received_block, *args, **kwargs):
         # TODO: check if the name is correct
@@ -731,6 +748,7 @@ class GenericBlock(BaseBlock):
 
     def reset_execution(self, exp, *args, **kwargs):
         self.clean_errors()
+        exp.store_block(self)
 
 
 save_params_actions_list = ActionsList([
@@ -742,9 +760,9 @@ save_params_actions_list = ActionsList([
 
 execute_block_actions_list = ActionsList([
     ActionRecord("execute", ["ready"], "working", user_title="Run block"),
-    ActionRecord("success", ["working"], "done"),
+    ActionRecord("success", ["working"], "done", propagate_auto_execution=True),
     ActionRecord("error", ["ready", "working"], "execution_error"),
-    ActionRecord("reset_execution", ['done', 'execution_error', 'ready'], "ready", user_title="Reset execution")
+    ActionRecord("reset_execution", ['done', 'execution_error', 'ready', 'working'], "ready", user_title="Reset execution")
 ])
 
 

@@ -20,7 +20,7 @@ class GetBroadInstituteGeneSet(GenericBlock):
     _block_actions = ActionsList([
         ActionRecord("save_params", ["created", "valid_params", "done"], "validating_params",
                      user_title="Save parameters"),
-        ActionRecord("on_params_is_valid", ["validating_params"], "done"),
+        ActionRecord("on_params_is_valid", ["validating_params"], "done", reload_block_in_client=True),
         ActionRecord("on_params_not_valid", ["validating_params"], "created"),
     ])
 

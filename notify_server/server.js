@@ -48,6 +48,7 @@ sockjs_echo.on('connection', function(conn) {
 
     subs.on("message", function(ch, msg){
         conn.write(msg);
+        console.log(msg);
     });
 
 });

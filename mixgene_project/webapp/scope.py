@@ -8,13 +8,14 @@ import sys
 
 from mixgene.redis_helper import ExpKeys
 from mixgene.util import get_redis_instance
+from webapp.notification import AllUpdated
 
 
 @task(name="webapp.scope.auto_exec")
-def auto_exec_task(exp, scope_name):
+def auto_exec_task(exp, scope_name, is_init=False):
     try:
         sr = ScopeRunner(exp, scope_name)
-        sr.execute()
+        sr.execute(is_init)
     except Exception, e:
         ex_type, ex, tb = sys.exc_info()
         traceback.print_tb(tb)
@@ -156,15 +157,18 @@ class ScopeRunner(object):
 
         return result
 
-    def execute(self):
+    def execute(self, is_init_action=False):
         self.build_dag(self.exp.build_block_dependencies_by_scope(self.scope_name))
 
         blocks_to_execute = []
         blocks_dict = dict(self.exp.get_blocks(self.dag.topological_order))
         for block_uuid in self.dag.topological_order:
             block = blocks_dict[block_uuid]
+            if is_init_action and block.is_block_supports_auto_execution and block.get_exec_status() == "done":
+                block.do_action("reset_execution", self.exp)
+
             if block.get_exec_status() == "ready" and \
-                self.is_block_inputs_are_satisfied(block_uuid, blocks_dict):
+                    self.is_block_inputs_are_satisfied(block_uuid, blocks_dict):
                 blocks_to_execute.append(block)
 
         if not blocks_to_execute:
@@ -172,6 +176,8 @@ class ScopeRunner(object):
             if self.scope_name != "root":
                 block = self.exp.get_meta_block_by_sub_scope(self.scope_name)
                 block.do_action("on_sub_scope_done", self.exp)
+            else:
+                AllUpdated(self.exp.pk, comment=u"Workflow execution completed", silent=False).send()
         else:
             for block in blocks_to_execute:
                 print "Block %s will be executed" % block.name

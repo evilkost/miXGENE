@@ -1,6 +1,7 @@
 import json
 
 import pandas as pd
+from webapp.notification import BlockUpdated
 from workflow.common_tasks import fetch_geo_gse, preprocess_soft
 
 from workflow.blocks.generic import GenericBlock, ActionsList, save_params_actions_list, BlockField, FieldType, \
@@ -16,12 +17,14 @@ class FetchGSE(GenericBlock):
         ActionRecord("on_params_not_valid", ["validating_params"], "created"),
 
         ActionRecord("start_fetch", ["valid_params", "done"], "source_is_being_fetched", "Start fetch"),
-        ActionRecord("error_during_fetch", ["source_is_being_fetched"], "form_valid"),
-        ActionRecord("successful_fetch", ["source_is_being_fetched"], "source_was_fetched"),
+        ActionRecord("error_during_fetch", ["source_is_being_fetched"], "form_valid", reload_block_in_client=True),
+        ActionRecord("successful_fetch", ["source_is_being_fetched"], "source_was_fetched", reload_block_in_client=True),
 
         ActionRecord("start_preprocess", ["source_was_fetched"], "source_is_being_fetched", "Run preprocess"),
-        ActionRecord("error_during_preprocess", ["source_is_being_fetched"], "source_was_fetched"),
-        ActionRecord("successful_preprocess", ["source_is_being_fetched"], "source_was_preprocessed"),
+        ActionRecord("error_during_preprocess", ["source_is_being_fetched"], "source_was_fetched",
+                     reload_block_in_client=True),
+        ActionRecord("successful_preprocess", ["source_is_being_fetched"], "source_was_preprocessed",
+                     reload_block_in_client=True),
 
         ActionRecord("assign_sample_classes", ["source_was_preprocessed", "done"], "done"),
     ])
@@ -85,7 +88,6 @@ class FetchGSE(GenericBlock):
         self.source_file = source_file
         self.do_action("start_preprocess", exp)
         exp.store_block(self)
-        exp.send_user_notification("Dataset %s was downloaded" % self.geo_uid)
 
     def start_preprocess(self, exp, *args, **kwargs):
         self.celery_task_preprocess = preprocess_soft.s(
@@ -110,7 +112,11 @@ class FetchGSE(GenericBlock):
         # print "OUT_DATA: ", self._out_data
         self.clean_errors()
         exp.store_block(self)
-        exp.send_user_notification("Dataset %s was preprocessed" % self.geo_uid)
+
+        msg = BlockUpdated(self.exp_id, self.uuid, self.base_name)
+        msg.comment = u"Dataset %s was preprocessed, \n please assign samples to classes" % self.geo_uid
+        msg.silent = False
+        msg.send()
 
     def assign_sample_classes(self, exp, request, *args, **kwargs):
         #TODO: Shift to celery

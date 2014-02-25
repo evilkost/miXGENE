@@ -69,4 +69,6 @@ def lin_svm_task(exp, block,
                                        target_class_column)
         block.do_action(success_action, exp, classifier_result)
     except Exception, e:
+        ex_type, ex, tb = sys.exc_info()
+        traceback.print_tb(tb)
         block.do_action(error_action, exp, e)

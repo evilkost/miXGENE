@@ -82,7 +82,7 @@ class Experiment(models.Model):
         return Experiment.objects.get(pk=_pk)
 
     def execute(self):
-        auto_exec_task.s(self, "root").apply_async()
+        auto_exec_task.s(self, "root", is_init=True).apply_async()
 
     def post_init(self, redis_instance=None):
         ## TODO: RENAME TO init experiment and invoke on first save
@@ -322,15 +322,6 @@ class Experiment(models.Model):
             raise KeyError("Doesn't have a scope with name %s" % scope_name)
         else:
             return self.get_block(block_uuid, r)
-
-    def send_user_notification(self, msg, redis_instance=None):
-        if redis_instance is None:
-            r = get_redis_instance()
-        else:
-            r = redis_instance
-
-        key = ExpKeys.get_exp_notify_publish_key(self.pk)
-        r.publish(key, msg)
 
 
 def delete_exp(exp):

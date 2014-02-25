@@ -1,4 +1,6 @@
+import traceback
 from celery import task
+import sys
 from environment.structures import GeneSets, GS
 from environment.units import GeneUnits
 
@@ -72,6 +74,8 @@ def merge_gs_with_platform_annotation(
 
         block.do_action(success_action, exp, gs_merged)
     except Exception, e:
+        ex_type, ex, tb = sys.exc_info()
+        traceback.print_tb(tb)
         block.errors.append(e)
         block.do_action(error_action, exp)
 

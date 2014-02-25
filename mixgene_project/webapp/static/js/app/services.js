@@ -14,15 +14,33 @@ Constructor.factory("blockAccess", function($http, $log){
     sockjs.onopen = function(){
         console.log('[*] open sockjs, protocol: ' + sockjs.protocol);
 
-        // TODO: export publich key in exp object from server
+        // TODO: export public key in exp object from server
         sockjs.send(angular.toJson({type: "init", content: "ENPK-" + access.exp_id}));
     };
-    toastr.options["timeOut"] = 0;
+    toastr.options["timeOut"] = 10000;
     toastr.options["extendedTimeOut"] = 0;
     toastr.options["closeButton"] = true;
 
-    sockjs.onmessage = function(raw){
-        toastr.info(raw.data);
+    sockjs.onmessage = function(e){
+        if(e.type === "message"){
+            msg = angular.fromJson(e.data);
+            console.log("Got message through WS: " + e.data);
+            if( msg.type === "updated_block"){
+                var block_ = access.block_bodies[msg.block_uuid];
+                access.reload_block(block_);
+            }
+
+            if( msg.type === "updated_all"){
+                access.fetch_blocks();
+                // TODO: reload scope variables when added
+            }
+
+            if( ! msg.silent){
+                toastr.info(msg.comment);
+            }
+
+        }
+
     }
 
     access.sockjs = sockjs;

@@ -56,6 +56,7 @@ class IteratedInnerFieldManager(object):
 class CrossValidation(GenericBlock):
     block_base_name = "CROSS_VALID"
     create_new_scope = True
+    is_block_supports_auto_execution = True
 
     _block_actions = ActionsList([])
     _block_actions.extend(save_params_actions_list)
@@ -63,13 +64,15 @@ class CrossValidation(GenericBlock):
     _block_actions.extend(ActionsList([
         ActionRecord("execute", ["ready"], "generating_folds", user_title="Run block"),
 
-        ActionRecord("on_folds_generation_success", ["generating_folds"], "ready_to_run_sub_scope"),
+        ActionRecord("on_folds_generation_success", ["generating_folds"], "ready_to_run_sub_scope", reload_block_in_client=True),
 
         ActionRecord("run_sub_scope", ["ready_to_run_sub_scope"], "sub_scope_executing"),
         ActionRecord("on_sub_scope_done", ["sub_scope_executing"], "ready_to_run_sub_scope"),
 
-        ActionRecord("success", ["working", "ready_to_run_sub_scope"], "done"),
-        ActionRecord("error", ["ready", "working", "sub_scope_executing", "generating_folds"], "execution_error"),
+        ActionRecord("success", ["working", "ready_to_run_sub_scope"], "done",
+                     propagate_auto_execution=True, reload_block_in_client=True),
+        ActionRecord("error", ["ready", "working", "sub_scope_executing", "generating_folds"],
+                     "execution_error", reload_block_in_client=True),
 
         ActionRecord("reset_execution", ['done', "sub_scope_executing",
                                          "generating_folds", "execution_error"], "ready",
@@ -165,5 +168,6 @@ class CrossValidation(GenericBlock):
         self.do_action("run_sub_scope", exp)
 
     def success(self, exp, *args, **kwargs):
-        pprint(args)
-        pprint(kwargs)
+        pass
+        # pprint(args)
+        # pprint(kwargs)

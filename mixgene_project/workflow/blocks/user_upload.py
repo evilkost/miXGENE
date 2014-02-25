@@ -18,9 +18,9 @@ class UserUpload(GenericBlock):
         ActionRecord("on_params_not_valid", ["validating_params"], "created"),
 
         ActionRecord("process_upload", ["valid_params", "processing_upload"],
-                     "processing_upload", "Process uploaded data"),
-        ActionRecord("success", ["processing_upload"], "done"),
-        ActionRecord("error", ["processing_upload"], "valid_params"),
+                     "processing_upload", "Process uploaded data", reload_block_in_client=True),
+        ActionRecord("success", ["processing_upload"], "done", reload_block_in_client=True),
+        ActionRecord("error", ["processing_upload"], "valid_params", reload_block_in_client=True),
     ])
 
     es_matrix = ParamField("es_matrix", title="Expression set matrix", order_num=0,
