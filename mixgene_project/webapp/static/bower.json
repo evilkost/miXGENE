@@ -15,9 +15,11 @@
     "tests"
   ],
   "dependencies": {
+    "underscore": "~1.5.2",
     "angular-resource": "~1.2.13",
     "angular-cookies": "~1.2.4",
     "angular-slider": "~0.1.6",
+    "ng-grid": "~2.0.7",
     "angular": "~1.2.13",
     "bootstrap": "~3.0.3",
     "datatables": "~1.9.4",
@@ -26,9 +28,11 @@
     "jquery-ui": "~1.10.x",
     "jquery.tablesorter": "~2.14.3",
     "ng-file-upload": "~1.2.8",
-    "toastr": "~2.0.1"
+    "toastr": "~2.0.1",
+    "angular-spinner": "~0.3.1"
   },
   "resolutions": {
-    "jquery": ">= 1.9.0"
+    "jquery": ">= 1.9.0",
+    "angular": "~1.2.13"
   }
 }

@@ -155,6 +155,18 @@ def block_resource(request, exp_id, block_uuid, action_code=None):
     return HttpResponseNotAllowed(["POST", "GET"])
 
 
+#@csrf_protect
+def block_field_resource(request, exp_id, block_uuid, field):
+    exp = Experiment.objects.get(pk=exp_id)
+    # import ipdb; ipdb.set_trace()
+    block = exp.get_block(str(block_uuid))
+    data = getattr(block, field)(exp, request)
+
+    resp = HttpResponse(content_type="application/json")
+    json.dump(data, resp)
+    return resp
+
+
 def block_sub_page(request, exp_id, block_uuid, sub_page):
     exp = Experiment.objects.get(pk=exp_id)
     block = exp.get_block(block_uuid)

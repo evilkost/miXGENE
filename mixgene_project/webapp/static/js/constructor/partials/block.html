@@ -78,7 +78,7 @@
                     </div>
 
 
-                    <div class="col-xs-1">
+                    <div class="col-xs-2">
                         <!--<h4 style="text-align: center"> <span class="label label-default"> Available actions </span> </h4>-->
                         <div class="btn-group-vertical center-block">
                             <button type="button" class="btn btn-default"
@@ -93,17 +93,23 @@
                            use angular routing and ng-view
                         -->
 
-                    </div>
-                    <div class="cols-xs-1" ng-if="block.is_sub_pages_visible">
+
                         <!--<h4 style="text-align: center"> <span class="label label-default"> Sub pages </span> </h4>-->
-                        <ul>
-                            <li ng-repeat="(res, page) in block.pages">
-                                <a href="/block_sub_page/{$ exp_id $}/{$ block.uuid$}/{$ page.resource$}">
-                                    {$ page.title $}
-                                </a>
-                            </li>
-                        </ul>
+                        <div ng-if="block.is_sub_pages_visible"
+                             class="list-group">
+                            <a class="list-group-item"
+                               ng-repeat="(res, page) in block.pages"
+                               href="/block_sub_page/{$ exp_id $}/{$ block.uuid$}/{$ page.resource$}"
+                                    >
+                                {$ page.title $}
+
+                            </a>
+                        </div>
+
+
+
                     </div>
+
                 </div>
 
                 <div class="row">
@@ -135,7 +141,7 @@
                     <div class="row">
 
 
-                        <div ng-include="'/static/js/app/partials/collector.html'">
+                        <div ng-include="'/static/js/constructor/partials/collector.html'">
                         <!--<div ports-group block="block" group-name="collect_internal">-->
                         <!--</div>-->
 

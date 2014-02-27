@@ -140,7 +140,9 @@ class ExpressionSet(GenericStoreStructure):
         self.assay_metadata = {}
 
         self.pheno_data_storage = None
-        self.pheno_metadata = {}
+        self.pheno_metadata = {
+            "user_class_title": "User_class"
+        }
 
         self.working_unit = None
 

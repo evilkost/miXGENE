@@ -569,8 +569,10 @@ class GenericBlock(BaseBlock):
     def get_out_var(self, name):
         if self.out_manager.contains(name):
             return self._out_data.get(name)
-        else:
+        elif self.create_new_scope:
             return self.get_inner_out_var(name)
+        else:
+            return None
 
     def get_inner_out_var(self, name):
         raise NotImplementedError("Not implemented in the base class")

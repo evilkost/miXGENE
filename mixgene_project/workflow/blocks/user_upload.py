@@ -1,12 +1,31 @@
 # coding: utf-8
+import json
 import traceback
 
 import pandas as pd
+import numpy as np
 import sys
 
 from environment.structures import ExpressionSet, BinaryInteraction
 from workflow.blocks.generic import GenericBlock, ActionsList, save_params_actions_list, BlockField, FieldType, \
     ActionRecord, ParamField, InputType, execute_block_actions_list, OutputBlockField
+
+
+def prepare_phenotype_for_js_from_es(es):
+    """
+        @type es: ExpressionSet
+    """
+    pheno_df = es.get_pheno_data_frame()
+
+    pheno_headers_list = pheno_df.columns.tolist()
+    pheno_headers = [{"field": val} for val in pheno_headers_list]
+
+    pheno_table = json.loads(pheno_df.to_json(orient="records"))
+    return {
+        "headers": pheno_headers,
+        "table": pheno_table,
+        "user_class_title": es.pheno_metadata.get("user_class_title")
+    }
 
 
 class UserUpload(GenericBlock):
@@ -50,10 +69,10 @@ class UserUpload(GenericBlock):
 
     # TODO: COPY PASTE from fetch_gse block
     pages = BlockField("pages", FieldType.RAW, init_val={
-        "assign_sample_classes": {
-            "title": "Assign sample classes",
-            "resource": "assign_sample_classes",
-            "widget": "widgets/fetch_gse/assign_sample_classes.html"
+        "assign_phenotype_classes": {
+            "title": "Assign phenotype classes",
+            "resource": "assign_phenotype_classes",
+            "widget": "widgets/assign_phenotype_classes.html"
         },
     })
 
@@ -63,9 +82,23 @@ class UserUpload(GenericBlock):
 
     @property
     def is_sub_pages_visible(self):
-        if self.state in ['source_was_preprocessed', 'sample_classes_assigned', 'ready']:
+        if self.state in ['source_was_preprocessed', 'sample_classes_assigned', 'ready', 'done']:
             return True
         return False
+
+    def phenotype_for_js(self, exp, *args, **kwargs):
+        return prepare_phenotype_for_js_from_es(self.get_out_var("expression_set"))
+
+    def update_user_classes_assignment(self, exp, request, *args, **kwargs):
+        es = self.get_out_var("expression_set")
+        pheno_df = es.get_pheno_data_frame()
+
+        received = json.loads(request.body)
+        es.pheno_metadata["user_class_title"] = received["user_class_title"]
+        pheno_df[received["user_class_title"]] = received["classes"]
+
+        es.store_pheno_data_frame(pheno_df)
+        exp.store_block(self)
 
     def process_upload(self, exp, *args, **kwargs):
         """
@@ -75,11 +108,15 @@ class UserUpload(GenericBlock):
 
         assay_df = pd.DataFrame.from_csv(self.es_matrix.get_file())
 
+        es = ExpressionSet(base_dir=exp.get_data_folder(),
+                           base_filename="%s_annotation" % self.uuid)
+
         pheno_df = pd.DataFrame.from_csv(self.pheno_matrix.get_file())
         pheno_df.set_index(pheno_df.columns[0])
 
-        es = ExpressionSet(base_dir=exp.get_data_folder(),
-                           base_filename="%s_annotation" % self.uuid)
+        user_class_title = es.pheno_metadata["user_class_title"]
+        if user_class_title not in pheno_df.columns:
+            pheno_df[es.pheno_metadata["user_class_title"]] = ""
 
         es.store_assay_data_frame(assay_df)
         es.store_pheno_data_frame(pheno_df)
@@ -87,7 +124,8 @@ class UserUpload(GenericBlock):
         if self.working_unit:
             es.working_unit = self.working_unit
 
-        setattr(self, "expression_set", es)
+
+        self.set_out_var("expression_set", es)
 
         exp.store_block(self)
 
@@ -108,18 +146,18 @@ class UserUploadComplex(GenericBlock):
 
         ActionRecord("process_upload", ["valid_params", "processing_upload"],
                      "processing_upload", "Process uploaded data"),
-        ActionRecord("success", ["processing_upload"], "done"),
+        ActionRecord("success", ["processing_upload"], "done", reload_block_in_client=True),
         ActionRecord("error", ["processing_upload"], "valid_params"),
     ])
 
-    mRNA_matrix = ParamField("mRNA_matrix", title="mRNA expression", order_num=10,
+    m_rna_matrix = ParamField("m_rna_matrix", title="mRNA expression", order_num=10,
                          input_type=InputType.FILE_INPUT, field_type=FieldType.CUSTOM)
-    mRNA_platform = ParamField("mRNA_platform", title="Platform ID", order_num=11,
+    m_rna_platform = ParamField("m_rna_platform", title="Platform ID", order_num=11,
                                input_type=InputType.TEXT, field_type=FieldType.STR, required=False)
-    mRNA_unit = ParamField("mRNA_unit", title="Working unit [used when platform is unknown]", init_val=None,
+    m_rna_unit = ParamField("m_rna_unit", title="Working unit [used when platform is unknown]", init_val=None,
                            order_num=12, input_type=InputType.TEXT, field_type=FieldType.STR, required=False)
 
-    miRNA_matrix = ParamField("miRNA_matrix", title=u"μRNA expression", order_num=20,
+    mi_rna_matrix = ParamField("mi_rna_matrix", title=u"μRNA expression", order_num=20,
                           input_type=InputType.FILE_INPUT, field_type=FieldType.CUSTOM, required=False)
 
     methyl_matrix = ParamField("methyl_matrix", title="Methylation expression", order_num=30,
@@ -140,13 +178,13 @@ class UserUploadComplex(GenericBlock):
                                        init_val=False, is_a_property=True)
 
 
-    _mRNA_es = OutputBlockField(name="mRNA_es", field_type=FieldType.HIDDEN,
+    _m_rna_es = OutputBlockField(name="m_rna_es", field_type=FieldType.HIDDEN,
         provided_data_type="ExpressionSet")
 
-    _mRNA_annotation = OutputBlockField(name="mRNA_annotation", field_type=FieldType.HIDDEN,
+    _m_rna_annotation = OutputBlockField(name="m_rna_annotation", field_type=FieldType.HIDDEN,
         provided_data_type="PlatformAnnotation")
 
-    _miRNA_es = OutputBlockField(name="miRNA_es", field_type=FieldType.HIDDEN,
+    _mi_rna_es = OutputBlockField(name="mi_rna_es", field_type=FieldType.HIDDEN,
                                 provided_data_type="ExpressionSet")
 
     _methyl_es = OutputBlockField(name="methyl_es", field_type=FieldType.HIDDEN,
@@ -154,20 +192,20 @@ class UserUploadComplex(GenericBlock):
 
 
     # TODO: COPY PASTE from fetch_gse block
-    # pages = BlockField("pages", FieldType.RAW, init_val={
-    #     "assign_sample_classes": {
-    #         "title": "Assign sample classes",
-    #         "resource": "assign_sample_classes",
-    #         "widget": "widgets/fetch_gse/assign_sample_classes.html"
-    #     },
-    # })
+    pages = BlockField("pages", FieldType.RAW, init_val={
+        "assign_phenotype_classes": {
+            "title": "Assign phenotype classes",
+            "resource": "assign_phenotype_classes",
+            "widget": "widgets/assign_phenotype_classes.html"
+        },
+    })
 
     def __init__(self, *args, **kwargs):
         super(UserUploadComplex, self).__init__("User upload", *args, **kwargs)
 
     @property
     def is_sub_pages_visible(self):
-        if self.state in ['source_was_preprocessed', 'sample_classes_assigned', 'ready']:
+        if self.state in ['source_was_preprocessed', 'sample_classes_assigned', 'ready', 'done']:
             return True
         return False
 
@@ -185,36 +223,39 @@ class UserUploadComplex(GenericBlock):
                 pheno_df = self.pheno_matrix.get_as_data_frame()
                 pheno_df.set_index(pheno_df.columns[0])
 
-            if self.mRNA_matrix is not None:
-                mRNA_assay_df = self.mRNA_matrix.get_as_data_frame()
+                # TODO: solve somehow better: Here we add empty column with user class assignment
+                pheno_df[ExpressionSet(None, None).pheno_metadata["user_class_title"]] = ""
 
-                mRNA_es = ExpressionSet(base_dir=exp.get_data_folder(),
-                                        base_filename="%s_mRNA_es" % self.uuid)
-                mRNA_es.store_assay_data_frame(mRNA_assay_df)
-                mRNA_es.store_pheno_data_frame(pheno_df)
-                mRNA_es.working_unit = self.mRNA_unit
+            if self.m_rna_matrix is not None:
+                m_rna_assay_df = self.m_rna_matrix.get_as_data_frame()
 
-                self.set_out_var("mRNA_es", mRNA_es)
+                m_rna_es = ExpressionSet(base_dir=exp.get_data_folder(),
+                                        base_filename="%s_m_rna_es" % self.uuid)
+                m_rna_es.store_assay_data_frame(m_rna_assay_df)
+                m_rna_es.store_pheno_data_frame(pheno_df)
+                m_rna_es.working_unit = self.m_rna_unit
+
+                self.set_out_var("m_rna_es", m_rna_es)
 
                 # TODO: fetch GPL annotation if GPL id was provided
 
-            if self.miRNA_matrix is not None:
-                miRNA_assay_df = self.miRNA_matrix.get_as_data_frame()
+            if self.mi_rna_matrix is not None:
+                mi_rna_assay_df = self.mi_rna_matrix.get_as_data_frame()
 
-                miRNA_es = ExpressionSet(base_dir=exp.get_data_folder(),
-                                        base_filename="%s_miRNA_es" % self.uuid)
-                miRNA_es.store_assay_data_frame(miRNA_assay_df)
-                miRNA_es.store_pheno_data_frame(pheno_df)
+                mi_rna_es = ExpressionSet(base_dir=exp.get_data_folder(),
+                                        base_filename="%s_mi_rna_es" % self.uuid)
+                mi_rna_es.store_assay_data_frame(mi_rna_assay_df)
+                mi_rna_es.store_pheno_data_frame(pheno_df)
 
-                self.set_out_var("miRNA_es", miRNA_es)
+                self.set_out_var("mi_rna_es", mi_rna_es)
 
             if self.methyl_matrix is not None:
                 methyl_assay_df = self.methyl_matrix.get_as_data_frame()
 
                 methyl_es = ExpressionSet(base_dir=exp.get_data_folder(),
                                           base_filename="%s_methyl_es" % self.uuid)
-                miRNA_es.store_assay_data_frame(methyl_assay_df)
-                miRNA_es.store_pheno_data_frame(pheno_df)
+                mi_rna_es.store_assay_data_frame(methyl_assay_df)
+                mi_rna_es.store_pheno_data_frame(pheno_df)
 
                 self.set_out_var("methyl_es", methyl_es)
 
@@ -224,6 +265,51 @@ class UserUploadComplex(GenericBlock):
             traceback.print_tb(tb)
             self.do_action("error", exp, e)
         # self.celery_task_fetch.apply_async()
+
+    def phenotype_for_js(self, exp, *args, **kwargs):
+        m_rna_es = self.get_out_var("m_rna_es")
+        mi_rna_es = self.get_out_var("mi_rna_es")
+        methyl_es = self.get_out_var("methyl_es")
+        es = None
+        if m_rna_es is not None:
+            es = m_rna_es
+        elif mi_rna_es is not None:
+            es = mi_rna_es
+        elif methyl_es is not None:
+            es = methyl_es
+
+        if es is None:
+            raise Exception("No data was stored before")
+
+        return prepare_phenotype_for_js_from_es(es)
+
+    def update_user_classes_assignment(self, exp, request, *args, **kwargs):
+        m_rna_es = self.get_out_var("m_rna_es")
+        mi_rna_es = self.get_out_var("mi_rna_es")
+        methyl_es = self.get_out_var("methyl_es")
+        es = None
+        if m_rna_es is not None:
+            es = m_rna_es
+        elif mi_rna_es is not None:
+            es = mi_rna_es
+        elif methyl_es is not None:
+            es = methyl_es
+
+        if es is None:
+            raise Exception("No data was stored before")
+
+        pheno_df = es.get_pheno_data_frame()
+
+        received = json.loads(request.body)
+        es.pheno_metadata["user_class_title"] = received["user_class_title"]
+        pheno_df[received["user_class_title"]] = received["classes"]
+
+        # es.store_pheno_data_frame(pheno_df)
+        for work_es in [m_rna_es, mi_rna_es, methyl_es]:
+            if work_es is not None:
+                work_es.store_pheno_data_frame(pheno_df)
+
+        exp.store_block(self)
 
     def success(self, exp, *args, **kwargs):
         pass

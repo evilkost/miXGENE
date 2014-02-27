@@ -67,7 +67,7 @@ Constructor.controller('PortCtrl', function PortCtrl($scope, blockAccess){
 
 
 Constructor.controller('formFieldCtrl', function($scope, $log){
-    $scope.template = "/static/js/app/forms/field_" +
+    $scope.template = "/static/js/constructor/forms/field_" +
         $scope.$parent.param_proto.input_type + ".html";
 
     $scope.predicate = "order_num";
@@ -76,7 +76,7 @@ Constructor.controller('formFieldCtrl', function($scope, $log){
 })
 
 Constructor.controller('blockElementCtrl', function($scope){
-    $scope.template = "/static/js/app/elements/" + $scope.element;
+    $scope.template = "/static/js/constructor/elements/" + $scope.element;
 
 })
 Constructor.controller('PalletCtrl', function($scope, blockAccess){

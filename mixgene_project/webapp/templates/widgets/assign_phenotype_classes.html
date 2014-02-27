@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% load static %}
+
+
+{% block inner %}
+
+<!--<script src="{% static 'common/ng-grid/ng-grid-2.0.7.debug.js'%}"></script>-->
+<script type="text/javascript" src="http://angular-ui.github.com/ng-grid/lib/ng-grid.debug.js"></script>
+<!--<script src="http://cdnjs.cloudflare.com/ajax/libs/ng-grid/2.0.7/ng-grid.min.js"></script>-->
+<link href="{% static 'common/ng-grid/ng-grid.min.css' %}" rel="stylesheet">
+
+<script type="text/javascript" src="{% static 'common/spin.js/spin.js' %}"></script>
+<script type="text/javascript" src="{% static 'common/angular-spinner/angular-spinner.js' %}"></script>
+
+<script src="{% static 'js/pheno_editor/app.js'%}"></script>
+
+
+<div ng-app="PhenotypeEditor" ng-controller="PhenoCtrl" ng-init="init('{{ exp.pk }}', '{{ block_.uuid }}')">
+    {% verbatim %}
+    <div class="row" ng-hide="init_done">
+        <div class="col-xs-4 col-xs-offset-4">
+            <!--<span us-spinner="{ speed: 1.7}"></span>-->
+            <h1>Loading ... </h1>
+        </div>
+
+
+    </div>
+    <div class="row" ng-show="init_done">
+        <div class="col-xs-8 cols-xs-offset-2">
+            <div  style="min-height: 600px" ng-grid="gridOptions"></div>
+        </div>
+        <div class="col-xs-4">
+            <div class="row">
+                <button class="btn btn-primary" ng-click="save_assignment()">
+                    Save assignment
+                </button>
+                <a href="/constructor/{{ phenoIO.exp_id}}/" class="btn btn-default ">
+                    Return to workflow construction
+                </a>
+            </div>
+            <div class="row">
+                <h5> Create target class from existing phenotype  property. </h5>
+                <div class="list-group" >
+                    <a class="list-group-item"
+                       ng-click="clone_feature_as_target_class(header)"
+                       ng-repeat="header in phenoIO.pheno.headers |filter:fnFilterUserClass"
+                    >
+                        {{ header.field }}
+                    </a>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-xs-12">
+
+                    <h3 style="text-align: center"> <span class="badge">Assign classes manually.</span></h3>
+                </div>
+                <br />
+                <div class="col-xs-6">
+                    <div class="row">
+                        <input type="text" ng-model="new_class_label"/>
+                        <button class="btn btn-default" ng-click="add_new_class()">Add class</button>
+                    </div>
+                    <div class="row">
+                        <button class="btn btn-default btn-block" ng-click="assign_class()">Assign selected samples</button>
+                    </div>
+
+                </div>
+                <div class="col-xs-6">
+                    <div class="list-group">
+                        <a class="list-group-item"
+                           ng-click="activate_class_for_assignment(sample_class)"
+                           ng-repeat="sample_class in available_classes "
+                           ng-class="{active: sample_class == active_class}"
+                            >
+                            {{ sample_class }}
+
+                           </a>
+                    </div>
+                </div>
+
+
+            </div>
+        </div>
+    </div>
+    {% endverbatim %}
+
+</div>
+
+{% endblock inner %}

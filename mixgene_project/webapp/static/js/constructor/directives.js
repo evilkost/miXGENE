@@ -4,7 +4,7 @@ Constructor.directive("pallet", function () {
         scope: {
             scopeName: "="
         },
-        templateUrl: "/static/js/app/partials/pallet.html"
+        templateUrl: "/static/js/constructor/partials/pallet.html"
     }
 })
 
@@ -15,7 +15,7 @@ Constructor.directive("blockDir", function (RecursionHelper) {
         scope: {
             block: "="
         },
-        templateUrl: "/static/js/app/partials/block.html",
+        templateUrl: "/static/js/constructor/partials/block.html",
         compile: function(element) {
             return RecursionHelper.compile(element);
         }
@@ -30,7 +30,7 @@ Constructor.directive("portsGroup", function () {
             "groupName": '@',
             "block": '='
         },
-        templateUrl: "/static/js/app/partials/port_group.html",
+        templateUrl: "/static/js/constructor/partials/port_group.html",
         controller: function ($scope, blockAccess) {
 
             $scope.access = blockAccess;
