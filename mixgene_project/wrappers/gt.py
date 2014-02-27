@@ -54,13 +54,11 @@ class GlobalTest(object):
         return result_df
 
 
-@task(name="wrappers.gt.global_test_task")
+# @task(name="wrappers.gt.global_test_task")
 def global_test_task(
         exp, block,
         es, gene_sets,
         base_dir, base_filename,
-        pheno_class_column="User_class",
-        success_action="success", error_action="error"
     ):
     """
     @param es: Expression set with defined user class in pheno
@@ -74,14 +72,11 @@ def global_test_task(
     @param pheno_class_column: Column name of target classes in phenotype table
     @type pheno_class_column: str or None
     """
-    try:
-        result_df = GlobalTest.gt_basic(es, gene_sets, pheno_class_column)
 
-        res = TableResult(base_dir, base_filename)
-        res.store_table(result_df)
+    result_df = GlobalTest.gt_basic(es, gene_sets, es.pheno_metadata["user_class_title"])
 
-        block.do_action(success_action, exp, res)
-    except Exception, e:
-        ex_type, ex, tb = sys.exc_info()
-        traceback.print_tb(tb)
-        block.do_action(error_action, exp, e)
+    res = TableResult(base_dir, base_filename)
+    res.store_table(result_df)
+
+    return [res], {}
+

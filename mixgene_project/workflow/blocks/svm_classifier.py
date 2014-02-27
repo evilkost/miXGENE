@@ -2,7 +2,8 @@ from environment.structures import TableResult
 from workflow.blocks.generic import GenericBlock, ActionsList, save_params_actions_list, BlockField, FieldType, \
     ActionRecord, ParamField, InputType, execute_block_actions_list, OutputBlockField, InputBlockField
 
-from wrappers.svm import lin_svm_task
+from workflow.common_tasks import wrapper_task
+from wrappers.svm import linear_svm
 
 
 class SvmClassifier(GenericBlock):
@@ -52,12 +53,15 @@ class SvmClassifier(GenericBlock):
 
     def execute(self, exp,  *args, **kwargs):
         lin_svm_options = self.collect_svm_options()
-        self.celery_task = lin_svm_task.s(
+        train_es = self.get_input_var("train_es")
+        self.celery_task = wrapper_task.s(
+            linear_svm,
             exp, self,
-            self.get_input_var("train_es"), self.get_input_var("test_es"),  # accessing bound vars
-            lin_svm_options,
-            exp.get_data_folder(), "%s" % self.uuid,
-            target_class_column=None,
+            train_es=train_es,
+            test_es=self.get_input_var("test_es"),
+            lin_svm_options=lin_svm_options,
+            base_folder=exp.get_data_folder(),
+            base_filename="%s_svm" % self.uuid,
         )
         exp.store_block(self)
         self.celery_task.apply_async()

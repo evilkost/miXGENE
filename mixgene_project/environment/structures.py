@@ -153,6 +153,9 @@ class ExpressionSet(GenericStoreStructure):
         self.experiment_data = None
         self.protocol_data = None
 
+    def __str__(self):
+        return "ExpressionSet, pheno: %s , assay: %s" % (self.pheno_data_storage, self.assay_data_storage)
+
     def clone(self, base_filename, clone_data_frames=False):
         es = ExpressionSet(self.base_dir, base_filename)
 

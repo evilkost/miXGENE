@@ -2,7 +2,7 @@ import json
 
 import pandas as pd
 from webapp.notification import BlockUpdated
-from workflow.common_tasks import fetch_geo_gse, preprocess_soft
+from workflow.common_tasks import fetch_geo_gse, preprocess_soft, wrapper_task
 
 from workflow.blocks.generic import GenericBlock, ActionsList, save_params_actions_list, BlockField, FieldType, \
     ActionRecord, ParamField, InputType, execute_block_actions_list, OutputBlockField
@@ -71,9 +71,9 @@ class FetchGSE(GenericBlock):
             @param exp: Experiment
         """
         self.clean_errors()
-        self.celery_task_fetch = fetch_geo_gse.s(
-            exp, self,
-            self.geo_uid,
+        self.celery_task_fetch = wrapper_task.s(
+            fetch_geo_gse, exp, self,
+            geo_uid=self.geo_uid,
             success_action="successful_fetch", error_action="error_during_fetch",
             ignore_cache=False
         )
@@ -90,9 +90,10 @@ class FetchGSE(GenericBlock):
         exp.store_block(self)
 
     def start_preprocess(self, exp, *args, **kwargs):
-        self.celery_task_preprocess = preprocess_soft.s(
+        self.celery_task_preprocess = wrapper_task.s(
+            preprocess_soft,
             exp, self,
-            self.source_file,
+            source_file=self.source_file,
             success_action="successful_preprocess",
             error_action="error_during_preprocess"
         )

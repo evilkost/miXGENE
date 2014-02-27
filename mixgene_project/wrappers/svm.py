@@ -9,17 +9,18 @@ from environment.structures import ExpressionSet, ClassifierResult
 from wrappers.scoring import compute_scores
 
 
-def linear_svm(train_es, test_es,
-               lin_svm_options,
-               base_folder, base_filename,
-               target_class_column=None):
+def linear_svm(exp, block,
+        train_es, test_es,
+        lin_svm_options,
+        base_folder, base_filename,
+    ):
     """
         @type train_es: ExpressionSet
         @type test_es: ExpressionSet
     """
 
-    if target_class_column is None:
-        target_class_column = "User_class"
+    # if target_class_column is None:
+    target_class_column = train_es.pheno_metadata.get("user_class_title", "User_class")
 
     # Unpack data
     x_train = train_es.get_assay_data_frame().as_matrix().transpose()
@@ -50,7 +51,7 @@ def linear_svm(train_es, test_es,
     cr.classifier = "linear_svm"
     cr.scores = compute_scores(y_test_fixed, y_test_predicted)  # Hmm what about parametric scores?
     cr.store_model(classifier)
-    return cr
+    return [cr], {}
 
 
 ## Here is a Celery task wrapper, it will be simplified in the future

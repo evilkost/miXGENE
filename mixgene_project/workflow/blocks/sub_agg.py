@@ -6,6 +6,7 @@ from workflow.blocks.generic import GenericBlock, ActionsList, save_params_actio
 
 from wrappers.aggregation import aggregation_task
 
+from workflow.common_tasks import wrapper_task
 
 class SubAggregation(GenericBlock):
     block_base_name = "SUB_AGG"
@@ -16,7 +17,7 @@ class SubAggregation(GenericBlock):
                      user_title="Save parameters"),
         ActionRecord("on_params_is_valid", ["validating_params"], "ready"),
         ActionRecord("on_params_not_valid", ["validating_params"], "created"),
-        ])
+    ])
     _block_actions.extend(execute_block_actions_list)
 
     _mRNA_es = InputBlockField(name="mRNA_es", required_data_type="ExpressionSet", required=True)
@@ -38,10 +39,16 @@ class SubAggregation(GenericBlock):
         miRNA_es = self.get_input_var("miRNA_es")
         interaction_matrix = self.get_input_var("interaction")
 
-        self.celery_task = aggregation_task.s(
-            exp, self, "SUB", self.c,
-            mRNA_es, miRNA_es, interaction_matrix,
-            "%s_sub_agg" % self.uuid,
+        self.celery_task = wrapper_task.s(
+            aggregation_task,
+            exp, self,
+
+            mode="SUB",
+            c=self.c,
+            m_rna_es=mRNA_es,
+            mi_rna_es=miRNA_es,
+            interaction_matrix=interaction_matrix,
+            base_filename="%s_sub_agg" % self.uuid,
         )
         exp.store_block(self)
         self.celery_task.apply_async()

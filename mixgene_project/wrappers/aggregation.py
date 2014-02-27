@@ -19,12 +19,11 @@ from pandas import DataFrame, Series, Index
 import sys
 
 
-@task(name="wrappers.aggregation.aggregation_task")
+#@task(name="wrappers.aggregation.aggregation_task")
 def aggregation_task(exp, block,
                      mode, c,
                      m_rna_es, mi_rna_es, interaction_matrix,
                      base_filename,
-                     success_action="success", error_action="error"
     ):
     """
         @type m_rna_es: ExpressionSet
@@ -32,27 +31,23 @@ def aggregation_task(exp, block,
         @type interaction_matrix: BinaryInteraction
 
     """
-    try:
-        if mode == "SVD":
-            agg_func = svd_agg
-        elif mode == "SUB":
-            agg_func = sub_agg
 
-        m_rna = m_rna_es.get_assay_data_frame()
-        mi_rna = mi_rna_es.get_assay_data_frame()
-        targets_matrix = interaction_matrix.load_matrix()
+    if mode == "SVD":
+        agg_func = svd_agg
+    elif mode == "SUB":
+        agg_func = sub_agg
 
-        result_df = agg_func(m_rna, mi_rna, targets_matrix, c)
-        result = m_rna_es.clone(base_filename)
-        result.store_assay_data_frame(result_df)
-        result.store_pheno_data_frame(mi_rna_es.get_pheno_data_frame())
+    m_rna = m_rna_es.get_assay_data_frame()
+    mi_rna = mi_rna_es.get_assay_data_frame()
+    targets_matrix = interaction_matrix.load_matrix()
 
-        block.do_action(success_action, exp, result)
+    result_df = agg_func(m_rna, mi_rna, targets_matrix, c)
+    result = m_rna_es.clone(base_filename)
+    result.store_assay_data_frame(result_df)
+    result.store_pheno_data_frame(mi_rna_es.get_pheno_data_frame())
 
-    except  Exception, e:
-        ex_type, ex, tb = sys.exc_info()
-        traceback.print_tb(tb)
-        block.do_action(error_action, exp, e)
+    return [result], {}
+
 
 ### umela data
 

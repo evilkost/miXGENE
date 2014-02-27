@@ -1,8 +1,8 @@
 from workflow.blocks.generic import GenericBlock, ActionsList, save_params_actions_list, BlockField, FieldType, \
     ActionRecord, ParamField, InputType, execute_block_actions_list, OutputBlockField, InputBlockField
 
-from converters.gene_set_tools import merge_gs_with_platform_annotation
-
+from converters.gene_set_tools import map_gene_sets_to_probes
+from workflow.common_tasks import wrapper_task
 
 class MergeGeneSetWithPlatformAnnotation(GenericBlock):
     block_base_name = "MERGE_GS_GPL_ANN"
@@ -31,8 +31,14 @@ class MergeGeneSetWithPlatformAnnotation(GenericBlock):
         self.clean_errors()
         gs, ann = self.get_input_var("gs"), self.get_input_var("ann")
         # import ipdb; ipdb.set_trace()
-        self.celery_task = merge_gs_with_platform_annotation.s(
-            exp, self, gs, ann, exp.get_data_folder(), "%s_merged" % self.uuid
+        self.celery_task = wrapper_task.s(
+            map_gene_sets_to_probes,
+            exp, self,
+            base_dir=exp.get_data_folder(),
+            base_filename="%s_merged" % self.uuid,
+            ann_gene_sets=ann.gene_sets,
+            src_gene_sets=gs
+
         )
         exp.store_block(self)
         self.celery_task.apply_async()

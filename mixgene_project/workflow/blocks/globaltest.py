@@ -2,6 +2,7 @@ from environment.structures import TableResult
 from workflow.blocks.generic import GenericBlock, ActionsList, save_params_actions_list, BlockField, FieldType, \
     ActionRecord, ParamField, InputType, execute_block_actions_list, OutputBlockField, InputBlockField
 
+from workflow.common_tasks import wrapper_task
 from wrappers.gt import global_test_task
 
 
@@ -35,10 +36,13 @@ class GlobalTest(GenericBlock):
 
     def execute(self, exp, *args, **kwargs):
         self.clean_errors()
-        self.celery_task = global_test_task.s(
+        self.celery_task = wrapper_task.s(
+            global_test_task,
             exp, self,
-            self.get_input_var("es"), self.get_input_var("gs"),
-            exp.get_data_folder(), "%s_gt_result" % self.uuid,
+            es=self.get_input_var("es"),
+            gene_sets=self.get_input_var("gs"),
+            base_dir=exp.get_data_folder(),
+            base_filename="%s_gt_result" % self.uuid,
         )
         exp.store_block(self)
         self.celery_task.apply_async()

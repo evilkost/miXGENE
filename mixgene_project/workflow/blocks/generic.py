@@ -377,7 +377,7 @@ class CollectorSpecification(object):
 
 class BlockMeta(type):
     def __new__(cls, name, bases, attrs):
-        print "BlockMeta new: %s " % name
+        # print "BlockMeta new: %s " % name
         super_new = super(BlockMeta, cls).__new__
         module = attrs.pop('__module__')
         new_class = super_new(cls, name, bases, {'__module__': module})

@@ -7,7 +7,8 @@ from environment.units import GeneUnits
 from mixgene.util import transpose_dict_list
 
 
-def map_gene_sets_to_probes(base_dir, base_filename, ann_gene_sets, src_gene_sets):
+def map_gene_sets_to_probes(exp, block,
+                            base_dir, base_filename, ann_gene_sets, src_gene_sets):
     """
     TODO: working units check
 
@@ -37,7 +38,7 @@ def map_gene_sets_to_probes(base_dir, base_filename, ann_gene_sets, src_gene_set
 
     gene_sets_probes.store_gs(gs)
 
-    return gene_sets_probes
+    return [gene_sets_probes], {}
 
 
 def filter_gs_by_genes(src_gs, allowed_genes):

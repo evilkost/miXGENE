@@ -7,15 +7,12 @@ from webapp.models import Experiment
 from environment.structures import SequenceContainer
 from webapp.scope import ScopeRunner
 
-from workflow.common_tasks import generate_cv_folds
+from workflow.common_tasks import generate_cv_folds, wrapper_task
 
 from generic import InnerOutputField
 
 from workflow.blocks.generic import GenericBlock, ActionsList, save_params_actions_list, BlockField, FieldType, \
     ActionRecord, ParamField, InputType, execute_block_actions_list, OutputBlockField, InputBlockField
-
-from converters.gene_set_tools import merge_gs_with_platform_annotation
-
 
 # class CrossValidationForm(forms.Form):
 #     folds_num = forms.IntegerField(min_value=2, max_value=100)
@@ -148,9 +145,11 @@ class CrossValidation(GenericBlock):
         es = self.get_input_var("es")
         self.inner_output_manager.reset()
 
-        self.celery_task = generate_cv_folds.s(
+        self.celery_task = wrapper_task.s(
+            generate_cv_folds,
             exp, self,
-            self.folds_num, es,
+            folds_num=self.folds_num,
+            es=es,
             success_action="on_folds_generation_success",
         )
         exp.store_block(self)

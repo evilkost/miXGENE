@@ -4,7 +4,7 @@ from workflow.blocks.generic import GenericBlock, ActionsList, save_params_actio
     ActionRecord, ParamField, InputType, execute_block_actions_list, OutputBlockField, InputBlockField
 
 from wrappers.aggregation import aggregation_task
-
+from workflow.common_tasks import wrapper_task
 
 class SvdAggregation(GenericBlock):
     block_base_name = "SVD_AGG"
@@ -37,10 +37,16 @@ class SvdAggregation(GenericBlock):
         miRNA_es = self.get_input_var("miRNA_es")
         interaction_matrix = self.get_input_var("interaction")
 
-        self.celery_task = aggregation_task.s(
-            exp, self, "SVD", self.c,
-            mRNA_es, miRNA_es, interaction_matrix,
-            "%s_svd_agg" % self.uuid,
+        self.celery_task = wrapper_task.s(
+            aggregation_task,
+            exp, self,
+
+            mode="SVD",
+            c=self.c,
+            m_rna_es=mRNA_es,
+            mi_rna_es=miRNA_es,
+            interaction_matrix=interaction_matrix,
+            base_filename="%s_svd_agg" % self.uuid,
         )
         exp.store_block(self)
         self.celery_task.apply_async()
