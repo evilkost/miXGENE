@@ -145,7 +145,6 @@ class ExpressionSet(GenericStoreStructure):
         }
 
         self.working_unit = None
-
         self.annotation = None
 
         # Have no idea about 3 following variables
@@ -159,6 +158,7 @@ class ExpressionSet(GenericStoreStructure):
     def clone(self, base_filename, clone_data_frames=False):
         es = ExpressionSet(self.base_dir, base_filename)
 
+        es.working_unit = self.working_unit
         es.annotation = self.annotation
         es.feature_data = self.feature_data
         es.experiment_data = self.experiment_data

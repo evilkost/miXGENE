@@ -9,6 +9,7 @@ from merge_gene_set_annotation import MergeGeneSetWithPlatformAnnotation
 from svm_classifier import SvmClassifier
 from globaltest import GlobalTest
 from user_upload import UserUpload, UserUploadComplex, UploadInteraction
+from expression_sets_merge import MergeExpressionSets
 
 
 #""" OLDER """
@@ -51,4 +52,5 @@ register_block("merge_gs_platform_annotation", "Merge Gene Set with platform",
 register_block("globaltest", "Global test", GroupType.PROCESSING, GlobalTest)
 register_block("svd_agg", "Svd aggregation", GroupType.PROCESSING, SvdAggregation)
 register_block("sub_agg", "Subtractive aggregation", GroupType.PROCESSING, SubAggregation)
-#""" OLDER  END"""
+register_block("merge_two_es", "Merge expression sets", GroupType.PROCESSING, MergeExpressionSets)
+
