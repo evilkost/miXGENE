@@ -88,7 +88,7 @@ PhenotypeEditor.controller('PhenoCtrl', function($scope, phenoIO){
             }
         });
 
-        $scope.available_classes = jQuery.unique(classes);
+        $scope.available_classes = _.unique(classes);
         console.log($scope.available_classes);
     }
 
