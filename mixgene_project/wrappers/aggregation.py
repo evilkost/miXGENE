@@ -45,6 +45,7 @@ def aggregation_task(exp, block,
         result_df = agg_func(m_rna, mi_rna, targets_matrix, c)
         result = m_rna_es.clone(base_filename)
         result.store_assay_data_frame(result_df)
+        result.store_pheno_data_frame(mi_rna_es.get_pheno_data_frame())
 
         block.do_action(success_action, exp, result)
 
