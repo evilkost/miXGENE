@@ -167,11 +167,12 @@ class InnerOutputField(OutputBlockField):
 
 
 class InputBlockField(BlockField):
-    def __init__(self, required_data_type=None, *args, **kwargs):
+    def __init__(self, required_data_type=None, multiply_extensible=False, *args, **kwargs):
         super(InputBlockField, self).__init__(*args, **kwargs)
         self.required_data_type = required_data_type
         self.field_type = FieldType.INPUT_PORT
         self.bound_var_key = None
+        self.multiply_extensible = multiply_extensible
 
     def contribute_to_class(self, cls, name):
         getattr(cls, "_block_serializer").register(self)
@@ -277,6 +278,9 @@ class BlockSerializer(object):
         bs = BlockSerializer()
         bs.fields = copy.deepcopy(other.fields)
         bs.params = copy.deepcopy(other.params)
+        bs.outputs = copy.deepcopy(other.outputs)
+        bs.inner_outputs = copy.deepcopy(other.inner_outputs)
+        bs.inputs = copy.deepcopy(other.inputs)
         return bs
 
     def to_dict(self, block):
@@ -449,6 +453,8 @@ class InputManager(object):
     def validate_inputs(self, bound_inputs, errors, warnings):
         is_valid = True
         for f in self.input_fields:
+            if f.multiply_extensible:
+                continue
             if bound_inputs.get(f.name) is None:
                 exception = Exception("Input %s hasn't bound variable" % f.name)
                 if f.required:
@@ -495,6 +501,10 @@ class GenericBlock(BaseBlock):
         """
             Building block for workflow
         """
+        # TODO: due to dynamic inputs, find better solution
+        self._block_serializer = BlockSerializer.clone(self.__class__._block_serializer)
+
+        self.state = "created"
         self.uuid = uuid1().hex
         self.name = name
         self.exp_id = exp_id
@@ -504,7 +514,6 @@ class GenericBlock(BaseBlock):
         # Used only be meta-blocks
         self.children_blocks = []
         # End
-
 
         self._out_data = dict()
         self.out_manager = OutManager()
@@ -517,7 +526,6 @@ class GenericBlock(BaseBlock):
         self.auto_exec_status_working = set(["working"])
         self.auto_exec_status_error = set(["execution_error"])
 
-
         # Init block fields
         for f_name, f in itertools.chain(
                 self._block_serializer.fields.iteritems(),
@@ -525,7 +533,14 @@ class GenericBlock(BaseBlock):
 
             #if f_name not in self.__dict__ and not f.is_a_property:
             if not hasattr(self, f_name):
-                setattr(self, f_name, f.init_val)
+                try:
+                    setattr(self, f_name, f.init_val)
+                except:
+                    import ipdb; ipdb.set_trace()
+
+        for f_name, f in self._block_serializer.inputs.iteritems():
+            if f.multiply_extensible:
+                setattr(self, f_name, [])  # Names of dynamically added ports
 
         # TODO: Hmm maybe more metaclass magic can be applied here
         scope = self.get_scope()
@@ -618,7 +633,7 @@ class GenericBlock(BaseBlock):
     def to_dict(self):
         result = self._block_serializer.to_dict(self)
         #pprint(result)
-        #import ipdb; ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
         return result
 
     def register_collector_bind(self, name, scope_var):
@@ -712,6 +727,43 @@ class GenericBlock(BaseBlock):
                 scope_var = ScopeVar.from_key(scope_var_key)
                 self.register_collector_bind(name, scope_var)
                 exp.store_block(self)
+
+
+    def add_dyn_input_hook(self, exp, dyn_port, new_port):
+        """ to override later
+        """
+        pass
+
+    def add_dyn_input(self, exp, received_block, *args, **kwargs):
+        # {u'_add_dyn_port': {u'input': },
+        #  u'new_port': {u'name': u'sad'}}
+
+        spec = received_block.get("_add_dyn_port")
+        if not spec:
+            return
+
+        if not spec['new_port'] or not spec['input']:
+            return
+
+        dyn_port_name = spec['input']
+        dyn_port = self._block_serializer.inputs.get(dyn_port_name)
+        if not dyn_port:
+            return
+
+        new_port = InputBlockField(name=spec['new_port'],
+                                   required_data_type=dyn_port.required_data_type)
+        self._block_serializer.register(new_port)
+        self.input_manager.register(new_port)
+
+        getattr(self, dyn_port_name).append(spec["new_port"])
+
+        #import ipdb; ipdb.set_trace()
+        # adding to
+        #port = InputBlockField
+        #
+        self.add_dyn_input_hook(exp, dyn_port, new_port)
+        exp.store_block(self)
+
 
     def validate_params(self, exp):
         is_valid = True
