@@ -1,31 +1,13 @@
 # coding: utf-8
 import json
 import traceback
-
-import pandas as pd
-import numpy as np
 import sys
 
-from environment.structures import ExpressionSet, BinaryInteraction
-from workflow.blocks.generic import GenericBlock, ActionsList, save_params_actions_list, BlockField, FieldType, \
-    ActionRecord, ParamField, InputType, execute_block_actions_list, OutputBlockField
+import pandas as pd
 
-
-def prepare_phenotype_for_js_from_es(es):
-    """
-        @type es: ExpressionSet
-    """
-    pheno_df = es.get_pheno_data_frame()
-
-    pheno_headers_list = pheno_df.columns.tolist()
-    pheno_headers = [{"field": val} for val in pheno_headers_list]
-
-    pheno_table = json.loads(pheno_df.to_json(orient="records"))
-    return {
-        "headers": pheno_headers,
-        "table": pheno_table,
-        "user_class_title": es.pheno_metadata.get("user_class_title")
-    }
+from environment.structures import ExpressionSet, BinaryInteraction, prepare_phenotype_for_js_from_es
+from workflow.blocks.generic import GenericBlock, ActionsList, BlockField, FieldType, \
+    ActionRecord, ParamField, InputType, OutputBlockField
 
 
 class UserUpload(GenericBlock):

@@ -136,11 +136,11 @@ def block_resource(request, exp_id, block_uuid, action_code=None):
     # import ipdb; ipdb.set_trace()
     block = exp.get_block(str(block_uuid))
 
-    import time; time.sleep( 0.05)
+    # import time; time.sleep( 0.05)
     if request.method == "POST":
         try:
             received_block = json.loads(request.body)
-            print received_block
+            # print received_block
         except Exception, e:
             # TODO log errors
             received_block = {}

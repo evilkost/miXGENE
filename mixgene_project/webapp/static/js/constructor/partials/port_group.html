@@ -1,6 +1,6 @@
 <div>
     <div ng-repeat="input in block.inputs" ng-controller="PortCtrl">
-        <div class="row">
+        <div ng-if="input.multiply_extensible != true" class="row">
             <div class="form-group">
                 <label class="col-sm-4 control-label">
                     {$ input.name $} <small>[{$ input.required_data_type $}]</small>
@@ -10,6 +10,19 @@
                         ng-model="block.bound_inputs[input.name]"
                         ng-options="option.pk as option.title for option in access.scopes[block.scope_name].by_data_type[input.required_data_type]" >
                     </select>
+                </div>
+            </div>
+        </div>
+        <div ng-if="input.multiply_extensible == true" class="row">
+            <div class="form-group">
+                <label class="col-sm-4 control-label">
+                    New input field <small> [{$ input.required_data_type $}] </small>
+                </label>
+                <div class="col-sm-6">
+                    <input ng-model="new_port.name" type="text" class="form-control">
+                </div>
+                <div class="col-sm-2">
+                    <button class="btn btn-primary" ng-click="add_port()">Add</button>
                 </div>
             </div>
         </div>

@@ -51,6 +51,7 @@ Constructor.controller('PortGroupCtrl', function PortGroupCtrl($scope){
 
 Constructor.controller('PortCtrl', function PortCtrl($scope, blockAccess){
     $scope.access = blockAccess;
+    $scope.new_port = {name: ""};
     $scope.get_option_key = function( option ){
         return option.block_uuid + ":" + option.var_name;
     }
@@ -63,6 +64,18 @@ Constructor.controller('PortCtrl', function PortCtrl($scope, blockAccess){
     }
     $scope.options = blockAccess.scopes[$scope.block.scope_name]
         .by_data_type[$scope.input.required_data_type];
+
+    $scope.add_port = function(){
+        // used only for dynamic input ports
+        var block_to_send = $scope.block
+        block_to_send._add_dyn_port = {
+            "input": $scope.input.name,
+            "new_port": $scope.new_port.name
+        };
+        $scope.new_port.name="";
+        $scope.access.send_action(block_to_send, 'add_dyn_input', true);
+
+    }
 })
 
 

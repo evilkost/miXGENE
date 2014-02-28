@@ -519,3 +519,18 @@ class FileInputVar(AbsInputVar):
             raise Exception("file type should be in [`user`, `ncbi_geo`, `gmt`], not %s" % type)
 
 
+def prepare_phenotype_for_js_from_es(es):
+    """
+        @type es: ExpressionSet
+    """
+    pheno_df = es.get_pheno_data_frame()
+
+    pheno_headers_list = pheno_df.columns.tolist()
+    pheno_headers = [{"field": val} for val in pheno_headers_list]
+
+    pheno_table = json.loads(pheno_df.to_json(orient="records"))
+    return {
+        "headers": pheno_headers,
+        "table": pheno_table,
+        "user_class_title": es.pheno_metadata.get("user_class_title")
+    }

@@ -618,6 +618,8 @@ class GenericBlock(BaseBlock):
     def get_input_blocks(self):
         required_blocks = []
         for f in self.input_manager.input_fields:
+            if f.multiply_extensible:
+                continue
             if self.bound_inputs.get(f.name) is None and f.required:
                 raise RuntimeError("Not all required inputs are bound")
             elif self.bound_inputs.get(f.name):
@@ -826,3 +828,33 @@ class GroupType(object):
     VISUALIZE = "Visualize"
     CLASSIFIER = "Classifier"
     PROCESSING = "Data processing"
+
+
+class IteratedInnerFieldManager(object):
+    def __init__(self):
+        self.fields = {}
+        self.sequence = []
+        self.iterator = -1
+
+    def register(self, field):
+        """
+            @type field: BlockField
+        """
+        self.fields[field.name] = field
+
+    def next(self):
+        self.iterator += 1
+        if self.iterator >= len(self.sequence):
+            raise StopIteration()
+
+    def reset(self):
+        self.sequence = []
+        self.iterator = -1
+
+    def get_var(self, fname):
+        if self.iterator < 0:
+            return RuntimeError("Iteration wasn't started")
+        elif self.iterator >= len(self.sequence):
+            return StopIteration()
+        else:
+            return self.sequence[self.iterator][fname]

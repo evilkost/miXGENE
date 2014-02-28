@@ -13,6 +13,7 @@ from expression_sets_merge import MergeExpressionSets
 
 
 #""" OLDER """
+from workflow.blocks.multi_features import MultiFeature
 from workflow.blocks.sub_agg import SubAggregation
 from workflow.blocks.svd_agg import SvdAggregation
 
@@ -42,7 +43,7 @@ register_block("upload_interaction", "Upload gene interaction", GroupType.INPUT_
 register_block("get_bi_gene_set", "Get MSigDB gene set", GroupType.INPUT_DATA, GetBroadInstituteGeneSet)
 
 register_block("cross_validation", "Cross validation K-fold", GroupType.META_PLUGIN, CrossValidation)
-
+register_block("multi_feature", "Multi feature validation", GroupType.META_PLUGIN, MultiFeature)
 # register_block("Pca_visualize", "2D PCA Plot", GroupType.VISUALIZE, PCA_visualize)
 
 register_block("svm_classifier", "Linear SVM Classifier", GroupType.CLASSIFIER, SvmClassifier)

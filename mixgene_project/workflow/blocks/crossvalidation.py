@@ -1,53 +1,19 @@
-from collections import defaultdict
 from copy import deepcopy
-import json
 from pprint import pprint
 
 from webapp.models import Experiment
 from environment.structures import SequenceContainer
 from webapp.scope import ScopeRunner
-
 from workflow.common_tasks import generate_cv_folds, wrapper_task
-
 from generic import InnerOutputField
-
 from workflow.blocks.generic import GenericBlock, ActionsList, save_params_actions_list, BlockField, FieldType, \
-    ActionRecord, ParamField, InputType, execute_block_actions_list, OutputBlockField, InputBlockField
+    ActionRecord, ParamField, InputType, OutputBlockField, InputBlockField, IteratedInnerFieldManager
+
 
 # class CrossValidationForm(forms.Form):
 #     folds_num = forms.IntegerField(min_value=2, max_value=100)
 #     #split_ratio = forms.FloatField(min_value=0, max_value=1)
 #
-
-
-class IteratedInnerFieldManager(object):
-    def __init__(self):
-        self.fields = {}
-        self.sequence = []
-        self.iterator = -1
-
-    def register(self, field):
-        """
-            @type field: BlockField
-        """
-        self.fields[field.name] = field
-
-    def next(self):
-        self.iterator += 1
-        if self.iterator >= len(self.sequence):
-            raise StopIteration()
-
-    def reset(self):
-        self.sequence = []
-        self.iterator = -1
-
-    def get_var(self, fname):
-        if self.iterator < 0:
-            return RuntimeError("Iteration wasn't started")
-        elif self.iterator >= len(self.sequence):
-            return StopIteration()
-        else:
-            return self.sequence[self.iterator][fname]
 
 
 class CrossValidation(GenericBlock):

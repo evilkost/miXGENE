@@ -96,6 +96,8 @@ Constructor.factory("blockAccess", function($http, $log){
     access.send_action = function(block, action_code, do_reload_all){
         if(typeof(do_reload_all)==='undefined'){ do_reload_all = false };
 
+
+        console.log(block);
         block.is_block_updating = true;
         $http({
             method: 'POST',
