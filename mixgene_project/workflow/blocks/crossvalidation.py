@@ -37,7 +37,7 @@ class CrossValidation(GenericBlock):
         ActionRecord("error", ["ready", "working", "sub_scope_executing", "generating_folds"],
                      "execution_error", reload_block_in_client=True),
 
-        ActionRecord("reset_execution", ['done', "sub_scope_executing",
+        ActionRecord("reset_execution", ['done', "sub_scope_executing", "ready",
                                          "generating_folds", "execution_error"], "ready",
                      user_title="Reset execution"),
     ]))

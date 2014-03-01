@@ -659,8 +659,9 @@ class GenericBlock(BaseBlock):
         ar = self._trans.action_records_by_name[action_name]
         old_exec_state = self.get_exec_status()
         next_state = self._trans.next_state(self.state, action_name)
-        print "Do action: " + action_name + " in block " + self.base_name + " from state " + self.state + " -> " + next_state
+
         if next_state is not None:
+            print "Do action: " + action_name + " in block " + self.base_name + " from state " + self.state + " -> " + next_state
             self.state = next_state
 
             if old_exec_state != "done" and self.get_exec_status() == "done":
@@ -683,7 +684,8 @@ class GenericBlock(BaseBlock):
                 auto_exec_task.s(exp, self.scope_name).apply_async()
 
         else:
-            raise RuntimeError("Action %s isn't available for block %s " % (action_name, self.base_name))
+            raise RuntimeError("Action %s isn't available for block %s in state %s" %
+                               (action_name, self.base_name, self.state))
 
     def change_base_name(self, exp, received_block, *args, **kwargs):
         # TODO: check if the name is correct

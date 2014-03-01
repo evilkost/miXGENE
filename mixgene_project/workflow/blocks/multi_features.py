@@ -34,6 +34,7 @@ def prepare_folds(exp, block, features, es_dict, inner_output_es_names_map):
 
     for num, feature in enumerate(features):
         mask = pd.notnull(pheno_df[feature])
+
         cell = {}
         for input_name, output_name in inner_output_es_names_map.iteritems():
             es = es_dict[input_name]
@@ -41,9 +42,10 @@ def prepare_folds(exp, block, features, es_dict, inner_output_es_names_map):
                 base_filename="%s_%s_%s" % (block.uuid, input_name, num),
 
             )
+            modified_pheno_df = pheno_df[mask]
 
             modified_es.pheno_metadata["user_class_title"] = feature
-            modified_es.store_pheno_data_frame(pheno_df)
+            modified_es.store_pheno_data_frame(modified_pheno_df)
 
             assay_df = es.get_assay_data_frame()
             modified_assay_df = assay_df[assay_df.columns[mask]]
@@ -67,7 +69,7 @@ class MultiFeature(GenericBlock):
         ActionRecord("on_params_is_valid", ["validating_params"], "valid_params"),
         ActionRecord("on_params_not_valid", ["validating_params"], "created"),
 
-        ActionRecord("on_feature_selection_updated", ["valid_params", "ready"], "ready"),
+        ActionRecord("on_feature_selection_updated", ["valid_params", "ready", "done"], "ready"),
 
         ActionRecord("execute", ["ready"], "generating_folds", user_title="Run block"),
 

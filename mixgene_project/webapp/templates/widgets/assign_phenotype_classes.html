@@ -4,8 +4,8 @@
 
 {% block inner %}
 
-<!--<script src="{% static 'common/ng-grid/ng-grid-2.0.7.debug.js'%}"></script>-->
-<script type="text/javascript" src="http://angular-ui.github.com/ng-grid/lib/ng-grid.debug.js"></script>
+<script src="{% static 'common/ng-grid/ng-grid-2.0.7.debug.js'%}"></script>
+<!--<script type="text/javascript" src="http://angular-ui.github.com/ng-grid/lib/ng-grid.debug.js"></script>-->
 <!--<script src="http://cdnjs.cloudflare.com/ajax/libs/ng-grid/2.0.7/ng-grid.min.js"></script>-->
 <link href="{% static 'common/ng-grid/ng-grid.min.css' %}" rel="stylesheet">
 
@@ -45,7 +45,7 @@
                        ng-click="clone_feature_as_target_class(header)"
                        ng-repeat="header in phenoIO.pheno.headers |filter:fnFilterUserClass"
                     >
-                        {{ header.field }}
+                        {{ header.displayName }}
                     </a>
                 </div>
             </div>
@@ -77,8 +77,6 @@
                            </a>
                     </div>
                 </div>
-
-
             </div>
         </div>
     </div>

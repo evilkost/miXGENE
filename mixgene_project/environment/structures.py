@@ -518,6 +518,14 @@ class FileInputVar(AbsInputVar):
         else:
             raise Exception("file type should be in [`user`, `ncbi_geo`, `gmt`], not %s" % type)
 
+import hashlib
+m = hashlib.md5()
+
+
+def fix_val(value):
+    if not pd.notnull(value):
+        return None
+    return str(value)
 
 def prepare_phenotype_for_js_from_es(es):
     """
@@ -526,11 +534,36 @@ def prepare_phenotype_for_js_from_es(es):
     pheno_df = es.get_pheno_data_frame()
 
     pheno_headers_list = pheno_df.columns.tolist()
-    pheno_headers = [{"field": val} for val in pheno_headers_list]
 
-    pheno_table = json.loads(pheno_df.to_json(orient="records"))
+    # ng-grid specific
+    column_title_to_code_name = {
+        val: hashlib.md5(val).hexdigest()
+        for val in pheno_headers_list
+    }
+
+    pheno_headers = [
+        {
+            "field": column_title_to_code_name[val],
+            "displayName": val,
+            "minWidth": 150
+        }
+        for val in pheno_headers_list
+    ]
+
+    #pheno_table = json.loads(pheno_df.to_json(orient="records"))
+    # again ng-grid specific
+    pheno_table = []
+    for record in pheno_df.to_records():
+
+        pheno_table.append({
+            column_title_to_code_name[title]: fix_val(value)
+            for (title, value)
+            in zip(pheno_headers_list, list(record)[1:])
+        })
+
     return {
         "headers": pheno_headers,
+        "headers_title_to_code_map": column_title_to_code_name,
         "table": pheno_table,
         "user_class_title": es.pheno_metadata.get("user_class_title")
     }

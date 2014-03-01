@@ -64,15 +64,16 @@ PhenotypeEditor.controller('PhenoCtrl', function($scope, phenoIO){
         data: 'phenoIO.pheno.table',
         columnDefs: 'phenoIO.pheno.headers',
         selectedItems: $scope.selected_rows,
-        enableColumnResize: true
+        enableColumnResize: true,
+        jqueryUITheme: true
     };
 
 
     $scope.on_data_fetched = function(){
         _.each($scope.phenoIO.pheno.headers, function(header){
             $scope.features.push({
-                name: header.field,
-                active: _.contains($scope.phenoIO.pheno.features, header.field)
+                name: header.displayName,
+                active: _.contains($scope.phenoIO.pheno.features, header.displayName)
             })
 
         });

@@ -81,10 +81,11 @@ PhenotypeEditor.controller('PhenoCtrl', function($scope, phenoIO){
 
     $scope.update_available_classes = function(){
         var classes = [];
-        var title = $scope.phenoIO.pheno.user_class_title;
+        var title_field = $scope.phenoIO.pheno.headers_title_to_code_map[
+            $scope.phenoIO.pheno.user_class_title];
         angular.forEach($scope.phenoIO.pheno.table, function(value, key){
-            if( value[title] != null && value[title] != undefined){
-                classes.push(value[title].toString());
+            if( value[title_field] != null && value[title_field] != undefined){
+                classes.push(value[title_field].toString());
             }
         });
 
@@ -132,11 +133,12 @@ PhenotypeEditor.controller('PhenoCtrl', function($scope, phenoIO){
 
     $scope.clone_feature_as_target_class = function(header){
         document._header = header;
-        var src_title = header.field;
-        var dst_title = $scope.phenoIO.pheno.user_class_title;
+        var src_title_field = header.field;
+        var dst_title_field = $scope.phenoIO.pheno.headers_title_to_code_map[
+            $scope.phenoIO.pheno.user_class_title];
 
         angular.forEach($scope.phenoIO.pheno.table, function(value, key){
-            value[dst_title] = value[src_title];
+            value[dst_title_field] = value[src_title_field];
         });
 
         $scope.update_available_classes();
