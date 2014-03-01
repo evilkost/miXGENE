@@ -20,7 +20,7 @@ def linear_svm(exp, block,
     """
 
     # if target_class_column is None:
-    target_class_column = train_es.pheno_metadata.get("user_class_title", "User_class")
+    target_class_column = train_es.pheno_metadata["user_class_title"]
 
     # Unpack data
     x_train = train_es.get_assay_data_frame().as_matrix().transpose()

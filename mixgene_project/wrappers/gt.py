@@ -21,7 +21,7 @@ class GlobalTest(object):
             GlobalTest.gt = R.r['gt']
 
     @staticmethod
-    def gt_basic(es, gene_sets, pheno_class_column="User_class",
+    def gt_basic(es, gene_sets, pheno_class_column,
                  model="logistic",
                  permutations=100):
         """

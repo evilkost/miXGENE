@@ -312,6 +312,7 @@ def get_flot_2d_scatter(request, exp_id, filename):
 
 #@cache_page(60 * 15)
 def get_gse_samples_info(request, exp_id, block_uuid):
+    # TODO: remove this method and use new version of sample assign page (angular based)
     exp = Experiment.objects.get(pk=exp_id)
     block = exp.get_block(block_uuid)
     #assert isinstance(block, FetchGSE)

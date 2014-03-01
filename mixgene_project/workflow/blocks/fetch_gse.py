@@ -125,7 +125,7 @@ class FetchGSE(GenericBlock):
         es = self.get_out_var("expression_set")
         pheno_df = es.get_pheno_data_frame()
         sample_classes = json.loads(request.POST['sample_classes'])
-        pheno_df['User_class'] = pd.Series(sample_classes)
+        pheno_df[es.pheno_metadata["user_class_title"]] = pd.Series(sample_classes)
 
         es.store_pheno_data_frame(pheno_df)
         exp.store_block(self)

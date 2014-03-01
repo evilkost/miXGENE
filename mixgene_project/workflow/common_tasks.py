@@ -119,6 +119,7 @@ def preprocess_soft(exp, block, source_file):
         factor.pop('sample_table_end')
         pheno_index.append(factor.pop('Sample_geo_accession'))
 
+    # TODO: add ordering to phenotype features
     pheno_df = DataFrame([Series(factor) for factor in factors], index=pheno_index)
     pheno_df.index.name = 'Sample_geo_accession'
     expression_set.store_pheno_data_frame(pheno_df)
@@ -147,15 +148,10 @@ def generate_cv_folds(
     # split_ratio = float(split_ratio)
     folds_num = int(folds_num)
 
-    if "User_class" not in pheno_df.columns:
+    if es.pheno_metadata["user_class_title"] not in pheno_df.columns:
         raise RuntimeError("Phenotype doesn't have user assigned classes")
 
-    classes_vector = pheno_df["User_class"].values
-    # for train_idx, test_idx in cross_validation.StratifiedShuffleSplit(
-    #         classes_vector,
-    #         n_iter=folds_num,
-    #         train_size=split_ratio, test_size= 1- split_ratio):
-    #
+    classes_vector = pheno_df[es.pheno_metadata["user_class_title"]].values
     i = 0
     for train_idx, test_idx in cross_validation.StratifiedKFold(
         classes_vector,
