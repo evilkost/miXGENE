@@ -16,10 +16,9 @@
             <ul class="list-group">
                 <li  class="list-group-item"
                      ng-repeat="(name, bound_var) in block.collector_spec.bound"
-                     ng-controller="LiCollectorOutputsCtrl">
-                    <b>[{$ bound_var_fixed.data_type $}] {$ name $}</b>:
-                    {$ bound_var_fixed.title $}
-
+                     ng-init="var=access.vars_by_key[bound_var.pk] "
+                     >
+                    <b>{$ name $}</b>: {$ var.title $}
                 </li>
             </ul>
         </div>
@@ -41,10 +40,14 @@
                     Variable to bind
                 </label>
 
-
                 <select class="form-control"
                         ng-model="block.collector_spec.new.scope_var"
-                        ng-options="option.pk as option.title for option in access.scopes[block.sub_scope_name].vars" >
+                        ng-options="
+                            option.pk as option.title for option
+                            in access.vars
+                                |filter:access.fnFilterVarsByScope([block.sub_scope_name])
+                        "
+                >
                 </select>
             </div>
 

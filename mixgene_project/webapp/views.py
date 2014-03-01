@@ -101,14 +101,13 @@ def blocks_resource(request, exp_id):
     root_blocks = [block.to_dict() for
                 uuid, block in blocks if block.scope_name == "root"]
 
-    scopes = {}
-
+    variables = []
     for scope_name, _ in exp.get_all_scopes_with_block_uuids(redis_instance=r).iteritems():
         scope = Scope(exp, scope_name)
         scope.load(redis_instance=r)
         scope.update_scope_vars_by_block_aliases(aliases_map)
 
-        scopes[scope_name] = scope.to_dict()
+        variables.extend(scope.scope_vars)
 
     result = {
         "blocks": root_blocks,
@@ -117,8 +116,9 @@ def blocks_resource(request, exp_id):
         "block_bodies": block_bodies,
 
         "blocks_by_group": blocks_by_group,
-        "scopes": scopes,
 
+        "vars": [var.to_dict() for var in variables],
+        "vars_by_key": {var.pk: var.to_dict() for var in variables}
     }
     resp = HttpResponse(content_type="application/json")
     # import ipdb; ipdb.set_trace()

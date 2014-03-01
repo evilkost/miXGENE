@@ -8,14 +8,12 @@ Constructor.controller('MainCtrl', function($scope, blockAccess){
         $scope.show_old_worktable = !$scope.show_old_worktable;
     }
 
-
 })
 
 Constructor.controller('WorktableCtrl', function WorktableCtrl($scope, blockAccess){
     $scope.access = blockAccess;
     $scope.bscope = "root";  // change for sub blocks worktable
     $scope.show_pallet = false;
-
 
 })
 
@@ -56,18 +54,6 @@ Constructor.controller('PortGroupCtrl', function PortGroupCtrl($scope){
 Constructor.controller('PortCtrl', function PortCtrl($scope, blockAccess){
     $scope.access = blockAccess;
     $scope.new_port = {name: ""};
-    $scope.get_option_key = function( option ){
-        return option.block_uuid + ":" + option.var_name;
-    }
-    $scope.get_option_title = function( option ){
-        if( option != undefined && option != null){
-            return option.block_alias + " -> " + option.var_name;
-        } else {
-            return "--error--"
-        }
-    }
-    $scope.options = blockAccess.scopes[$scope.block.scope_name]
-        .by_data_type[$scope.input.required_data_type];
 
     $scope.add_port = function(){
         // used only for dynamic input ports
@@ -109,21 +95,13 @@ Constructor.controller('PalletCtrl', function($scope, blockAccess){
 })
 
 Constructor.controller('CollectorCtrl', function($scope, blockAccess){
-    //$scope.access = blockAccess;
-//    $scope.new_collector = {
-//        "name": "",
-//        "var": undefined
-//    }
 
     $scope.add_var = function(){
         $scope.access.send_action($scope.block, "add_collector_var", true);
     }
 
 })
-Constructor.controller('LiCollectorOutputsCtrl', function($scope, blockAccess){
-    $scope.bound_var_fixed =
-        blockAccess.scopes[$scope.block.sub_scope_name].by_var_key[$scope.bound_var.pk];
-})
+
 
 Constructor.controller('UploadFieldCtrl', function($scope, $upload){
     $scope.upload_meta = {

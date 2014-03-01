@@ -23,11 +23,14 @@ def auto_exec_task(exp, scope_name, is_init=False):
 
 
 class ScopeVar(object):
-    def __init__(self, block_uuid, var_name, data_type=None, block_alias=None):
+    def __init__(self, block_uuid, var_name,
+                 data_type=None, block_alias=None,
+                 scope_name=None):
         self.block_uuid = block_uuid
         self.var_name = var_name
         self.data_type = data_type
         self.block_alias = block_alias
+        self.scope_name = scope_name
 
     @property
     def title(self):
@@ -229,6 +232,25 @@ class Scope(object):
         #import ipdb; ipdb.set_trace()
         #a = 2
 
+    def get_parent_scope_list(self, redis_instance=None):
+        if self.name == "root":
+            return []
+
+        if redis_instance is None:
+            r = get_redis_instance()
+        else:
+            r = redis_instance
+
+        parent_scope_names = []
+        wn_scope_name = self.name
+        while True:
+            scope_creating_block = self.exp.get_meta_block_by_sub_scope(wn_scope_name, r)
+            wn_scope_name = scope_creating_block.scope_name
+            parent_scope_names.append(wn_scope_name)
+            if wn_scope_name == "root":
+                break
+        return parent_scope_names
+
     def load(self, redis_instance=None):
         if redis_instance is None:
             r = get_redis_instance()
@@ -239,6 +261,9 @@ class Scope(object):
         raw = r.get(key)
         if raw is not None:
             self.scope_vars = pickle.loads(raw)
+            # TODO: set scope name during scope_var creation
+            for scope_var in self.scope_vars:
+                scope_var.scope_name = self.name
 
     def to_dict(self):
         return {

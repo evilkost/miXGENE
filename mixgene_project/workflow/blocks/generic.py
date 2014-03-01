@@ -480,6 +480,8 @@ class GenericBlock(BaseBlock):
 
     scope_name = BlockField("scope_name", FieldType.STR, "root", is_immutable=True)
     _sub_scope_name = BlockField("sub_scope_name", FieldType.STR, None, is_immutable=True)
+    _visible_scopes_list = BlockField("visible_scopes_list",
+                                      FieldType.SIMPLE_LIST, is_immutable=True)
 
     state = BlockField("state", FieldType.STR, "created")
 
@@ -607,6 +609,13 @@ class GenericBlock(BaseBlock):
             return "%s_%s" % (self.scope_name, self.uuid)
         else:
             return ""
+
+    @property
+    def visible_scopes_list(self):
+        scope = self.get_scope()
+        scope_names_list = scope.get_parent_scope_list()
+        scope_names_list.append(self.scope_name)
+        return scope_names_list
 
     def get_sub_scope(self):
         exp = Experiment.get_exp_by_id(self.exp_id)

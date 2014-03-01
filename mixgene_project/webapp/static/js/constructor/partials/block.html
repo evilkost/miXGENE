@@ -18,8 +18,6 @@
                 <i>State: {$ block.state $} </i>
 
                 <div class="pull-right">
-
-
                     <a class="block-reload glyphicon glyphicon-repeat"
                        style="text-decoration: none"
                        ng-click="access.reload_block(block)"></a>
@@ -59,7 +57,6 @@
                 <div class="row">
 
                     <div class="col-xs-4 col-md-3">
-
                         <!--<h4 style="text-align: center"> <span class="label label-default"> Input variables </span> </h4>-->
                         <div class="row">
                             <div ports-group block="block" group-name="input">
@@ -67,6 +64,7 @@
                         </div>
 
                     </div>
+
                     <div class="col-xs-5 col-md-6">
                         <!--<h4 style="text-align: center"> <span class="label label-default"> Parameters </span> </h4>-->
                         <div class="row">
@@ -80,7 +78,6 @@
                             </div>
                         </div>
                     </div>
-
 
                     <div class="col-xs-2">
                         <!--<h4 style="text-align: center"> <span class="label label-default"> Available actions </span> </h4>-->
@@ -96,8 +93,6 @@
                         <!-- TODO: remove hardcoded link
                            use angular routing and ng-view
                         -->
-
-
                         <!--<h4 style="text-align: center"> <span class="label label-default"> Sub pages </span> </h4>-->
                         <div ng-if="block.is_sub_pages_visible"
                              class="list-group">
@@ -109,9 +104,6 @@
 
                             </a>
                         </div>
-
-
-
                     </div>
 
                 </div>
@@ -143,22 +135,11 @@
 
                     </div>
                     <div class="row">
-
-
-                        <div ng-include="'/static/js/constructor/partials/collector.html'">
-                        <!--<div ports-group block="block" group-name="collect_internal">-->
-                        <!--</div>-->
-
-                        <!--<div class="col-xs-2">-->
-                            <!--<button class="btn btn-default" ng-click="bind_internal_ports(block)">-->
-                                <!--Bind internal ports-->
-                            <!--</button>-->
-                        <!--</div>-->
+                        <div ng-include="'/static/js/constructor/partials/collector.html'" />
                     </div>
                     <hr />
 
                 </div>
-
 
             </div>
         </div>

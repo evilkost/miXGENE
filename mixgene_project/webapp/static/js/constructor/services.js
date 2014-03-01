@@ -6,7 +6,10 @@ Constructor.factory("blockAccess", function($http, $log){
 
     access.blocks_by_bscope = {};
     access.block_bodies = {};
-    access.scopes = {}
+    access.scopes = {};
+
+    access.vars = {};
+    access.vars_by_key = {};
 
     access.blocks_by_group_json = {};
 
@@ -56,6 +59,9 @@ Constructor.factory("blockAccess", function($http, $log){
             access.blocks_by_group = data.blocks_by_group;
             access.scopes = data.scopes;
 
+            access.vars = data.vars;
+            access.vars_by_key = data.vars_by_key;
+
             document.access = access;
         })
     }
@@ -75,6 +81,9 @@ Constructor.factory("blockAccess", function($http, $log){
             access.block_bodies = data.block_bodies;
             access.blocks_by_bscope = data.blocks_by_bscope;
             access.scopes = data.scopes;
+
+            access.vars = data.vars;
+            access.vars_by_key = data.vars_by_key;
 
             document.access = access;
         })
@@ -124,6 +133,18 @@ Constructor.factory("blockAccess", function($http, $log){
             })
         })
         return result;
+    }
+
+
+    access.fnFilterVarsByType = function(data_type_list){
+        return function(scope_var){
+            return _.contains(data_type_list, scope_var.data_type);
+        }
+    }
+    access.fnFilterVarsByScope = function(scopes_list){
+        return function(scope_var){
+            return _.contains(scopes_list, scope_var.scope_name);
+        }
     }
 
     access.fetch_blocks();
