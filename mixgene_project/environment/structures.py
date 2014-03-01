@@ -3,6 +3,7 @@ import cPickle as pickle
 from uuid import uuid1
 import pandas as pd
 import rpy2.robjects as R
+from copy import deepcopy
 
 
 import json
@@ -158,14 +159,14 @@ class ExpressionSet(GenericStoreStructure):
     def clone(self, base_filename, clone_data_frames=False):
         es = ExpressionSet(self.base_dir, base_filename)
 
-        es.working_unit = self.working_unit
-        es.annotation = self.annotation
-        es.feature_data = self.feature_data
-        es.experiment_data = self.experiment_data
-        es.protocol_data = self.protocol_data
+        es.working_unit = deepcopy(self.working_unit)
+        es.annotation = deepcopy(self.annotation)
+        es.feature_data = deepcopy(self.feature_data)
+        es.experiment_data = deepcopy(self.experiment_data)
+        es.protocol_data = deepcopy(self.protocol_data)
 
-        es.assay_metadata = self.assay_metadata
-        es.pheno_metadata = self.pheno_metadata
+        es.assay_metadata = deepcopy(self.assay_metadata)
+        es.pheno_metadata = deepcopy(self.pheno_metadata)
         if clone_data_frames:
             es.store_assay_data_frame(self.get_assay_data_frame())
             es.store_pheno_data_frame(self.get_pheno_data_frame())
