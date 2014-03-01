@@ -863,6 +863,8 @@ class IteratedInnerFieldManager(object):
 
     def next(self):
         self.iterator += 1
+        print "Iterated inner field shifted iterator to pos %s from %s" % \
+              (self.iterator, len(self.sequence))
         if self.iterator >= len(self.sequence):
             raise StopIteration()
 

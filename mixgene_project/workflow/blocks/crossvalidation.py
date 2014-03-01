@@ -3,7 +3,7 @@ from pprint import pprint
 
 from webapp.models import Experiment
 from environment.structures import SequenceContainer
-from webapp.scope import ScopeRunner
+from webapp.scope import ScopeRunner, ScopeVar
 from workflow.common_tasks import generate_cv_folds, wrapper_task
 from generic import InnerOutputField
 from workflow.blocks.generic import GenericBlock, ActionsList, save_params_actions_list, BlockField, FieldType, \
@@ -48,14 +48,17 @@ class CrossValidation(GenericBlock):
 
     folds_num = ParamField(name="folds_num", title="Folds number",
                            input_type=InputType.TEXT, field_type=FieldType.INT, init_val=10)
-    _input_es = InputBlockField(name="es",
-                                required_data_type="ExpressionSet", required=True)
+
+    _input_es_dyn = InputBlockField(
+        name="es_inputs", required_data_type="ExpressionSet",
+        required=True, multiply_extensible=True
+    )
 
     _es_train_i = InnerOutputField(name="es_train_i", provided_data_type="ExpressionSet")
     _es_test_i = InnerOutputField(name="es_test_i", provided_data_type="ExpressionSet")
 
-    _cv_res_seq = OutputBlockField(name="cv_res_seq", provided_data_type="SequenceContainer",
-                                   field_type=FieldType.CUSTOM)
+    _res_seq = OutputBlockField(name="res_seq", provided_data_type="SequenceContainer",
+                                field_type=FieldType.CUSTOM)
 
     def __init__(self, *args, **kwargs):
         super(CrossValidation, self).__init__("Cross Validation", *args, **kwargs)
@@ -63,17 +66,44 @@ class CrossValidation(GenericBlock):
                                               "generating_folds"])
 
         self.celery_task = None
+        self.inner_output_es_names_map = {}
 
         self.inner_output_manager = IteratedInnerFieldManager()
         for f_name, f in self._block_serializer.inner_outputs.iteritems():
             self.inner_output_manager.register(f)
+
+    def add_dyn_input_hook(self, exp, dyn_port, new_port):
+        """
+            @type new_port: InputBlockField
+        """
+        new_inner_output_train = InnerOutputField(
+            name="%s_train_i" % new_port.name,
+            provided_data_type=new_port.required_data_type
+        )
+        new_inner_output_test = InnerOutputField(
+            name="%s_test_i" % new_port.name,
+            provided_data_type=new_port.required_data_type
+        )
+        self.inner_output_es_names_map[new_port.name] = \
+            (new_inner_output_train.name, new_inner_output_test.name)
+        self.inner_output_manager.register(new_inner_output_train)
+        self.inner_output_manager.register(new_inner_output_test)
+        self._block_serializer.register(new_inner_output_train)
+        self._block_serializer.register(new_inner_output_test)
+
+        scope = self.get_sub_scope()
+        scope.load()
+        scope.register_variable(ScopeVar(
+            self.uuid, new_inner_output_train.name, new_inner_output_train.provided_data_type))
+        scope.register_variable(ScopeVar(
+            self.uuid, new_inner_output_test.name, new_inner_output_test.provided_data_type))
+        scope.store()
 
     def get_inner_out_var(self, name):
         return self.inner_output_manager.get_var(name)
 
     def run_sub_scope(self, exp, *args, **kwargs):
         self.reset_execution_for_sub_blocks()
-
 
         exp.store_block(self)
         sr = ScopeRunner(exp, self.sub_scope_name)
@@ -86,17 +116,16 @@ class CrossValidation(GenericBlock):
             This action should be called by ScopeRunner
             when all blocks in sub-scope have exec status == done
         """
-        cv_res_seq = self.get_out_var("cv_res_seq")
+        res_seq = self.get_out_var("res_seq")
         cell = {}
         for name, scope_var in self.collector_spec.bound.iteritems():
             cell[name] = deepcopy(exp.get_scope_var_value(scope_var))
 
-        cv_res_seq.append(cell)
-        self.set_out_var("cv_res_seq", cv_res_seq)
+        res_seq.append(cell)
+        self.set_out_var("res_seq", res_seq)
         exp.store_block(self)
 
-        print "Collected fold results: "
-        pprint(cell)
+        print "Collected fold results: %s " % cell
 
         try:
             self.inner_output_manager.next()
@@ -108,14 +137,18 @@ class CrossValidation(GenericBlock):
     def execute(self, exp, *args, **kwargs):
         self.clean_errors()
 
-        es = self.get_input_var("es")
         self.inner_output_manager.reset()
+        es_dict = {
+            inp_name: self.get_input_var(inp_name)
+            for inp_name in self.es_inputs
+        }
 
         self.celery_task = wrapper_task.s(
             generate_cv_folds,
             exp, self,
             folds_num=self.folds_num,
-            es=es,
+            es_dict=es_dict,
+            inner_output_es_names_map=self.inner_output_es_names_map,
             success_action="on_folds_generation_success",
         )
         exp.store_block(self)
@@ -125,9 +158,9 @@ class CrossValidation(GenericBlock):
         self.inner_output_manager.sequence = sequence
         self.inner_output_manager.next()
 
-        cv_res_seq = SequenceContainer()
-        cv_res_seq.fields = self.collector_spec.bound.keys()
-        self.set_out_var("cv_res_seq", cv_res_seq)
+        res_seq = SequenceContainer()
+        res_seq.fields = self.collector_spec.bound.keys()
+        self.set_out_var("res_seq", res_seq)
 
         exp.store_block(self)
         self.do_action("run_sub_scope", exp)

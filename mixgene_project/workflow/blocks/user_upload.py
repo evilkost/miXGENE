@@ -291,6 +291,7 @@ class UserUploadComplex(GenericBlock):
             if work_es is not None:
                 work_es.store_pheno_data_frame(pheno_df)
 
+        # import ipdb; ipdb.set_trace()
         exp.store_block(self)
 
     def success(self, exp, *args, **kwargs):

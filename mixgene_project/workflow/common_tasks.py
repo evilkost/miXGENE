@@ -1,6 +1,8 @@
 import shutil
 import gzip
 from celery import task
+from celery.contrib import rdb
+
 from pandas import Series, DataFrame
 
 from sklearn import cross_validation
@@ -129,50 +131,53 @@ def preprocess_soft(exp, block, source_file):
 
 def generate_cv_folds(
         exp, block,
-        folds_num, es,
+        folds_num,
+        es_dict, inner_output_es_names_map,
         success_action="success", error_action="error",
     ):
     """
-        On success populate block.sequence with correct folds and
-         call action #on_generate_folds_done otherwise calls
-                     #on_generate_folds_error
-        @type es: ExpressionSet
-    """
-    #print folds_num
-    #print split_ratio
-    sequence = []
-    assay_df = es.get_assay_data_frame()
-    pheno_df = es.get_pheno_data_frame()
+        @type es_dict: dict
+        @param es_dict: {input_name -> ExpressionSet}
 
-    #TODO: fix in block parser
-    # split_ratio = float(split_ratio)
+        @type inner_output_es_names_map: dict
+        @param inner_output_es_names_map: input field name ->
+            (inner output name train, inner output name test)
+    """
+    sequence = []
+
+    es_0 = es_dict.values()[0]
+    pheno_df = es_0.get_pheno_data_frame()
+
     folds_num = int(folds_num)
 
-    if es.pheno_metadata["user_class_title"] not in pheno_df.columns:
+    if es_0.pheno_metadata["user_class_title"] not in pheno_df.columns:
         raise RuntimeError("Phenotype doesn't have user assigned classes")
 
-    classes_vector = pheno_df[es.pheno_metadata["user_class_title"]].values
+    classes_vector = pheno_df[es_0.pheno_metadata["user_class_title"]].values
     i = 0
     for train_idx, test_idx in cross_validation.StratifiedKFold(
         classes_vector,
         n_folds=folds_num
     ):
+        cell = {}
+        for input_name, output_names in inner_output_es_names_map.iteritems():
+            es_train_name, es_test_name = output_names
+            es = es_dict[input_name]
+            assay_df = es.get_assay_data_frame()
 
-        train_es = es.clone("%s_train_%s" % (es.base_filename ,i))
-        train_es.store_assay_data_frame(assay_df[train_idx])
-        train_es.store_pheno_data_frame(pheno_df.iloc[train_idx])
+            train_es = es.clone("%s_%s_train_%s" % (es_0.base_filename, input_name, i))
+            train_es.store_assay_data_frame(assay_df[train_idx])
+            train_es.store_pheno_data_frame(pheno_df.iloc[train_idx])
 
-        test_es = es.clone("%s_test_%s" % (es.base_filename, i))
-        test_es.store_assay_data_frame(assay_df[test_idx])
-        test_es.store_pheno_data_frame(pheno_df.iloc[test_idx])
+            test_es = es.clone("%s_%s_test_%s" % (es_0.base_filename, input_name, i))
+            test_es.store_assay_data_frame(assay_df[test_idx])
+            test_es.store_pheno_data_frame(pheno_df.iloc[test_idx])
 
-        sequence.append({
-            "es_train_i": train_es,
-            "es_test_i": test_es
-        })
+            cell[es_train_name] = train_es
+            cell[es_test_name] = test_es
 
+        sequence.append(cell)
         i += 1
-
 
     return [sequence], {}
 

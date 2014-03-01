@@ -107,7 +107,7 @@ class MultiFeature(GenericBlock):
         },
     })
 
-    _cv_res_seq = OutputBlockField(name="cv_res_seq", provided_data_type="SequenceContainer",
+    _res_seq = OutputBlockField(name="res_seq", provided_data_type="SequenceContainer",
                                    field_type=FieldType.CUSTOM)
 
     def __init__(self, *args, **kwargs):
@@ -118,7 +118,11 @@ class MultiFeature(GenericBlock):
         self.inner_output_es_names_map = {}
         self.celery_task = None
 
-        self.seq = []
+    @property
+    def is_sub_pages_visible(self):
+        if self.state in ['valid_params', 'done', 'ready']:
+            return True
+        return False
 
     def add_dyn_input_hook(self, exp, dyn_port, new_port):
         """
@@ -138,11 +142,74 @@ class MultiFeature(GenericBlock):
             self.uuid, new_inner_output.name, new_inner_output.provided_data_type))
         scope.store()
 
-    @property
-    def is_sub_pages_visible(self):
-        if self.state in ['valid_params', 'done', 'ready']:
-            return True
-        return False
+    def get_inner_out_var(self, name):
+        return self.inner_output_manager.get_var(name)
+
+    def run_sub_scope(self, exp, *args, **kwargs):
+        self.reset_execution_for_sub_blocks()
+
+        exp.store_block(self)
+        sr = ScopeRunner(exp, self.sub_scope_name)
+        sr.execute()
+
+    def on_sub_scope_done(self, exp, *args, **kwargs):
+        """
+            @type exp: Experiment
+
+            This action should be called by ScopeRunner
+            when all blocks in sub-scope have exec status == done
+        """
+        res_seq = self.get_out_var("res_seq")
+        cell = {}
+        for name, scope_var in self.collector_spec.bound.iteritems():
+            cell[name] = deepcopy(exp.get_scope_var_value(scope_var))
+
+        res_seq.append(cell)
+        self.set_out_var("res_seq", res_seq)
+        exp.store_block(self)
+
+        print "Collected fold results: "
+        pprint(cell)
+
+        try:
+            self.inner_output_manager.next()
+            self.do_action("run_sub_scope", exp)
+        except StopIteration, e:
+            # All folds was processed without errors
+            self.do_action("success", exp)
+
+    def execute(self, exp, *arga, **kwargs):
+        # self.celery_task = wrapper_task.s(
+        #
+        # )
+        self.inner_output_manager.reset()
+        es_dict = {
+            inp_name: self.get_input_var(inp_name)
+            for inp_name in self.es_inputs
+        }
+        seq = prepare_folds(
+            exp, self,
+            self.features, es_dict,
+            self.inner_output_es_names_map
+        )
+
+        exp.store_block(self)
+        self.do_action("on_folds_generation_success", exp, seq)
+
+    def on_folds_generation_success(self, exp, sequence, *args, **kwargs):
+        self.inner_output_manager.sequence = sequence
+        self.inner_output_manager.next()
+
+        res_seq = SequenceContainer()
+        res_seq.fields = self.collector_spec.bound.keys()
+        self.set_out_var("res_seq", res_seq)
+
+        exp.store_block(self)
+        self.do_action("run_sub_scope", exp)
+
+    def success(self, exp, *args, **kwargs):
+        pass
+
 
     def phenotype_for_js(self, exp, *args, **kwargs):
         es = None
@@ -163,77 +230,6 @@ class MultiFeature(GenericBlock):
 
     def on_feature_selection_updated(self, *args, **kwargs):
         pass
-
-    def execute(self, exp, *arga, **kwargs):
-        # self.celery_task = wrapper_task.s(
-        #
-        # )
-        self.inner_output_manager.reset()
-        es_dict = {
-            inp_name: self.get_input_var(inp_name)
-            for inp_name in self.es_inputs
-        }
-        self.seq = prepare_folds(
-            exp, self,
-            self.features, es_dict,
-            self.inner_output_es_names_map
-        )
-
-        exp.store_block(self)
-        self.do_action("on_folds_generation_success", exp, self.seq)
-
-    def on_folds_generation_success(self, exp, sequence, *args, **kwargs):
-        self.inner_output_manager.sequence = sequence
-        self.inner_output_manager.next()
-
-        cv_res_seq = SequenceContainer()
-        cv_res_seq.fields = self.collector_spec.bound.keys()
-        self.set_out_var("cv_res_seq", cv_res_seq)
-
-        exp.store_block(self)
-        self.do_action("run_sub_scope", exp)
-
-    def success(self, exp, *args, **kwargs):
-        pass
-
-    def get_inner_out_var(self, name):
-        return self.inner_output_manager.get_var(name)
-
-    def run_sub_scope(self, exp, *args, **kwargs):
-        self.reset_execution_for_sub_blocks()
-
-
-        exp.store_block(self)
-        sr = ScopeRunner(exp, self.sub_scope_name)
-        sr.execute()
-
-    def on_sub_scope_done(self, exp, *args, **kwargs):
-        """
-            @type exp: Experiment
-
-            This action should be called by ScopeRunner
-            when all blocks in sub-scope have exec status == done
-        """
-        cv_res_seq = self.get_out_var("cv_res_seq")
-        cell = {}
-        for name, scope_var in self.collector_spec.bound.iteritems():
-            cell[name] = deepcopy(exp.get_scope_var_value(scope_var))
-
-        cv_res_seq.append(cell)
-        self.set_out_var("cv_res_seq", cv_res_seq)
-        exp.store_block(self)
-
-        print "Collected fold results: "
-        pprint(cell)
-
-        try:
-            self.inner_output_manager.next()
-            self.do_action("run_sub_scope", exp)
-        except StopIteration, e:
-            # All folds was processed without errors
-            self.do_action("success", exp)
-
-
 
 
 

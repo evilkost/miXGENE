@@ -40,7 +40,7 @@ PhenotypeEditor.factory("phenoIO", function($http){
     }
 
     io.send_classes = function(method_name, to_send, on_success){
-        console.log("SENDING: " + to_send);
+        console.log("SENDING: " + angular.toJson(to_send));
         $http({
             method: "POST",
             url: "/experiments/" + io.exp_id+ "/blocks/"+
