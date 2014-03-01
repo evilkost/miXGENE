@@ -146,8 +146,8 @@ class ScopeRunner(object):
         result = True
         for p_uuid in self.dag.get_parents(block_uuid):
             # TODO: Fix this add hoc code to ignore meta block status
-            #  is will certainly produce bags on two nested meta blocks
-            if blocks_dict[p_uuid].sub_scope_name == self.scope_name:
+            if blocks_dict[p_uuid].create_sub_scope and\
+                    blocks_dict[p_uuid].sub_scope_name in self.scope_name:
                 continue
 
             parent_status = blocks_dict[p_uuid].get_exec_status()
@@ -161,7 +161,7 @@ class ScopeRunner(object):
         self.build_dag(self.exp.build_block_dependencies_by_scope(self.scope_name))
 
         blocks_to_execute = []
-        blocks_dict = dict(self.exp.get_blocks(self.dag.topological_order))
+        blocks_dict = dict(self.exp.get_blocks(self.exp.get_all_block_uuids()))
         for block_uuid in self.dag.topological_order:
             block = blocks_dict[block_uuid]
             if is_init_action and block.is_block_supports_auto_execution and block.get_exec_status() == "done":
