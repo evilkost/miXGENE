@@ -146,6 +146,11 @@ Constructor.factory("blockAccess", function($http, $log){
             return _.contains(scopes_list, scope_var.scope_name);
         }
     }
+    access.fnFilterVarsByBlockUUID = function(uuid_list){
+        return function(scope_var){
+            return !_.contains(uuid_list, scope_var.block_uuid);
+        }
+    }
 
     access.fetch_blocks();
     return access;

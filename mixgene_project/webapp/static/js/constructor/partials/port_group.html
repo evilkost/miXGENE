@@ -13,6 +13,7 @@
                             in access.vars
                                 |filter:access.fnFilterVarsByScope(block.visible_scopes_list)
                                 |filter:access.fnFilterVarsByType([input.required_data_type])
+                                |filter:access.fnFilterVarsByBlockUUID([block.uuid])
                         "
                     >
                     </select>
