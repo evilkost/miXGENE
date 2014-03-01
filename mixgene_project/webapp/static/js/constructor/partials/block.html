@@ -21,17 +21,21 @@
 
 
                     <a class="block-reload glyphicon glyphicon-repeat"
+                       style="text-decoration: none"
                        ng-click="access.reload_block(block)"></a>
                     &nbsp;&nbsp;&nbsp;&nbsp;
-                    <a class="block-move-down glyphicon glyphicon-resize-small"
+                    <a class="block-move-down glyphicon "
+                       style="text-decoration: none"
+                       ng-class="{'glyphicon-resize-small': !block.ui_folded,
+                                  'glyphicon-resize-full': block.ui_folded}"
                        ng-click='toggleBodyVisibility()'>
                     </a>
-                    <a class="block-move-down hidden glyphicon glyphicon-resize-full"></a>
-                    &nbsp;&nbsp;&nbsp;&nbsp;
-                    <a class="block-move-down glyphicon glyphicon-arrow-down"></a>
-                    <a class="block-move-up glyphicon glyphicon-arrow-up"></a>
-                    &nbsp;&nbsp;&nbsp;&nbsp;
-                    <a class="block-remove text-danger glyphicon glyphicon-trash"></a>
+                    <!--<a class="block-move-down hidden glyphicon glyphicon-resize-full"></a>-->
+                    <!--&nbsp;&nbsp;&nbsp;&nbsp;-->
+                    <!--<a class="block-move-down glyphicon glyphicon-arrow-down"></a>-->
+                    <!--<a class="block-move-up glyphicon glyphicon-arrow-up"></a>-->
+                    <!--&nbsp;&nbsp;&nbsp;&nbsp;-->
+                    <!--<a class="block-remove text-danger glyphicon glyphicon-trash"></a>-->
                 </div>
             </div>
             <div class="panel-body" ng-show="block.is_block_updating">
@@ -41,7 +45,7 @@
 
             </div>
 
-            <div class="panel-body" ng-show="show_panel_body" ng-hide="block.is_block_updating">
+            <div class="panel-body" ng-hide="block.ui_folded" ng-hide="block.is_block_updating">
                 <div ng-if="block.errors.length > 0" class="row">
                     <div  class="alert alert-danger">
                         <ul class="list-unsyled">

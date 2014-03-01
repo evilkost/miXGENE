@@ -136,11 +136,11 @@ class BlockField(object):
         if raw_val is None:
             val = None
         else:
-            if self.field_type in [FieldType.RAW, FieldType.INT, FieldType.FLOAT] :
+            if self.field_type in [FieldType.RAW, FieldType.INT, FieldType.FLOAT, FieldType.BOOLEAN]:
                 val = raw_val
             if self.field_type == FieldType.CUSTOM:
                 val = raw_val.to_dict(block)
-            if self.field_type in [FieldType.STR, FieldType.BOOLEAN]:
+            if self.field_type in [FieldType.STR]:
                 val = str(raw_val)
             if self.field_type == FieldType.SIMPLE_DICT:
                 val = {str(k): str(v) for k, v in raw_val.iteritems()}
@@ -483,6 +483,8 @@ class GenericBlock(BaseBlock):
 
     state = BlockField("state", FieldType.STR, "created")
 
+    ui_folded = BlockField("ui_folded", FieldType.BOOLEAN, init_val=False)
+
     _create_new_scope = BlockField("create_new_scope", FieldType.BOOLEAN, False)
     _collector_spec = ParamField(name="collector_spec", title="",
                                  field_type=FieldType.CUSTOM,
@@ -693,6 +695,11 @@ class GenericBlock(BaseBlock):
 
         if new_name:
             exp.change_block_alias(self, new_name)
+
+    def toggle_ui_folded(self, exp, received_block, *args, **kwargs):
+        self.ui_folded = received_block["ui_folded"]
+        print "new value ", self.ui_folded
+        exp.store_block(self)
 
     def save_params(self, exp, received_block=None, *args, **kwargs):
         self._block_serializer.save_params(self, received_block)
