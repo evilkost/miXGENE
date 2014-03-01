@@ -40,7 +40,7 @@ PhenotypeEditor.factory("phenoIO", function($http){
     }
 
     io.send_classes = function(to_send){
-        console.log("SENDING: " + to_send);
+        console.log("SENDING: " + angular.toJson(to_send));
         $http({
             method: "POST",
             url: "/experiments/" + io.exp_id+ "/blocks/"+
@@ -146,9 +146,10 @@ PhenotypeEditor.controller('PhenoCtrl', function($scope, phenoIO){
 
     $scope.save_assignment = function(){
         var classes = []
-        var src_title = $scope.phenoIO.pheno.user_class_title;
+        var src_title_field = $scope.phenoIO.pheno.headers_title_to_code_map[
+            $scope.phenoIO.pheno.user_class_title];
         angular.forEach($scope.phenoIO.pheno.table, function(value, key){
-            classes.push(value[src_title]);
+            classes.push(value[src_title_field]);
         });
         var to_send = {
             "user_class_title": $scope.phenoIO.pheno.user_class_title,
