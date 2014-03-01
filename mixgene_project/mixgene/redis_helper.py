@@ -36,6 +36,10 @@ class ExpKeys(object):
         """
         return "S_ESCP-%s-%s" % (exp_id, scope_name)
 
+    @staticmethod
+    def get_auto_exec_task_lock_key(exp_id, scope_name):
+        return "AETLK-%s-%s" % (exp_id, scope_name)
+
 
 def register_sub_key(exp_id, key, redis_instance=None):
     if redis_instance is None:

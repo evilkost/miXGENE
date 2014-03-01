@@ -5,21 +5,30 @@ from pprint import pprint
 import traceback
 from celery.task import task
 import sys
+from time import time
 
 from mixgene.redis_helper import ExpKeys
 from mixgene.util import get_redis_instance
 from webapp.notification import AllUpdated
 
+LOCK_TIME = 60*10 # 10 minutes
 
 @task(name="webapp.scope.auto_exec")
 def auto_exec_task(exp, scope_name, is_init=False):
-    try:
-        sr = ScopeRunner(exp, scope_name)
-        sr.execute(is_init)
-    except Exception, e:
-        ex_type, ex, tb = sys.exc_info()
-        traceback.print_tb(tb)
-        print e
+    r = get_redis_instance()
+
+    lock_key = ExpKeys.get_auto_exec_task_lock_key(exp.pk, scope_name)
+    lock = r.setnx(lock_key, str(int(time()) + LOCK_TIME))
+    if lock:
+        try:
+            sr = ScopeRunner(exp, scope_name)
+            sr.execute(is_init)
+        except Exception, e:
+            ex_type, ex, tb = sys.exc_info()
+            traceback.print_tb(tb)
+            print e
+        finally:
+            r.delete(lock_key)
 
 
 class ScopeVar(object):
@@ -149,7 +158,7 @@ class ScopeRunner(object):
         result = True
         for p_uuid in self.dag.get_parents(block_uuid):
             # TODO: Fix this add hoc code to ignore meta block status
-            if blocks_dict[p_uuid].create_sub_scope and\
+            if blocks_dict[p_uuid].create_new_scope and\
                     blocks_dict[p_uuid].sub_scope_name in self.scope_name:
                 continue
 
