@@ -22,14 +22,9 @@ Constructor.controller('BlockCtrl', function BlockCtrl($scope, blockAccess){
     $scope.exp_id = $scope.access.exp_id;
     $scope.has_errors = $scope.block.errors.length > 0;
 
-//    $scope.show_panel_body = true;
-
     $scope.bscope = $scope.block.sub_scope;
     $scope.toggleBodyVisibility = function(){
-//        $scope.show_panel_body = !$scope.show_panel_body;
-        console.log("before " + $scope.block.ui_folded);
         $scope.block.ui_folded = !$scope.block.ui_folded;
-        console.log("after " + $scope.block.ui_folded);
         $scope.access.send_action($scope.block, "toggle_ui_folded");
     };
 

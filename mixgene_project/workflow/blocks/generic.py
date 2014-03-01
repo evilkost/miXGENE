@@ -487,13 +487,14 @@ class GenericBlock(BaseBlock):
 
     ui_folded = BlockField("ui_folded", FieldType.BOOLEAN, init_val=False)
 
+    create_new_scope = False
     _create_new_scope = BlockField("create_new_scope", FieldType.BOOLEAN, False)
     _collector_spec = ParamField(name="collector_spec", title="",
                                  field_type=FieldType.CUSTOM,
                                  input_type=InputType.HIDDEN,
                                  init_val=CollectorSpecification()
     )
-    create_new_scope = False
+
 
     is_block_supports_auto_execution = False
 
