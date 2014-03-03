@@ -12,11 +12,11 @@ from user_upload import UserUpload, UserUploadComplex, UploadInteraction
 from expression_sets_merge import MergeExpressionSets
 
 
-
 from workflow.blocks.multi_features import MultiFeature
 from workflow.blocks.sub_agg import SubAggregation
 from workflow.blocks.svd_agg import SvdAggregation
 from workflow.blocks.box_plot import BoxPlot
+from workflow.blocks.flatten_nested_res_seq import FlattenNestedResultSequences
 
 block_classes_by_name = {}
 blocks_by_group = defaultdict(list)
@@ -58,4 +58,5 @@ register_block("svd_agg", "Svd aggregation", GroupType.PROCESSING, SvdAggregatio
 register_block("sub_agg", "Subtractive aggregation", GroupType.PROCESSING, SubAggregation)
 register_block("merge_two_es", "Merge expression sets", GroupType.PROCESSING, MergeExpressionSets)
 
-
+register_block("flatten_nested_result_seq", "Flatten nested sequence",
+               GroupType.PROCESSING, FlattenNestedResultSequences)

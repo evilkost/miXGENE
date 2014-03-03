@@ -189,7 +189,8 @@ Constructor.controller('BoxPlotCtrl', function($scope){
     $scope.plotConfig = {
         options: {
             chart: {
-                type: 'boxplot'
+                type: 'boxplot',
+                inverted: true
             },
             legend: false,
 
@@ -200,16 +201,16 @@ Constructor.controller('BoxPlotCtrl', function($scope){
                 },
                 labels: {
                     rotation: 0,
-                    align: 'center',
+                    align: 'right',
                     style: {
-                        fontSize: '13px',
+                        fontSize: '10px',
                         fontFamily: 'Verdana, sans-serif'
                     }
                 }
             },
             yAxis: {
                 title: {
-                    text: 'Observations'
+                    text: 'Scores'
                 }
             }
 

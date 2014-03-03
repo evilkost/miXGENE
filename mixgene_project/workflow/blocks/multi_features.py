@@ -170,7 +170,7 @@ class MultiFeature(GenericBlock):
         r = get_redis_instance()
         with redis_lock.Lock(r, ExpKeys.get_metablock_collect_lock_key(self.exp_id, self.uuid)):
             res_seq = self.get_out_var("res_seq")
-            cell = {}
+            cell = res_seq.sequence[self.inner_output_manager.iterator]
             for name, scope_var in self.collector_spec.bound.iteritems():
                 var = exp.get_scope_var_value(scope_var)
                 print "Collected %s from %s" % (var, scope_var.title)
@@ -219,7 +219,7 @@ class MultiFeature(GenericBlock):
 
         res_seq = self.get_out_var("res_seq")
         res_seq.clean_content()
-        res_seq.sequence = [None for _ in sequence]
+        res_seq.sequence = [{"__label__": feature} for feature in self.features]
         self.set_out_var("res_seq", res_seq)
 
         exp.store_block(self)
