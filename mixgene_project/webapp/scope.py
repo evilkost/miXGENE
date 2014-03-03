@@ -195,10 +195,11 @@ class ScopeRunner(object):
                 block.do_action("on_sub_scope_done", self.exp)
             else:
                 AllUpdated(self.exp.pk, comment=u"Workflow execution completed", silent=False).send()
-        else:
-            for block in blocks_to_execute:
-                print "Block %s will be executed" % block.name
-                block.do_action("execute", self.exp)
+        elif blocks_to_execute:
+            # for block in blocks_to_execute:
+            #     print "Block %s will be executed" % block.name
+            #     block.do_action("execute", self.exp
+            blocks_to_execute[0].do_action("execute", self.exp)
 
     def build_dag(self, block_dependencies):
         """
