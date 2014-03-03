@@ -102,7 +102,7 @@ Constructor.factory("blockAccess", function($http, $log){
         })
     }
 
-    access.send_action = function(block, action_code, do_reload_all){
+    access.send_action = function(block, action_code, do_reload_all, on_success){
         if(typeof(do_reload_all)==='undefined'){ do_reload_all = false };
 
 
@@ -121,6 +121,9 @@ Constructor.factory("blockAccess", function($http, $log){
                 //          that we need to reload all blocks
                 access.block_bodies[data.uuid] = data;
 
+            }
+            if(typeof(on_success) != "undefined"){
+                on_success();
             }
         })
     }

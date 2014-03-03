@@ -367,7 +367,7 @@ class PlatformAnnotation(object):
 class SequenceContainer(object):
     def __init__(self, fields=None, sequence=None):
         self.sequence = sequence or []
-        self.fields = fields  # TODO: Just names, or contains some meta info ?
+        self.fields = fields or []  # TODO: Just names, or contains some meta info ?
         self.iterator = -1
 
     def is_end(self):
@@ -408,7 +408,7 @@ class SequenceContainer(object):
     def to_dict(self):
         dict_seq = []
         for cell in self.sequence:
-            if cell is not None:
+            if cell is not None and self.fields is not None:
                 cell_dict = {}
                 for field in self.fields:
                     obj = cell.get(field)

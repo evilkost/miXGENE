@@ -139,8 +139,9 @@ Constructor.controller('BoxPlotCtrl', function($scope){
         }
     }
 
-    $scope.block.plot_inputs = [];
-    $scope.plotSeries = [];
+//    $scope.block.chart_series = [{data: [], name: "ML scores"}];
+    
+//    $scope.block.plot_inputs = [];
 
     document._block = $scope.block;
 
@@ -169,59 +170,31 @@ Constructor.controller('BoxPlotCtrl', function($scope){
     }
 
     $scope.redraw_plot = function(){
-        $scope.access.block_method($scope.block, "compute_boxplot_stats",
-            function(data){
-                var main_series = [];
-                var categories =[];
-                document._bs = data;
+        $scope.access.send_action($scope.block, "compute_boxplot_stats", false,
+            function(){
+                console.log("block should be updated");
+                console.log($scope.block.chart_series);
+                console.log($scope.access.block_bodies[$scope.block.uuid].chart_series);
 
-                _.each(_.zip($scope.block.plot_inputs, data),
-                    function(obj){
-                        var input = obj[0];
-                        var bp_stat = obj[1];
-                        var label = input.name +":" + input.metric
-
-                        var hc_record = [
-                            bp_stat.whislo,
-                            bp_stat.q1,
-                            bp_stat.med,
-                            bp_stat.q3,
-                            bp_stat.whishi
-                        ]
-                        categories.push(label);
-                        main_series.push(hc_record)
-                    }
-                );
-
-                $scope.plotConfig.categories = categories;
-                $scope.plotConfig.options.xAxis.categories = categories;
-                $scope.chartSeries[0].data = main_series;
-
-                console.log($scope.chartSeries);
+                $scope.plotConfig.series = $scope.access.block_bodies[$scope.block.uuid].chart_series;
+                $scope.plotConfig.options.xAxis.categories =
+                    $scope.access.block_bodies[$scope.block.uuid].chart_categories;
 
             }
-        )
+        );
 
         document._plt = $scope.plotConfig;
     }
 
-
-    $scope.chartSeries = [
-        { data: [
-
-          ],
-           name: "ML scores"
-        }
-    ];
-
     $scope.plotConfig = {
         options: {
             chart: {
-                type: 'boxplot',
+                type: 'boxplot'
             },
             legend: false,
 
             xAxis: {
+                categories: $scope.block.chart_categories,
                 title: {
                     text: 'Inputs'
                 },
@@ -241,7 +214,8 @@ Constructor.controller('BoxPlotCtrl', function($scope){
             }
 
         },
-        series: $scope.chartSeries,
+//        categories: $scope.block.chart_categories,
+        series: $scope.block.chart_series,
         title: {
             text: ''
         },
@@ -250,6 +224,5 @@ Constructor.controller('BoxPlotCtrl', function($scope){
         },
         loading: false
     }
-
 
 })
