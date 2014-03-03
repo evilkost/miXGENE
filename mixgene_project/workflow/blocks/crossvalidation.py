@@ -133,7 +133,6 @@ class CrossValidation(GenericBlock):
 
             res_seq.sequence[self.inner_output_manager.iterator] = cell
             self.set_out_var("res_seq", res_seq)
-            # print "Storing res_seq on iter %s: %s" % (self.inner_output_manager.iterator, res_seq.to_dict())
             exp.store_block(self)
 
         # print "Collected fold results: %s " % cell

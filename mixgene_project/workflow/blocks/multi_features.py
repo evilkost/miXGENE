@@ -4,8 +4,12 @@ from copy import deepcopy
 import json
 from pprint import pprint
 
+import redis_lock
 import pandas as pd
 
+
+from mixgene.redis_helper import ExpKeys
+from mixgene.util import get_redis_instance
 from webapp.models import Experiment
 from environment.structures import SequenceContainer
 from webapp.scope import ScopeRunner, ScopeVar
@@ -74,6 +78,8 @@ class MultiFeature(GenericBlock):
         ActionRecord("execute", ["ready"], "generating_folds", user_title="Run block"),
 
         ActionRecord("on_folds_generation_success", ["generating_folds"], "ready_to_run_sub_scope", reload_block_in_client=True),
+        ActionRecord("continue_collecting_sub_scope", ["ready_to_run_sub_scope"],
+                                          "sub_scope_executing"),
 
         ActionRecord("run_sub_scope", ["ready_to_run_sub_scope"], "sub_scope_executing"),
         ActionRecord("on_sub_scope_done", ["sub_scope_executing"], "ready_to_run_sub_scope"),
@@ -84,7 +90,7 @@ class MultiFeature(GenericBlock):
                                "generating_folds", "ready_to_run_sub_scope"],
                      "execution_error", reload_block_in_client=True),
 
-        ActionRecord("reset_execution", ['done', "sub_scope_executing", "ready_to_run_sub_scope",
+        ActionRecord("reset_execution", ["*", "done", "sub_scope_executing", "ready_to_run_sub_scope",
                                          "generating_folds", "execution_error"], "ready",
                      user_title="Reset execution"),
     ]))
@@ -108,7 +114,7 @@ class MultiFeature(GenericBlock):
     })
 
     _res_seq = OutputBlockField(name="res_seq", provided_data_type="SequenceContainer",
-                                   field_type=FieldType.CUSTOM)
+                                   field_type=FieldType.CUSTOM, init_val=SequenceContainer())
 
     def __init__(self, *args, **kwargs):
         super(MultiFeature, self).__init__("Multi feature block", *args, **kwargs)
@@ -117,6 +123,8 @@ class MultiFeature(GenericBlock):
         self.features = []
         self.inner_output_es_names_map = {}
         self.celery_task = None
+
+        self.set_out_var("res_seq", SequenceContainer())
 
     @property
     def is_sub_pages_visible(self):
@@ -159,24 +167,33 @@ class MultiFeature(GenericBlock):
             This action should be called by ScopeRunner
             when all blocks in sub-scope have exec status == done
         """
-        res_seq = self.get_out_var("res_seq")
-        cell = {}
-        for name, scope_var in self.collector_spec.bound.iteritems():
-            cell[name] = deepcopy(exp.get_scope_var_value(scope_var))
+        r = get_redis_instance()
+        with redis_lock.Lock(r, ExpKeys.get_metablock_collect_lock_key(self.exp_id, self.uuid)):
+            res_seq = self.get_out_var("res_seq")
+            cell = {}
+            for name, scope_var in self.collector_spec.bound.iteritems():
+                var = exp.get_scope_var_value(scope_var)
+                print "Collected %s from %s" % (var, scope_var.title)
+                if var is not None:
+                    cell[name] = deepcopy(var)
 
-        res_seq.append(cell)
-        self.set_out_var("res_seq", res_seq)
-        exp.store_block(self)
+            res_seq.sequence[self.inner_output_manager.iterator] = cell
+            self.set_out_var("res_seq", res_seq)
+            exp.store_block(self)
 
-        print "Collected fold results: "
-        pprint(cell)
+        # print "Collected fold results: %s " % cell
+        if len(cell) < len(res_seq.fields):
+            self.do_action("continue_collecting_sub_scope", exp)
+        else:
+            try:
+                self.inner_output_manager.next()
+                self.do_action("run_sub_scope", exp)
+            except StopIteration, e:
+                # All folds was processed without errors
+                self.do_action("success", exp)
 
-        try:
-            self.inner_output_manager.next()
-            self.do_action("run_sub_scope", exp)
-        except StopIteration, e:
-            # All folds was processed without errors
-            self.do_action("success", exp)
+    def continue_collecting_sub_scope(self, exp, *args, **kwargs):
+        pass
 
     def execute(self, exp, *arga, **kwargs):
         # self.celery_task = wrapper_task.s(
@@ -200,8 +217,9 @@ class MultiFeature(GenericBlock):
         self.inner_output_manager.sequence = sequence
         self.inner_output_manager.next()
 
-        res_seq = SequenceContainer()
-        res_seq.fields = self.collector_spec.bound.keys()
+        res_seq = self.get_out_var("res_seq")
+        res_seq.clean_content()
+        res_seq.sequence = [None for _ in sequence]
         self.set_out_var("res_seq", res_seq)
 
         exp.store_block(self)
@@ -231,5 +249,13 @@ class MultiFeature(GenericBlock):
     def on_feature_selection_updated(self, *args, **kwargs):
         pass
 
+    def add_collector_var(self, exp, *args, **kwargs):
+        super(MultiFeature, self).add_collector_var(exp, *args, **kwargs)
+        res_seq = self.get_out_var("res_seq")
+        res_seq.fields = {
+            name: var.data_type
+            for name, var in self.collector_spec.bound.iteritems()
+        }
+        exp.store_block(self)
 
 

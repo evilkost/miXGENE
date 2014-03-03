@@ -15,7 +15,7 @@ sudo apt-get update
 #sudo apt-get upgrade
 
 sudo apt-get install -y python python-dev python-pip git-core tmux mysql-server mysql-common \
-    mysql-client python-mysqldb nginx redis-server gunicorn  \
+    mysql-client python-mysqldb nginx redis-server=2:2.6.13-1~bpo70+1+b1 gunicorn  \
     r-base-core libxml2-dev r-cran-xml \
     python-redis-lock python-nose python-django-nose python-scipy libatlas-dev libatlas3-base
 
