@@ -137,6 +137,7 @@ def block_resource(request, exp_id, block_uuid, action_code=None):
     block = exp.get_block(str(block_uuid))
 
     # import time; time.sleep( 0.05)
+    action_result = None
     if request.method == "POST":
         try:
             received_block = json.loads(request.body)
@@ -144,12 +145,16 @@ def block_resource(request, exp_id, block_uuid, action_code=None):
         except Exception, e:
             # TODO log errors
             received_block = {}
-        block.apply_action_from_js(action_code, exp=exp, request=request, received_block=received_block)
+        action_result = block.apply_action_from_js(action_code, exp=exp, request=request, received_block=received_block)
 
     if request.method == "GET" or request.method == "POST":
-        block_dict = exp.get_block(block_uuid).to_dict()
+        # TODO: split into two views
         resp = HttpResponse(content_type="application/json")
-        json.dump(block_dict, resp)
+        if action_result is None:
+            block_dict = exp.get_block(block_uuid).to_dict()
+            json.dump(block_dict, resp)
+        else:
+            json.dump(action_result, resp)
         return resp
 
     return HttpResponseNotAllowed(["POST", "GET"])

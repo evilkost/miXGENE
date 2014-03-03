@@ -1,5 +1,6 @@
 from copy import deepcopy
 from pprint import pprint
+from mixgene.redis_helper import ExpKeys
 
 from webapp.models import Experiment
 from environment.structures import SequenceContainer
@@ -8,7 +9,8 @@ from workflow.common_tasks import generate_cv_folds, wrapper_task
 from generic import InnerOutputField
 from workflow.blocks.generic import GenericBlock, ActionsList, save_params_actions_list, BlockField, FieldType, \
     ActionRecord, ParamField, InputType, OutputBlockField, InputBlockField, IteratedInnerFieldManager
-
+from mixgene.util import get_redis_instance
+import redis_lock
 
 # class CrossValidationForm(forms.Form):
 #     folds_num = forms.IntegerField(min_value=2, max_value=100)
@@ -32,12 +34,15 @@ class CrossValidation(GenericBlock):
         ActionRecord("run_sub_scope", ["ready_to_run_sub_scope"], "sub_scope_executing"),
         ActionRecord("on_sub_scope_done", ["sub_scope_executing"], "ready_to_run_sub_scope"),
 
+        ActionRecord("continue_collecting_sub_scope", ["ready_to_run_sub_scope"],
+                     "sub_scope_executing"),
+
         ActionRecord("success", ["working", "ready_to_run_sub_scope"], "done",
                      propagate_auto_execution=True, reload_block_in_client=True),
         ActionRecord("error", ["ready", "working", "sub_scope_executing", "generating_folds"],
                      "execution_error", reload_block_in_client=True),
 
-        ActionRecord("reset_execution", ['done', "sub_scope_executing", "ready",
+        ActionRecord("reset_execution", ["*", 'done', "sub_scope_executing", "ready",
                                          "generating_folds", "execution_error"], "ready",
                      user_title="Reset execution"),
     ]))
@@ -54,11 +59,8 @@ class CrossValidation(GenericBlock):
         required=True, multiply_extensible=True
     )
 
-    _es_train_i = InnerOutputField(name="es_train_i", provided_data_type="ExpressionSet")
-    _es_test_i = InnerOutputField(name="es_test_i", provided_data_type="ExpressionSet")
-
     _res_seq = OutputBlockField(name="res_seq", provided_data_type="SequenceContainer",
-                                field_type=FieldType.CUSTOM)
+                                field_type=FieldType.CUSTOM, init_val=SequenceContainer())
 
     def __init__(self, *args, **kwargs):
         super(CrossValidation, self).__init__("Cross Validation", *args, **kwargs)
@@ -71,6 +73,8 @@ class CrossValidation(GenericBlock):
         self.inner_output_manager = IteratedInnerFieldManager()
         for f_name, f in self._block_serializer.inner_outputs.iteritems():
             self.inner_output_manager.register(f)
+
+        self.set_out_var("res_seq", SequenceContainer())
 
     def add_dyn_input_hook(self, exp, dyn_port, new_port):
         """
@@ -116,23 +120,35 @@ class CrossValidation(GenericBlock):
             This action should be called by ScopeRunner
             when all blocks in sub-scope have exec status == done
         """
-        res_seq = self.get_out_var("res_seq")
-        cell = {}
-        for name, scope_var in self.collector_spec.bound.iteritems():
-            cell[name] = deepcopy(exp.get_scope_var_value(scope_var))
 
-        res_seq.append(cell)
-        self.set_out_var("res_seq", res_seq)
-        exp.store_block(self)
+        r = get_redis_instance()
+        with redis_lock.Lock(r, ExpKeys.get_metablock_collect_lock_key(self.exp_id, self.uuid)):
+            res_seq = self.get_out_var("res_seq")
+            cell = {}
+            for name, scope_var in self.collector_spec.bound.iteritems():
+                var = exp.get_scope_var_value(scope_var)
+                print "Collected %s from %s" % (var, scope_var.title)
+                if var is not None:
+                    cell[name] = deepcopy(var)
 
-        print "Collected fold results: %s " % cell
+            res_seq.sequence[self.inner_output_manager.iterator] = cell
+            self.set_out_var("res_seq", res_seq)
+            # print "Storing res_seq on iter %s: %s" % (self.inner_output_manager.iterator, res_seq.to_dict())
+            exp.store_block(self)
 
-        try:
-            self.inner_output_manager.next()
-            self.do_action("run_sub_scope", exp)
-        except StopIteration, e:
-            # All folds was processed without errors
-            self.do_action("success", exp)
+        # print "Collected fold results: %s " % cell
+        if len(cell) < len(res_seq.fields):
+            self.do_action("continue_collecting_sub_scope", exp)
+        else:
+            try:
+                self.inner_output_manager.next()
+                self.do_action("run_sub_scope", exp)
+            except StopIteration, e:
+                # All folds was processed without errors
+                self.do_action("success", exp)
+
+    def continue_collecting_sub_scope(self, exp, *args, **kwargs):
+        pass
 
     def execute(self, exp, *args, **kwargs):
         self.clean_errors()
@@ -158,8 +174,9 @@ class CrossValidation(GenericBlock):
         self.inner_output_manager.sequence = sequence
         self.inner_output_manager.next()
 
-        res_seq = SequenceContainer()
-        res_seq.fields = self.collector_spec.bound.keys()
+        res_seq = self.get_out_var("res_seq")
+        res_seq.clean_content()
+        res_seq.sequence = [None for _ in sequence]
         self.set_out_var("res_seq", res_seq)
 
         exp.store_block(self)
@@ -169,3 +186,12 @@ class CrossValidation(GenericBlock):
         pass
         # pprint(args)
         # pprint(kwargs)
+
+    def add_collector_var(self, exp, *args, **kwargs):
+        super(CrossValidation, self).add_collector_var(exp, *args, **kwargs)
+        res_seq = self.get_out_var("res_seq")
+        res_seq.fields = {
+            name: var.data_type
+            for name, var in self.collector_spec.bound.iteritems()
+        }
+        exp.store_block(self)

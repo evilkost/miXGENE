@@ -120,6 +120,21 @@ Constructor.factory("blockAccess", function($http, $log){
                 // TODO: add a special field in block to indicate
                 //          that we need to reload all blocks
                 access.block_bodies[data.uuid] = data;
+
+            }
+        })
+    }
+
+    access.block_method = function(block, action_code, on_success){
+        $http({
+            method: 'POST',
+            url: '/experiments/' + access.exp_id +
+                '/blocks/' + block.uuid + "/actions/" + action_code,
+            data:  angular.toJson(block)
+        }).success(function(data, status, headers, config){
+            document._recv = data;
+            if(typeof(on_success) != 'undefined'){
+                on_success(data);
             }
         })
     }

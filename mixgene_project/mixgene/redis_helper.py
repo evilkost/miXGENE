@@ -40,6 +40,10 @@ class ExpKeys(object):
     def get_auto_exec_task_lock_key(exp_id, scope_name):
         return "AETLK-%s-%s" % (exp_id, scope_name)
 
+    @staticmethod
+    def get_metablock_collect_lock_key(exp_id, block_uuid):
+        return "MBCLK-%s-%s" % (exp_id, block_uuid)
+
 
 def register_sub_key(exp_id, key, redis_instance=None):
     if redis_instance is None:

@@ -52,6 +52,7 @@ class SvmClassifier(GenericBlock):
         return options
 
     def execute(self, exp,  *args, **kwargs):
+        self.set_out_var("result", None)
         lin_svm_options = self.collect_svm_options()
         train_es = self.get_input_var("train_es")
         self.celery_task = wrapper_task.s(
@@ -69,4 +70,9 @@ class SvmClassifier(GenericBlock):
     def success(self, exp, result, *args, **kwargs):
         # We store obtained result as an output variable
         self.set_out_var("result", result)
+        exp.store_block(self)
+
+    def reset_execution(self, exp, *args, **kwargs):
+        self.clean_errors()
+        self.set_out_var("result", None)
         exp.store_block(self)

@@ -378,6 +378,10 @@ class SequenceContainer(object):
     def append(self, element):
         self.sequence.append(element)
 
+    def clean_content(self):
+        self.sequence = []
+        self.iterator = -1
+
     def apply_next(self):
         """
             Set block properties from the current sequence element
@@ -402,17 +406,23 @@ class SequenceContainer(object):
         self.iterator = -1
 
     def to_dict(self):
-        res = []
+        dict_seq = []
         for cell in self.sequence:
-            cell_dict = {}
-            for field in self.fields:
-                obj = cell[field]
-                if hasattr(obj, "to_dict"):
-                    cell_dict[field] = obj.to_dict()
-                else:
-                    cell_dict[field] = str(obj)
-            res.append(cell_dict)
-        return res
+            if cell is not None:
+                cell_dict = {}
+                for field in self.fields:
+                    obj = cell.get(field)
+                    if hasattr(obj, "to_dict"):
+                        cell_dict[field] = obj.to_dict()
+                    else:
+                        cell_dict[field] = str(obj)
+                dict_seq.append(cell_dict)
+            else:
+                dict_seq.append(None)
+        return {
+            "fields": self.fields,
+            "seq": dict_seq
+        }
 
 
 class ClassifierResult(GenericStoreStructure):
@@ -437,7 +447,7 @@ class ClassifierResult(GenericStoreStructure):
     def to_dict(self):
         return {
             "classifier": self.classifier,
-            "scores": str(self.scores),
+            "scores": self.scores,
         }
 
 

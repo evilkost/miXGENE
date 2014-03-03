@@ -173,6 +173,8 @@ class ScopeRunner(object):
         self.build_dag(self.exp.build_block_dependencies_by_scope(self.scope_name))
 
         blocks_to_execute = []
+        working_blocks = []
+
         blocks_dict = dict(self.exp.get_blocks(self.exp.get_all_block_uuids()))
         for block_uuid in self.dag.topological_order:
             block = blocks_dict[block_uuid]
@@ -182,8 +184,11 @@ class ScopeRunner(object):
             if block.get_exec_status() == "ready" and \
                     self.is_block_inputs_are_satisfied(block_uuid, blocks_dict):
                 blocks_to_execute.append(block)
+            if block.get_exec_status() == "working" and \
+                    self.is_block_inputs_are_satisfied(block_uuid, blocks_dict):
+                working_blocks.append(block)
 
-        if not blocks_to_execute:
+        if not blocks_to_execute and not working_blocks:
             print "Nothing to execute"
             if self.scope_name != "root":
                 block = self.exp.get_meta_block_by_sub_scope(self.scope_name)

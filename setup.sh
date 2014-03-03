@@ -17,7 +17,7 @@ sudo apt-get update
 sudo apt-get install -y python python-dev python-pip git-core tmux mysql-server mysql-common \
     mysql-client python-mysqldb nginx redis-server gunicorn  \
     r-base-core libxml2-dev r-cran-xml \
-    python-nose python-django-nose python-scipy libatlas-dev libatlas3-base
+    python-redis-lock python-nose python-django-nose python-scipy libatlas-dev libatlas3-base
 
 ###
 # Node & bower used only to fetch static files like js, css libraries
