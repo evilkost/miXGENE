@@ -12,10 +12,11 @@ from user_upload import UserUpload, UserUploadComplex, UploadInteraction
 from expression_sets_merge import MergeExpressionSets
 
 
-#""" OLDER """
+
 from workflow.blocks.multi_features import MultiFeature
 from workflow.blocks.sub_agg import SubAggregation
 from workflow.blocks.svd_agg import SvdAggregation
+from workflow.blocks.box_plot import BoxPlot
 
 block_classes_by_name = {}
 blocks_by_group = defaultdict(list)
@@ -44,7 +45,9 @@ register_block("get_bi_gene_set", "Get MSigDB gene set", GroupType.INPUT_DATA, G
 
 register_block("cross_validation", "Cross validation K-fold", GroupType.META_PLUGIN, CrossValidation)
 register_block("multi_feature", "Multi feature validation", GroupType.META_PLUGIN, MultiFeature)
+
 # register_block("Pca_visualize", "2D PCA Plot", GroupType.VISUALIZE, PCA_visualize)
+register_block("box_plot", "Box plot ML scores", GroupType.VISUALIZE, BoxPlot)
 
 register_block("svm_classifier", "Linear SVM Classifier", GroupType.CLASSIFIER, SvmClassifier)
 
@@ -54,4 +57,5 @@ register_block("globaltest", "Global test", GroupType.PROCESSING, GlobalTest)
 register_block("svd_agg", "Svd aggregation", GroupType.PROCESSING, SvdAggregation)
 register_block("sub_agg", "Subtractive aggregation", GroupType.PROCESSING, SubAggregation)
 register_block("merge_two_es", "Merge expression sets", GroupType.PROCESSING, MergeExpressionSets)
+
 

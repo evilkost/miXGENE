@@ -78,15 +78,20 @@ class TransSystem(object):
         self.is_action_visible[ar.name] = ar.show_to_user
 
     def user_visible(self, state):
-        return [
-            self.action_records_by_name[action] for action in self.states_to_actions.get(state, [])
+        return set([
+            self.action_records_by_name[action]
+            for action in itertools.chain(
+                self.states_to_actions.get(state, []),
+                self.states_to_actions.get("*", [])
+            )
             if self.is_action_visible[action]
-        ]
+        ])
 
     def is_action_available(self, state, action_name):
         if action_name not in self.action_records_by_name:
             return False
-        if action_name in self.states_to_actions[state]:
+        if action_name in self.states_to_actions[state] or \
+                action_name in self.states_to_actions["*"]:
             return True
         else:
             return False
@@ -95,7 +100,8 @@ class TransSystem(object):
         if action_name not in self.action_records_by_name:
             return None
 
-        if action_name in self.states_to_actions[state]:
+        if action_name in self.states_to_actions[state] or \
+                action_name in self.states_to_actions["*"]:
             return self.action_to_state[action_name]
         else:
             return None
@@ -537,7 +543,7 @@ class GenericBlock(BaseBlock):
                 self._block_serializer.params.iteritems()):
 
             #if f_name not in self.__dict__ and not f.is_a_property:
-            if not hasattr(self, f_name):
+            if not f.is_a_property and not hasattr(self, f_name):
                 try:
                     setattr(self, f_name, f.init_val)
                 except:
@@ -553,6 +559,9 @@ class GenericBlock(BaseBlock):
         for f_name, f in self._block_serializer.outputs.iteritems():
             print "Registering normal outputs: ", f_name
             self.register_provided_objects(scope, ScopeVar(self.uuid, f_name, f.provided_data_type))
+            # TODO: User factories for init values
+            # if f.init_val is not None:
+            #     setattr(self, f.name, f.init_val)
         scope.store()
 
         if hasattr(self, "create_new_scope") and self.create_new_scope:
@@ -582,9 +591,12 @@ class GenericBlock(BaseBlock):
         self.bound_inputs[input_name] = bound_var
 
     def get_input_var(self, name):
-        exp = Experiment.get_exp_by_id(self.exp_id)
-        scope_var = self.bound_inputs[name]
-        return exp.get_scope_var_value(scope_var)
+        try:
+            exp = Experiment.get_exp_by_id(self.exp_id)
+            scope_var = self.bound_inputs[name]
+            return exp.get_scope_var_value(scope_var)
+        except:
+            return None
 
     def get_out_var(self, name):
         if self.out_manager.contains(name):
@@ -661,7 +673,7 @@ class GenericBlock(BaseBlock):
         if self._trans.is_action_available(self.state, action_name):
             self.do_action(action_name, *args, **kwargs)
         elif hasattr(self, action_name) and hasattr(getattr(self, action_name), "__call__"):
-            getattr(self, action_name)(*args, **kwargs)
+            return getattr(self, action_name)(*args, **kwargs)
         else:
             raise RuntimeError("Block %s doesn't have action: %s" % (self.name, action_name))
 
@@ -744,8 +756,10 @@ class GenericBlock(BaseBlock):
         if rec_new:
             name = str(rec_new.get("name"))
             scope_var_key = rec_new.get("scope_var")
+            data_type = rec_new.get("data_type")
             if name and scope_var_key:
                 scope_var = ScopeVar.from_key(scope_var_key)
+                scope_var.data_type = data_type
                 self.register_collector_bind(name, scope_var)
                 exp.store_block(self)
 
@@ -836,8 +850,9 @@ save_params_actions_list = ActionsList([
 execute_block_actions_list = ActionsList([
     ActionRecord("execute", ["ready"], "working", user_title="Run block"),
     ActionRecord("success", ["working"], "done", propagate_auto_execution=True),
-    ActionRecord("error", ["ready", "working"], "execution_error"),
-    ActionRecord("reset_execution", ['done', 'execution_error', 'ready', 'working'], "ready", user_title="Reset execution")
+    ActionRecord("error", ["*", "ready", "working"], "execution_error"),
+    ActionRecord("reset_execution", ["*", "done", "execution_error", "ready", "working"], "ready",
+                 user_title="Reset execution")
 ])
 
 

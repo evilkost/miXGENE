@@ -4,10 +4,6 @@ Constructor.controller('MainCtrl', function($scope, blockAccess){
     $scope.exp_id = $scope.access.exp_id;
     $scope.root_scope_name = "root";
 
-    $scope.toggle_show_old_worktable = function(){
-        $scope.show_old_worktable = !$scope.show_old_worktable;
-    }
-
 })
 
 Constructor.controller('WorktableCtrl', function WorktableCtrl($scope, blockAccess){
@@ -63,7 +59,6 @@ Constructor.controller('PortCtrl', function PortCtrl($scope, blockAccess){
     }
 })
 
-
 Constructor.controller('formFieldCtrl', function($scope, $log){
     $scope.template = "/static/js/constructor/forms/field_" +
         $scope.$parent.param_proto.input_type + ".html";
@@ -92,6 +87,8 @@ Constructor.controller('PalletCtrl', function($scope, blockAccess){
 Constructor.controller('CollectorCtrl', function($scope, blockAccess){
 
     $scope.add_var = function(){
+        var key = $scope.block.collector_spec.new.scope_var;
+        $scope.block.collector_spec.new.data_type = $scope.access.vars_by_key[key].data_type;
         $scope.access.send_action($scope.block, "add_collector_var", true);
     }
 
@@ -132,4 +129,127 @@ Constructor.controller('UploadFieldCtrl', function($scope, $upload){
             //.then(success, error, progress);
         }
     }
+})
+
+Constructor.controller('BoxPlotCtrl', function($scope){
+    // TODO: keep in python and provide through `access` service
+    $scope.data_type_info = {
+        ClassifierResult: {
+            numeric_fields: ["accuracy", "average_precision"]
+        }
+    }
+
+    $scope.block.plot_inputs = [];
+    $scope.plotSeries = [];
+
+    document._block = $scope.block;
+
+    $scope.field_to_add = {
+        name: "",
+        type: ""
+    };
+
+    $scope.select_element_to_add = function(field_name, field_type){
+        $scope.field_to_add.name = field_name;
+        $scope.field_to_add.type = field_type;
+    };
+
+    $scope.add_plot_input = function(metric){
+        input = _.clone($scope.field_to_add)
+        input.metric = metric;
+
+        $scope.block.plot_inputs.push(input);
+
+        $scope.field_to_add.name = "";
+        $scope.field_to_add.type = "";
+    };
+
+    $scope.remove_plot_input = function(idx){
+        $scope.block.plot_inputs.splice(idx, 1);
+    }
+
+    $scope.redraw_plot = function(){
+        $scope.access.block_method($scope.block, "compute_boxplot_stats",
+            function(data){
+                var main_series = [];
+                var categories =[];
+                document._bs = data;
+
+                _.each(_.zip($scope.block.plot_inputs, data),
+                    function(obj){
+                        var input = obj[0];
+                        var bp_stat = obj[1];
+                        var label = input.name +":" + input.metric
+
+                        var hc_record = [
+                            bp_stat.whislo,
+                            bp_stat.q1,
+                            bp_stat.med,
+                            bp_stat.q3,
+                            bp_stat.whishi
+                        ]
+                        categories.push(label);
+                        main_series.push(hc_record)
+                    }
+                );
+
+                $scope.plotConfig.categories = categories;
+                $scope.plotConfig.options.xAxis.categories = categories;
+                $scope.chartSeries[0].data = main_series;
+
+                console.log($scope.chartSeries);
+
+            }
+        )
+
+        document._plt = $scope.plotConfig;
+    }
+
+
+    $scope.chartSeries = [
+        { data: [
+
+          ],
+           name: "ML scores"
+        }
+    ];
+
+    $scope.plotConfig = {
+        options: {
+            chart: {
+                type: 'boxplot',
+            },
+            legend: false,
+
+            xAxis: {
+                title: {
+                    text: 'Inputs'
+                },
+                labels: {
+                    rotation: 0,
+                    align: 'center',
+                    style: {
+                        fontSize: '13px',
+                        fontFamily: 'Verdana, sans-serif'
+                    }
+                }
+            },
+            yAxis: {
+                title: {
+                    text: 'Observations'
+                }
+            }
+
+        },
+        series: $scope.chartSeries,
+        title: {
+            text: ''
+        },
+        credits: {
+            enabled: false
+        },
+        loading: false
+    }
+
+
 })

@@ -175,7 +175,8 @@ class Experiment(models.Model):
         if not dont_execute_pipe:
             pipe.execute()
 
-        print "block %s was stored with state: %s" % (block.uuid, block.state)
+        print "block %s was stored with state: %s [uuid: %s]" % \
+              (block.base_name, block.state, block.uuid)
 
     def change_block_alias(self, block, new_base_name):
         r = get_redis_instance()

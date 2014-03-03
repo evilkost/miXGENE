@@ -1,0 +1,56 @@
+<div ng-controller="BoxPlotCtrl">
+    <div class="col-xs-4 col-lg-2">
+        <h4 style="text-align: center"> <span class="label label-default">
+            Choose element to add to plot
+        </span> </h4>
+
+        <div class="list_group"
+                ng-repeat="(field_name, field_type) in block.res_seq_for_js.fields ">
+            <a class="list-group-item"
+                ng-click="select_element_to_add(field_name, field_type)">
+                {$ field_name $} [ <small> {$ field_type $} </small>]
+            </a>
+        </div>
+    </div>
+
+    <div class="col-xs-4 col-lg-2">
+        <h4 style="text-align: center"> <span class="label label-default">
+            Choose metric:
+        </span> </h4>
+
+
+        <div class="list_group"
+             ng-repeat="metric in data_type_info[field_to_add.type].numeric_fields">
+            <a class="list-group-item"
+               ng-click="add_plot_input(metric)">
+                {$ metric $}
+            </a>
+        </div>
+    </div>
+    <div class="col-xs-4 col-lg-2">
+        <h4 style="text-align: center"> <span class="label label-default">
+            Used inputs:
+        </span> </h4>
+
+
+        <div class="list_group"
+             ng-repeat="input in block.plot_inputs">
+            <a class="list-group-item"
+               >
+                {$ input.name $} &#8594; {$ input.metric $}
+                <span class="pull-right glyphicon glyphicon-remove-circle"
+                      ng-click="remove_plot_input($index)">
+                </span>
+            </a>
+        </div>
+    </div>
+
+    <div class="col-xs-12 col-lg-6">
+        <button class="btn btn-default btn-block"
+                ng-click="redraw_plot()">Re-draw plot</button>
+
+        <highchart id="chart1" config="plotConfig" ></highchart>
+
+    </div>
+
+</div>
