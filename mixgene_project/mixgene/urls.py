@@ -33,8 +33,31 @@ urlpatterns = patterns('',
 
     url(r'^upload_data/', 'webapp.views.upload_data', name='upload_data'),
 
-    url(r'^auth/login/$', 'django.contrib.auth.views.login', {'template_name': 'auth/login.html'}),
+    url(r'^auth/login/$', 'django.contrib.auth.views.login',
+        {'template_name': 'auth/login.html'}, name='login'),
     url(r'^auth/logout/$', 'django.contrib.auth.views.logout', {}),
+
+    url(r'^auth/password_change/$', 'django.contrib.auth.views.password_change', {}),
+    url(r'^auth/password_change/done/$', 'django.contrib.auth.views.password_change_done', name='password_change_done'),
+
+    url(r'^auth/password_reset/$', 'django.contrib.auth.views.password_reset',
+        {'template_name': 'auth/reset_form_request.html'},
+        name='password_reset'
+    ),
+    url(r'^auth/password_reset/done/$', 'django.contrib.auth.views.password_reset_done',
+        {'template_name': 'auth/reset_request_sent.html'},
+        name='password_reset_done'
+    ),
+
+    url(r'^auth/reset/(?P<uidb64>[0-9A-Za-z_\-]+)/(?P<token>[0-9A-Za-z]{1,13}-[0-9A-Za-z]{1,20})/$',
+        'django.contrib.auth.views.password_reset_confirm',
+        {'template_name': 'auth/password_reset_confirm.html'},
+        name='password_reset_confirm'
+    ),
+    url(r'^auth/reset/done/$', 'django.contrib.auth.views.password_reset_complete',
+        {'template_name': 'auth/password_reset_done.html'},
+        name='password_reset_complete'
+    ),
 
     url(r'^auth/create_user/$', 'webapp.views.create_user', {}),
 
