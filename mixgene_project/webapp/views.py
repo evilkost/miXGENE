@@ -66,6 +66,23 @@ def constructor(request, exp_id):
     return HttpResponse(template.render(context))
 
 
+def exp_ro(request, exp_id):
+    exp = Experiment.objects.get(pk=exp_id)
+
+    context = {
+        "next": "/",
+        "scope": "root",
+        "exp": exp,
+        "exp_json": json.dumps({
+            "exp_id": exp_id,
+        }),
+        "ro_mode": "true"
+    }
+    template = loader.get_template('constructor.html')
+    context = RequestContext(request, context)
+    return HttpResponse(template.render(context))
+
+
 @csrf_protect
 def blocks_resource(request, exp_id):
     allowed = ["GET", "POST"]
