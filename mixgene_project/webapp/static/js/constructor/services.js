@@ -1,8 +1,6 @@
 Constructor.factory("blockAccess", function($http, $log){
     var access = {}
 
-    access.exp = document.exp;
-    access.exp_id = document.exp.exp_id;
 
     access.blocks_by_bscope = {};
     access.block_bodies = {};
@@ -170,7 +168,15 @@ Constructor.factory("blockAccess", function($http, $log){
         }
     }
 
-    access.fetch_blocks();
+    access.init = function(exp_id, mode){
+        access.mode = mode;
+        access.exp_id = exp_id;
+        access.exp = {
+            exp_id: exp_id
+        }
+        access.fetch_blocks();
+
+    }
     return access;
 });
 

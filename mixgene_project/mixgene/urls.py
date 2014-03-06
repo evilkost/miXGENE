@@ -13,6 +13,7 @@ urlpatterns = patterns('',
     url(r'^contact$', 'webapp.views.contact', name='contact'),
 
     url(r'^constructor/(?P<exp_id>\d+)', 'webapp.views.constructor', name='constructor'),
+    url(r'^experiments/ro/(?P<exp_id>\d+)', 'webapp.views.exp_ro', name='exp_ro'),
 
     url(r'^experiments/(?P<exp_id>\d+)/blocks/?$', 'webapp.views.blocks_resource', name="blocks_resource"),
     url(r'^experiments/(?P<exp_id>\d+)/blocks/(?P<block_uuid>[\w|\d]+)$',

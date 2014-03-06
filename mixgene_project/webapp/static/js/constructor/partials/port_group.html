@@ -20,7 +20,9 @@
                 </div>
             </div>
         </div>
-        <div ng-if="input.multiply_extensible == true" class="row">
+        <div ng-if="input.multiply_extensible == true"
+             ng-hide="access.mode.ro"
+             class="row">
             <div class="form-group">
                 <label class="col-sm-4 control-label">
                     New input field <small> [{$ input.required_data_type $}] </small>

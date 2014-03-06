@@ -3,6 +3,20 @@ Constructor.controller('MainCtrl', function($scope, blockAccess){
     $scope.access = blockAccess;
     $scope.exp_id = $scope.access.exp_id;
     $scope.root_scope_name = "root";
+    $scope.mode = {};
+//    $scope.ro_mode = false;
+
+    $scope.init = function(exp_id, ro_mode){
+
+        if( typeof(ro_mode) == "undefined"){
+            $scope.mode.ro = false;
+        } else {
+            $scope.mode.ro = ro_mode;
+        }
+//        alert(angular.toJson($scope.mode));
+        $scope.access.init(exp_id, $scope.mode);
+    }
+
 
 })
 
