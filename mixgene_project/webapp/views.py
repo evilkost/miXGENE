@@ -1,6 +1,7 @@
 import csv
 import json
 from collections import defaultdict
+import logging
 
 import numpy as np
 
@@ -24,6 +25,8 @@ from workflow.blocks import blocks_by_group
 
 from mixgene.util import dyn_import, get_redis_instance, mkdir
 
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
 
 def index(request):
     template = loader.get_template('index.html')
@@ -249,8 +252,7 @@ def create_user(request):
 
         # Add nice warning for UI
         if password != password2:
-            print "unmatched passwords"
-            pass
+            log.debug("User entered unmatched passwords")
             #TODO: redirect to create user page with warning, keep user name, flush passwords
         else:
             #TODO: check whether we already have user with the same name or email

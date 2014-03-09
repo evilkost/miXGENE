@@ -182,7 +182,6 @@ class ScopeRunner(object):
                 AllUpdated(self.exp.pk, comment=u"Workflow execution completed", silent=False).send()
         elif blocks_to_execute:
             # for block in blocks_to_execute:
-            #     print "Block %s will be executed" % block.name
             #     block.do_action("execute", self.exp
             blocks_to_execute[0].do_action("execute", self.exp)
 

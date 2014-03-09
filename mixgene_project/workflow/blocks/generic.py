@@ -1,3 +1,4 @@
+import logging
 from pprint import pprint
 import collections
 import copy
@@ -12,6 +13,8 @@ from collections import defaultdict
 from uuid import uuid1
 from webapp.tasks import auto_exec_task
 
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
 
 class ActionRecord(object):
     def __init__(self, name, src_states, dst_state, user_title=None,
@@ -557,7 +560,7 @@ class GenericBlock(BaseBlock):
         scope = self.get_scope()
         scope.load()
         for f_name, f in self._block_serializer.outputs.iteritems():
-            print "Registering normal outputs: ", f_name
+            log.debug("Registering normal outputs: %s", f_name)
             self.register_provided_objects(scope, ScopeVar(self.uuid, f_name, f.provided_data_type))
             # TODO: User factories for init values
             # if f.init_val is not None:
@@ -565,11 +568,13 @@ class GenericBlock(BaseBlock):
         scope.store()
 
         if hasattr(self, "create_new_scope") and self.create_new_scope:
-            print "Trying to add inner outputs"
+            log.debug("Trying to add inner outputs for block %s in exp: %s",
+                      self.name, self.exp_id)
             scope = self.get_sub_scope()
             scope.load()
             for f_name, f in self._block_serializer.inner_outputs.iteritems():
-                print "Registering inner outputs: ", f_name
+                log.debug("Registering inner outputs: %s in block: %s, exp: %s",
+                          f_name, self.name, self.exp_id)
                 scope.register_variable(ScopeVar(self.uuid, f_name, f.provided_data_type))
             scope.store()
 
@@ -587,7 +592,8 @@ class GenericBlock(BaseBlock):
         return "not_ready"
 
     def bind_input_var(self, input_name, bound_var):
-        print "bound input %s to %s" % (input_name, bound_var)
+        log.debug("bound input %s to %s in block: %s, exp: %s",
+                  input_name, bound_var, self.base_name, self.exp_id)
         self.bound_inputs[input_name] = bound_var
 
     def get_input_var(self, name):
@@ -685,7 +691,8 @@ class GenericBlock(BaseBlock):
         next_state = self._trans.next_state(self.state, action_name)
 
         if next_state is not None:
-            print "Do action: " + action_name + " in block " + self.base_name + " from state " + self.state + " -> " + next_state
+            log.debug("Do action: %s in block %s from state %s -> %s",
+                      action_name, self.base_name, self.state, next_state)
             self.state = next_state
 
             if old_exec_state != "done" and self.get_exec_status() == "done":
@@ -704,7 +711,7 @@ class GenericBlock(BaseBlock):
             if old_exec_state != "done" and self.get_exec_status() == "done" \
                     and ar.propagate_auto_execution \
                     and self.is_block_supports_auto_execution:
-                print "Propagate execution: %s " % self.base_name
+                log.debug("Propagate execution: %s ", self.base_name)
                 auto_exec_task.s(exp, self.scope_name).apply_async()
 
         else:
@@ -720,7 +727,6 @@ class GenericBlock(BaseBlock):
 
     def toggle_ui_folded(self, exp, received_block, *args, **kwargs):
         self.ui_folded = received_block["ui_folded"]
-        print "new value ", self.ui_folded
         exp.store_block(self)
 
     def save_params(self, exp, received_block=None, *args, **kwargs):
@@ -878,8 +884,8 @@ class IteratedInnerFieldManager(object):
 
     def next(self):
         self.iterator += 1
-        print "Iterated inner field shifted iterator to pos %s from %s" % \
-              (self.iterator, len(self.sequence))
+        log.debug("Iterated inner field shifted iterator to pos %s from %s",
+              self.iterator, len(self.sequence))
         if self.iterator >= len(self.sequence):
             raise StopIteration()
 

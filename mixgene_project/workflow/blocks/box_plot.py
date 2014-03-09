@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import logging
 from pprint import pprint
 import json
 
@@ -11,6 +12,8 @@ from workflow.blocks.generic import GenericBlock, ActionsList, save_params_actio
 from wrappers.boxplot_stats import boxplot_stats
 from wrappers.gt import global_test_task
 
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
 
 class BoxPlot(GenericBlock):
     block_base_name = "BOX_PLOT"
@@ -75,7 +78,7 @@ class BoxPlot(GenericBlock):
              for rec in bps
         ]
         self.chart_categories = categories
-        print "stored chart series: %s" % self.chart_series
+        log.debug("stored chart series: %s", self.chart_series)
         exp.store_block(self)
 
 

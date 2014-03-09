@@ -6,6 +6,9 @@ import os
 from urlparse import urlparse
 import re
 
+import logging
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
 
 def get_redis_instance():
     return StrictRedis(host=REDIS_HOST, port=REDIS_PORT)
@@ -32,13 +35,12 @@ def fetch_file_from_url(url, target_file):
     except:
         pass
     args = ['wget', '-nv', '-t', '3', '-O', str(target_file), str(url)]
-    print 'CMD: ' + ' '.join(args)
+    log.debug('Command to execute: %s' , ' '.join(args))
     #print "args", args
     output = Popen(args, stdout=PIPE, stderr=PIPE)
     retcode = output.wait()
-    pipe=output.communicate()
-    print "retcode", retcode
-    print "pipe", pipe
+    pipe = output.communicate()
+    log.debug("Return code: %s, stdout: %s", retcode, pipe)
 
     if os.path.getsize(target_file) == 0:
         raise RuntimeError("Got empty file, something bad happaned")
@@ -78,7 +80,6 @@ def prepare_GEO_ftp_url(geo_uid, file_format):
     db_type = geo_uid[:3]
     uid = geo_uid[3:]
 
-    print "\t".join([geo_uid, db_type, uid, file_format])
     if db_type == "GSE":
         pre_url = "%s/%s/%s" % (NCBI_GEO_SERIES, geo_folder_name(db_type, uid), db_type + str(uid))
         if file_format == "txt":

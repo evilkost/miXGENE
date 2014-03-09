@@ -2,6 +2,7 @@
 
 from copy import deepcopy
 import json
+import logging
 from pprint import pprint
 
 import redis_lock
@@ -21,6 +22,8 @@ from workflow.blocks.generic import GenericBlock, ActionsList, save_params_actio
 
 from environment.structures import prepare_phenotype_for_js_from_es
 
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
 
 def prepare_folds(exp, block, features, es_dict, inner_output_es_names_map):
     """
@@ -174,7 +177,7 @@ class MultiFeature(GenericBlock):
             cell = res_seq.sequence[self.inner_output_manager.iterator]
             for name, scope_var in self.collector_spec.bound.iteritems():
                 var = exp.get_scope_var_value(scope_var)
-                print "Collected %s from %s" % (var, scope_var.title)
+                log.debug("Collected %s from %s", var, scope_var.title)
                 if var is not None:
                     cell[name] = deepcopy(var)
 

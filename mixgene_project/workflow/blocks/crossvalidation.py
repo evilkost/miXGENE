@@ -1,4 +1,5 @@
 from copy import deepcopy
+import logging
 from pprint import pprint
 from mixgene.redis_helper import ExpKeys
 
@@ -18,6 +19,8 @@ import redis_lock
 #     #split_ratio = forms.FloatField(min_value=0, max_value=1)
 #
 
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
 
 class CrossValidation(GenericBlock):
     block_base_name = "CROSS_VALID"
@@ -128,7 +131,7 @@ class CrossValidation(GenericBlock):
             cell = {}
             for name, scope_var in self.collector_spec.bound.iteritems():
                 var = exp.get_scope_var_value(scope_var)
-                print "Collected %s from %s" % (var, scope_var.title)
+                log.debug("Collected %s from %s", var, scope_var.title)
                 if var is not None:
                     cell[name] = deepcopy(var)
 

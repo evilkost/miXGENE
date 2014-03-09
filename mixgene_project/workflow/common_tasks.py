@@ -51,7 +51,7 @@ def fetch_geo_gse(exp, block, geo_uid, ignore_cache=False):
         CachedFile.update_cache(url, fi.filepath)
     else:
         shutil.copy(mb_cached.get_file_path(), fi.filepath)
-        print "copied file from cache"
+        log.debug("File for %s was copied file from cache", url)
 
     return [fi], {}
 

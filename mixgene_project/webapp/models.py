@@ -5,6 +5,7 @@ import os
 import shutil
 import cPickle as pickle
 import hashlib
+import logging
 
 import pandas as pd
 
@@ -18,6 +19,9 @@ from mixgene.redis_helper import ExpKeys
 
 from environment.structures import GmtStorage, GeneSets
 from webapp.tasks import auto_exec_task
+
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
 
 
 class CachedFile(models.Model):
@@ -174,8 +178,8 @@ class Experiment(models.Model):
         if not dont_execute_pipe:
             pipe.execute()
 
-        print "block %s was stored with state: %s [uuid: %s]" % \
-              (block.base_name, block.state, block.uuid)
+        log.info("block %s was stored with state: %s [uuid: %s]",
+              block.base_name, block.state, block.uuid)
 
     def change_block_alias(self, block, new_base_name):
         r = get_redis_instance()

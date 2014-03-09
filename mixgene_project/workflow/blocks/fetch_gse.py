@@ -122,7 +122,6 @@ class FetchGSE(GenericBlock):
 
     def assign_sample_classes(self, exp, request, *args, **kwargs):
         #TODO: Shift to celery
-        print " assign ///"
         es = self.get_out_var("expression_set")
         pheno_df = es.get_pheno_data_frame()
         sample_classes = json.loads(request.POST['sample_classes'])
