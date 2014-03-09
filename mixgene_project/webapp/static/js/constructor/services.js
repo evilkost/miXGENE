@@ -43,8 +43,17 @@ Constructor.factory("blockAccess", function($http, $log){
         }
 
     }
-
     access.sockjs = sockjs;
+
+    access.exp_sub_resource = function(sub_resource, on_success){
+        $http({
+            method: 'GET',
+            url: '/experiments/' + access.exp_id + '/sub/' + sub_resource
+        }).success(function(data){
+            on_success(data);
+        });
+    }
+
 
     access.fetch_blocks = function(){
         $http({

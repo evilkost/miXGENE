@@ -1,7 +1,7 @@
 'use strict';
 
 var Constructor = angular.module("Constructor",
-        ['ngCookies', 'angularFileUpload', 'highcharts-ng'],
+        ['ngCookies', 'ngSanitize', 'angularFileUpload', 'highcharts-ng'],
     function ($interpolateProvider) {
         $interpolateProvider.startSymbol("{$");
         $interpolateProvider.endSymbol("$}");

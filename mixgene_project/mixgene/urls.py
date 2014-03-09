@@ -15,6 +15,9 @@ urlpatterns = patterns('',
     url(r'^constructor/(?P<exp_id>\d+)', 'webapp.views.constructor', name='constructor'),
     url(r'^experiments/ro/(?P<exp_id>\d+)', 'webapp.views.exp_ro', name='exp_ro'),
 
+    url(r'^experiments/(?P<exp_id>\d+)/sub/(?P<sub>[\w|\d|_]+)?$',
+        'webapp.views.exp_sub_resource', name="experiment_sub_resource"),
+
     url(r'^experiments/(?P<exp_id>\d+)/blocks/?$', 'webapp.views.blocks_resource', name="blocks_resource"),
     url(r'^experiments/(?P<exp_id>\d+)/blocks/(?P<block_uuid>[\w|\d]+)$',
         'webapp.views.block_resource', name="block_resource"),

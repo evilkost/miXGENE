@@ -83,6 +83,19 @@ def exp_ro(request, exp_id):
     return HttpResponse(template.render(context))
 
 
+def exp_sub_resource(request, exp_id, sub):
+    exp = Experiment.objects.get(pk=exp_id)
+    attr = getattr(exp, str(sub))
+    if callable(attr):
+        result = {'data': attr()}
+    else:
+        result = {'data': attr}
+
+    resp = HttpResponse(content_type="application/json")
+    json.dump(result, resp)
+    return resp
+
+
 @csrf_protect
 def blocks_resource(request, exp_id):
     allowed = ["GET", "POST"]
@@ -138,7 +151,6 @@ def blocks_resource(request, exp_id):
         "vars_by_key": {var.pk: var.to_dict() for var in variables}
     }
     resp = HttpResponse(content_type="application/json")
-    # import ipdb; ipdb.set_trace()
     json.dump(result, resp)
     return resp
 

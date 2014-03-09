@@ -23,21 +23,20 @@
       </div>
 
   </div>
-    <hr />
+  <hr />
+  <div class="row" ng-if="access.mode.ro">
+    <div ng-include="'/static/js/constructor/partials/data_flow.html'" />
+
+
+  </div>
   <div class="row">
-      <div class="col-md-12"
-          ng-class="{'col-lg-8': access.mode.ro}"
-      >
+      <div class="col-md-12">
           <div class="row" ng-repeat="uuid in access.blocks_by_bscope.root">
               <div block-dir block="access.block_bodies[uuid]"> </div>
           </div>
       </div>
 
-      <div class="col-lg-4" ng-if="access.mode.ro">
-          <div ng-include="'/static/js/constructor/partials/data_flow.html'" />
 
-
-      </div>
   </div>
 
   <div pallet scope-name="root_scope_name" ng-if="!access.mode.ro">

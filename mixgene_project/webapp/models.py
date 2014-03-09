@@ -65,7 +65,6 @@ class Experiment(models.Model):
     dt_created = models.DateTimeField(auto_now_add=True)
     dt_updated = models.DateTimeField(auto_now=True)
 
-
     def __unicode__(self):
         return u"%s" % self.pk
 
@@ -324,6 +323,10 @@ class Experiment(models.Model):
         else:
             return self.get_block(block_uuid, r)
 
+    def get_dataflow_graphviz(self):
+        from workflow.graphviz import root_from_exp
+        root = root_from_exp(self).to_dot()[0]
+        return root
 
 def delete_exp(exp):
     """
