@@ -4,46 +4,37 @@
 
 
 <div ng-app="Constructor" ng-controller="MainCtrl" ng-init="init('{{ exp.pk }}', '{{ ro_mode }}')" >
-<input id="exp_id_storage" type="hidden" name="exp_id" value="{{ exp.pk }}" />
-<input id="csrf_token_storage" type="hidden"  value="{{ csrf_token }}" />
+    <!--<input id="exp_id_storage" type="hidden" name="exp_id" value="{{ exp.pk }}" />-->
+    <!--<input id="csrf_token_storage" type="hidden"  value="{{ csrf_token }}" />-->
 
-<!--<script type="text/javascript">-->
-    <!--{% autoescape off %}-->
-    <!--document.exp = JSON.parse('{{ exp_json }}');-->
-    <!--{% endautoescape %}-->
-<!--</script>-->
+    <div class="col-lg-12">
+        <div id="worktable" class="col-xs-12" ng-controller="WorktableCtrl">
 
+            <div class="row pull-right" ng-if="!access.mode.ro">
+                <a class="btn btn-primary"
+                 href="{% url 'webapp.views.alter_exp' exp_id=exp.pk action='execute' %}">Run experiment</a>
+                <a href="{% url 'exp_ro' exp.pk %}">Workflow presentation</a>
+            </div>
+            <br />
+            <div class="row" ng-if="access.mode.ro">
+                <div ng-include="'/static/js/constructor/partials/data_flow.html'">
+                </div>
+            </div>
 
-<div id="worktable" class="col-xs-12" ng-controller="WorktableCtrl">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="row" ng-repeat="uuid in access.blocks_by_bscope.root">
+                        <div block-dir block="access.block_bodies[uuid]"> </div>
+                    </div>
+                </div>
+            </div>
 
-  <div class="row" ng-if="!access.mode.ro">
-      <div class="col-xs-2 col-xs-offset-5">
-          <a class="btn btn-primary"
-             href="{% url 'webapp.views.alter_exp' exp_id=exp.pk action='execute' %}">Run experiment</a>
-      </div>
-
-  </div>
-  <hr />
-  <div class="row" ng-if="access.mode.ro">
-    <div ng-include="'/static/js/constructor/partials/data_flow.html'" />
-
-
-  </div>
-  <div class="row">
-      <div class="col-md-12">
-          <div class="row" ng-repeat="uuid in access.blocks_by_bscope.root">
-              <div block-dir block="access.block_bodies[uuid]"> </div>
-          </div>
-      </div>
+            <div pallet scope-name="root_scope_name" ng-if="!access.mode.ro">
+            </div>
+        </div>
 
 
-  </div>
-
-  <div pallet scope-name="root_scope_name" ng-if="!access.mode.ro">
-  </div>
-
-</div>
-
+    </div>
 
 </div>
 {% endblock %}

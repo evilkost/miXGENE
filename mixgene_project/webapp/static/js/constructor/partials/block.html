@@ -1,5 +1,5 @@
 <div>
-    <div id="{$ block.uuid $}" class="row constructor-block" ng-controller="BlockCtrl">
+    <div id="{$ block.uuid $}" class="constructor-block" ng-controller="BlockCtrl">
 
         <div class="panel panel-default">
             <div class="panel-heading">
@@ -132,30 +132,22 @@
                     </div>
                 </div>
 
-
                 <!-- Internal steps -->
                 <div class="panel panel-danger" ng-if="block.create_new_scope">
                     <div class="panel-heading">
                         <span style="text-align: center"> Internal steps: </span>
                     </div>
                     <div class="panel-body">
-
                         <div class="row">
                             <div ng-repeat="uuid in access.blocks_by_bscope[block.sub_scope_name]">
                                 <div block-dir block="access.block_bodies[uuid]"> </div>
                             </div>
-
                         </div>
-
                         <div pallet scope_name="block.sub_scope_name" ng-if="!access.mode.ro">
                         </div>
-
                     </div>
-                    <div class="row">
-                        <div ng-include="'/static/js/constructor/partials/collector.html'" />
-                    </div>
-                    <hr />
 
+                    <div ng-include="'/static/js/constructor/partials/collector.html'" />
                 </div>
 
             </div>
