@@ -1,8 +1,8 @@
 from environment.structures import TableResult
+from webapp.tasks import wrapper_task
 from workflow.blocks.generic import GenericBlock, ActionsList, save_params_actions_list, BlockField, FieldType, \
     ActionRecord, ParamField, InputType, execute_block_actions_list, OutputBlockField, InputBlockField
 
-from workflow.common_tasks import wrapper_task
 from wrappers.gt import global_test_task
 
 

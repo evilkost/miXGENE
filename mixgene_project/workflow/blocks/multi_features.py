@@ -13,7 +13,8 @@ from mixgene.util import get_redis_instance
 from webapp.models import Experiment
 from environment.structures import SequenceContainer
 from webapp.scope import ScopeRunner, ScopeVar
-from workflow.common_tasks import generate_cv_folds, wrapper_task
+from webapp.tasks import wrapper_task
+from workflow.common_tasks import generate_cv_folds
 from generic import InnerOutputField
 from workflow.blocks.generic import GenericBlock, ActionsList, save_params_actions_list, BlockField, FieldType, \
     ActionRecord, ParamField, InputType, OutputBlockField, InputBlockField, IteratedInnerFieldManager

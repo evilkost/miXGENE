@@ -17,7 +17,7 @@ from mixgene.util import get_redis_instance
 from mixgene.redis_helper import ExpKeys
 
 from environment.structures import GmtStorage, GeneSets
-from webapp.scope import auto_exec_task
+from webapp.tasks import auto_exec_task
 
 
 class CachedFile(models.Model):

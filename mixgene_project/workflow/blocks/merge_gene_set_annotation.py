@@ -1,8 +1,9 @@
+from webapp.tasks import wrapper_task
 from workflow.blocks.generic import GenericBlock, ActionsList, save_params_actions_list, BlockField, FieldType, \
     ActionRecord, ParamField, InputType, execute_block_actions_list, OutputBlockField, InputBlockField
 
 from converters.gene_set_tools import map_gene_sets_to_probes
-from workflow.common_tasks import wrapper_task
+
 
 class MergeGeneSetWithPlatformAnnotation(GenericBlock):
     block_base_name = "MERGE_GS_GPL_ANN"

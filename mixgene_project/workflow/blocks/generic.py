@@ -7,10 +7,10 @@ import random
 from webapp.models import Experiment, UploadedData, UploadedFileWrapper
 from webapp.notification import Notification, NotifyType, BlockUpdated
 from webapp.scope import Scope, ScopeVar
-from webapp.scope import auto_exec_task
 
 from collections import defaultdict
 from uuid import uuid1
+from webapp.tasks import auto_exec_task
 
 
 class ActionRecord(object):

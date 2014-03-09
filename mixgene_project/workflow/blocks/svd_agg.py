@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
+from webapp.tasks import wrapper_task
 
 from workflow.blocks.generic import GenericBlock, ActionsList, save_params_actions_list, BlockField, FieldType, \
     ActionRecord, ParamField, InputType, execute_block_actions_list, OutputBlockField, InputBlockField
 
 from wrappers.aggregation import aggregation_task
-from workflow.common_tasks import wrapper_task
+
 
 class SvdAggregation(GenericBlock):
     block_base_name = "SVD_AGG"

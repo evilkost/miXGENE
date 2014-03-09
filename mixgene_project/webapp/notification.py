@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 import json
+import logging
 from mixgene.util import get_redis_instance
 from mixgene.redis_helper import ExpKeys
 
+log = logging.getLogger("mixgene.notify")
+log.setLevel(logging.DEBUG)
 
 class NotifyType(object):
     ALL = "updated_all"
@@ -23,7 +26,7 @@ class Notification(object):
         r.publish(ExpKeys.get_exp_notify_publish_key(self.exp_id),
                   json.dumps(msg))
 
-        print("Notification: " + json.dumps(msg))
+        log.debug("Sent notification: %s", json.dumps(msg))
 
     def to_dict(self):
         return {

@@ -40,13 +40,14 @@ CELERY_RESULT_BACKEND = BROKER_URL
 CELERY_ENABLE_UTC = True
 CELERY_TIMEZONE = 'Europe/Moscow'
 CELERY_IMPORTS = (
+    "webapp.tasks",
     "workflow.common_tasks",
-    "converters.gene_set_tools",
-    "wrappers.gt",
-    "wrappers.pca",
-    "wrappers.svm",
-    "wrappers.aggregation",
+    # "wrappers.gt",
+    # "wrappers.pca",
+    # "wrappers.svm",
+    # "wrappers.aggregation",
 )
+CELERYD_HIJACK_ROOT_LOGGER = False
 
 ## End celery settings
 
@@ -182,6 +183,19 @@ LOG_DIR = BASE_DIR + "/logs"
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '[%(asctime)s|%(levelname)s][%(module)s:%(lineno)s:%(funcName)s] %(message)s',
+            'datefmt': '%Y-%m-%d %H:%M:%S'
+        },
+        'celery_fmt': {
+            'format': '[%(asctime)s: %(levelname)s/%(processName)s][%(task_name)s(%(task_id)s)] %(message)s',
+            'datefmt': '%Y-%m-%d %H:%M:%S',
+        },
+        'simple': {
+            'format': '%(levelname)s %(message)s'
+        },
+    },
     'filters': {
         'require_debug_false': {
             '()': 'django.utils.log.RequireDebugFalse'
@@ -190,15 +204,92 @@ LOGGING = {
     'handlers': {
         'file_info': {
             'level': 'INFO',
-            'class': 'logging.FileHandler',
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'formatter': 'verbose',
             'filename': LOG_DIR + '/info.log',
+            'when': 'midnight',
+            'interval': 1,
+            'backupCount': 3,
+        },
+        'file_debug': {
+            'level': 'DEBUG',
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'formatter': 'verbose',
+            'filename': LOG_DIR + '/debug.log',
+            'when': 'midnight',
+            'interval': 1,
+            'backupCount': 3,
+        },
+        'celery': {
+            'level': 'DEBUG',
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'formatter': 'verbose',
+            'filename': LOG_DIR + '/celery.log',
+            'when': 'midnight',
+            'interval': 1,
+            'backupCount': 3,
+        },
+        'celery_task': {
+            'level': 'DEBUG',
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'formatter': 'verbose',
+            'filename': LOG_DIR + '/celery_task.log',
+            'when': 'midnight',
+            'interval': 1,
+            'backupCount': 3,
+        },
+        'console': {
+            'level': 'DEBUG',
+            'formatter': 'verbose',
+            'class': 'logging.StreamHandler'
         },
     },
     'loggers': {
+        'mixgene': {
+            'handlers': ['file_debug', 'file_info', 'console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'workflow': {
+            'handlers': ['file_debug', 'file_info', 'console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'converters': {
+            'handlers': ['file_debug', 'file_info', 'console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'wrappers': {
+            'handlers': ['file_debug', 'file_info', 'console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'webapp': {
+            'handlers': ['file_debug', 'file_info', 'console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
         'django.request': {
-            'handlers': ['file_info'],
+            'handlers': ['file_info', 'file_debug', 'console'],
             'level': 'INFO',
             'propagate': True,
         },
+        'celery.task': {
+            'handlers': ['file_debug', 'console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'celery.worker': {
+            'handlers': ['file_debug', 'console'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+        'celery': {
+            'handlers': ['celery', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+
     }
 }

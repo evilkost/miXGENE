@@ -1,10 +1,14 @@
 import traceback
 from celery import task
 import sys
+import logging
 from environment.structures import GeneSets, GS
 from environment.units import GeneUnits
 
 from mixgene.util import transpose_dict_list
+
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
 
 
 def map_gene_sets_to_probes(exp, block,
@@ -37,7 +41,6 @@ def map_gene_sets_to_probes(exp, block,
             gs.description[set_name] = src_gs.description[set_name]
 
     gene_sets_probes.store_gs(gs)
-
     return [gene_sets_probes], {}
 
 
@@ -59,25 +62,3 @@ def filter_gs_by_genes(src_gs, allowed_genes):
             gs.genes[k] = list(to_preserve)
             gs.description[k] = src_gs.description
     return gs
-
-
-@task(name="converters.gene_set_tools.merge_gs_with_platform_annotation")
-def merge_gs_with_platform_annotation(
-        exp, block, gene_sets, annotation, base_dir, base_filename,
-        success_action="success", error_action="error",
-    ):
-    """
-        @type gene_sets: GeneSets
-        @type annotation: PlatformAnnotation
-    """
-    try:
-        gs_merged = map_gene_sets_to_probes(base_dir, base_filename, annotation.gene_sets, gene_sets)
-
-        block.do_action(success_action, exp, gs_merged)
-    except Exception, e:
-        ex_type, ex, tb = sys.exc_info()
-        traceback.print_tb(tb)
-        block.errors.append(e)
-        block.do_action(error_action, exp)
-
-

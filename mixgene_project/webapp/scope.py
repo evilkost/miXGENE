@@ -1,34 +1,18 @@
 from collections import defaultdict
 import copy
 import cPickle as pickle
-from pprint import pprint
-import traceback
-from celery.task import task
-import sys
-from time import time
+import logging
 
 from mixgene.redis_helper import ExpKeys
 from mixgene.util import get_redis_instance
 from webapp.notification import AllUpdated
 
+# TODO: invent magic to correct logging when called outside of celery task
+
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
+
 LOCK_TIME = 60*10 # 10 minutes
-
-@task(name="webapp.scope.auto_exec")
-def auto_exec_task(exp, scope_name, is_init=False):
-    r = get_redis_instance()
-
-    lock_key = ExpKeys.get_auto_exec_task_lock_key(exp.pk, scope_name)
-    lock = r.setnx(lock_key, str(int(time()) + LOCK_TIME))
-    if lock:
-        try:
-            sr = ScopeRunner(exp, scope_name)
-            sr.execute(is_init)
-        except Exception, e:
-            ex_type, ex, tb = sys.exc_info()
-            traceback.print_tb(tb)
-            print e
-        finally:
-            r.delete(lock_key)
 
 
 class ScopeVar(object):
@@ -189,7 +173,8 @@ class ScopeRunner(object):
                 working_blocks.append(block)
 
         if not blocks_to_execute and not working_blocks:
-            print "Nothing to execute"
+            log.debug("Nothing to execute in scope `%s` for exp `%s`",
+                      self.scope_name, self.exp.pk)
             if self.scope_name != "root":
                 block = self.exp.get_meta_block_by_sub_scope(self.scope_name)
                 block.do_action("on_sub_scope_done", self.exp)
@@ -243,7 +228,8 @@ class Scope(object):
 
         key = ExpKeys.get_scope_key(self.exp.pk, scope_name=self.name)
         r.set(key, pickle.dumps(self.scope_vars))
-        print "SAVED"
+        log.debug("Scope `%s` was saved to storage", self.name)
+
         #import ipdb; ipdb.set_trace()
         #a = 2
 
@@ -311,6 +297,6 @@ class Scope(object):
             pass
             #raise KeyError("Scope var %s already registered" % scope_var)
         else:
-            print "REGISTERED to %s variable %s" % (self.name, scope_var)
+            log.debug("Variable: `%s` was registered in scope: `%s`", scope_var, self.name)
             self.scope_vars.add(scope_var)
             self.vars_by_data_type[scope_var.data_type].add(scope_var)

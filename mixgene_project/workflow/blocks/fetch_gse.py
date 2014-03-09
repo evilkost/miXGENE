@@ -2,7 +2,8 @@ import json
 
 import pandas as pd
 from webapp.notification import BlockUpdated
-from workflow.common_tasks import fetch_geo_gse, preprocess_soft, wrapper_task
+from webapp.tasks import wrapper_task
+from workflow.common_tasks import fetch_geo_gse, preprocess_soft
 
 from workflow.blocks.generic import GenericBlock, ActionsList, save_params_actions_list, BlockField, FieldType, \
     ActionRecord, ParamField, InputType, execute_block_actions_list, OutputBlockField

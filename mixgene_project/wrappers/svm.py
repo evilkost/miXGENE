@@ -52,24 +52,3 @@ def linear_svm(exp, block,
     cr.scores = compute_scores(y_test_fixed, y_test_predicted)  # Hmm what about parametric scores?
     cr.store_model(classifier)
     return [cr], {}
-
-
-## Here is a Celery task wrapper, it will be simplified in the future
-@task(name="wrappers.svm.lin_svm_task")
-def lin_svm_task(exp, block,
-                 train_es, test_es,
-                 lin_svm_options,
-                 base_folder, base_filename,
-                 target_class_column=None,
-                 success_action="success", error_action="error"
-    ):
-    try:
-        classifier_result = linear_svm(train_es, test_es,
-                                       lin_svm_options,
-                                       base_folder, base_filename,
-                                       target_class_column)
-        block.do_action(success_action, exp, classifier_result)
-    except Exception, e:
-        ex_type, ex, tb = sys.exc_info()
-        traceback.print_tb(tb)
-        block.do_action(error_action, exp, e)

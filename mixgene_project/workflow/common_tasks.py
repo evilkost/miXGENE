@@ -1,40 +1,25 @@
+import logging
 import shutil
 import gzip
-from celery import task
-from celery.contrib import rdb
 
 from pandas import Series, DataFrame
-
 from sklearn import cross_validation
-
 from Bio.Geo import parse as parse_geo
 
-from mixgene.util import prepare_GEO_ftp_url, fetch_file_from_url, dyn_import
-from webapp.models import CachedFile, Experiment
+
+from mixgene.util import prepare_GEO_ftp_url, fetch_file_from_url
+
+from webapp.models import CachedFile
 from environment.units import GeneUnits
 from environment.structures import ExpressionSet, PlatformAnnotation, \
-    GeneSets, GS, FileInputVar
-import sys
-import traceback
-from webapp.scope import ScopeRunner
+    GS, FileInputVar
 
 
-@task(name="workflow.common_tasks.wrapper_task")
-def wrapper_task(func, exp, block,
-             # success_action="success", error_action="error",
-             *args, **kwargs
-    ):
-    success_action = kwargs.pop("success_action", "success")
-    error_action = kwargs.pop("error_action", "error")
+# TODO: invent magic to correct logging when called outside of celery task
+from celery.utils.log import get_task_logger
 
-    try:
-        print "trying to apply: %s" % func
-        result_list, key_result = func(exp, block, *args, **kwargs)
-        block.do_action(success_action, exp, *result_list, **key_result)
-    except Exception, e:
-        ex_type, ex, tb = sys.exc_info()
-        traceback.print_tb(tb)
-        block.do_action(error_action, exp, e)
+log = get_task_logger(__name__)
+log.setLevel(logging.DEBUG)
 
 
 def fetch_geo_gse(exp, block, geo_uid, ignore_cache=False):
@@ -202,3 +187,4 @@ def generate_cv_folds(
 #     test_df.to_csv(expression_test.filepath, sep=expression_test.delimiter, index_label=False)
 #
 #     return ctx
+
