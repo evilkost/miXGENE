@@ -7,9 +7,9 @@ class ConfigurationError(object):
         self.msg = msg
 
 
-class InputPortError(ConfigurationError):
+class PortError(ConfigurationError):
     def __init__(self, block, port_name, *args, **kwargs):
-        super(InputPortError, self).__init__(*args, **kwargs)
+        super(PortError, self).__init__(*args, **kwargs)
         self.block_uuid = block.uuid
         self.block_alias = block.base_name
         self.port_name = port_name

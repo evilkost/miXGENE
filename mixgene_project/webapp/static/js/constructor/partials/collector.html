@@ -1,17 +1,14 @@
 <div ng-controller="CollectorCtrl">
     <hr >
     <div class="row">
-        <div class="col-xs-6">
 
-        </div>
-    </div>
-
-    <div class="row">
         <!--<h3 >-->
             <!--<span class="label label-default"> Collect results </span>-->
         <!--</h3>-->
         <div class="col-xs-6 col-lg-4">
-            <h3 style="text-align: center"> <span class="label label-default"> Outputs to collect</span></h3>
+            <h3 style="text-align: center">
+                <span class="label label-default"> Outputs to collect</span>
+            </h3>
 
             <ul class="list-group">
                 <li  class="list-group-item"
@@ -19,6 +16,11 @@
                      ng-init="var=access.vars_by_key[bound_var.pk] "
                      >
                     <b>{$ name $}</b>: {$ var.title $}
+
+                    <a class="pull-right glyphicon glyphicon-remove-circle"
+                       ng-if="!access.mode.ro"
+                       ng-click="remove_from_collector(name)">
+                    </a>
                 </li>
             </ul>
         </div>
@@ -51,8 +53,8 @@
                     >
                     </select>
                 </div>
-
-                <div class="col-xs-4">
+                <div ng-if="show_add_button()"
+                        class="col-xs-4">
                     <div class="form-group col-xs-4">
                         <label class="control-label">
                         </label>

@@ -1,3 +1,4 @@
+import abc
 import logging
 from pprint import pprint
 import collections
@@ -12,7 +13,7 @@ from webapp.scope import Scope, ScopeVar
 from collections import defaultdict
 from uuid import uuid1
 from webapp.tasks import auto_exec_task
-from workflow.blocks.errors import InputPortError
+from workflow.blocks.errors import PortError
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -367,29 +368,7 @@ class BlockSerializer(object):
                     block.bind_input_var(input_field.name, var)
 
 
-class CollectorSpecification(object):
-    def __init__(self):
-        self.bound = {}  # name -> scope_var
-
-    def register(self, name, scope_var):
-        """
-            @type scope_var: ScopeVar
-        """
-        # if not isinstance(scope_var, ScopeVar):
-        #     pprint(scope_var)
-        #     import  ipdb; ipdb.set_trace()
-
-        self.bound[name] = scope_var
-
-    def to_dict(self, *args, **kwargs):
-        return {
-            "bound": {str(name): scope_var.to_dict()
-                      for name, scope_var in self.bound.iteritems()},
-            "new": {"name": "", "scope_var": ""}
-        }
-
-
-class BlockMeta(type):
+class BlockMeta(abc.ABCMeta):
     def __new__(cls, name, bases, attrs):
         # print "BlockMeta new: %s " % name
         super_new = super(BlockMeta, cls).__new__
@@ -466,7 +445,7 @@ class InputManager(object):
             if f.multiply_extensible:
                 continue
             if bound_inputs.get(f.name) is None:
-                exception = InputPortError(block, f.name, "Input port not bound")
+                exception = PortError(block, f.name, "Input port not bound")
                 if f.required:
                     is_valid = False
                     errors.append(exception)
@@ -502,11 +481,6 @@ class GenericBlock(BaseBlock):
 
     create_new_scope = False
     _create_new_scope = BlockField("create_new_scope", FieldType.BOOLEAN, False)
-    _collector_spec = ParamField(name="collector_spec", title="",
-                                 field_type=FieldType.CUSTOM,
-                                 input_type=InputType.HIDDEN,
-                                 init_val=CollectorSpecification()
-    )
 
     is_block_supports_auto_execution = False
 
@@ -671,9 +645,6 @@ class GenericBlock(BaseBlock):
         # import ipdb; ipdb.set_trace()
         return result
 
-    def register_collector_bind(self, name, scope_var):
-        self.collector_spec.register(name, scope_var)
-
     def register_provided_objects(self, scope, scope_var):
         self.out_manager.register(scope_var.var_name, scope_var.data_type)
         scope.register_variable(scope_var)
@@ -760,18 +731,6 @@ class GenericBlock(BaseBlock):
 
         exp.store_block(self)
 
-    def add_collector_var(self, exp, received_block, *args, **kwargs):
-        rec_new = received_block.get("collector_spec", {}).get("new", {})
-        if rec_new:
-            name = str(rec_new.get("name"))
-            scope_var_key = rec_new.get("scope_var")
-            data_type = rec_new.get("data_type")
-            if name and scope_var_key:
-                scope_var = ScopeVar.from_key(scope_var_key)
-                scope_var.data_type = data_type
-                self.register_collector_bind(name, scope_var)
-                exp.store_block(self)
-
     def add_dyn_input_hook(self, exp, dyn_port, new_port):
         """ to override later
         """
@@ -803,6 +762,8 @@ class GenericBlock(BaseBlock):
         self.add_dyn_input_hook(exp, dyn_port, new_port)
         exp.store_block(self)
 
+    def validate_params_hook(self, exp, *args, **kwargs):
+        return True
 
     def validate_params(self, exp, *args, **kwargs):
         is_valid = True
@@ -813,6 +774,9 @@ class GenericBlock(BaseBlock):
             is_valid = False
         # check user provided values
         if not self._block_serializer.validate_params(self, exp):
+            is_valid = False
+
+        if not self.validate_params_hook(exp, *args, **kwargs):
             is_valid = False
 
         if is_valid:

@@ -146,13 +146,14 @@ def root_from_exp(exp):
                                   from_cluster=parent_block.create_new_scope)
                 node.add_input(new_input)
 
-        for input_name, bound_var in block.collector_spec.bound.iteritems():
-            sg_collector_node = collector_node_dict[uuid]
-            parent_uuid = bound_var.block_uuid
-            parent_block = blocks_dict[parent_uuid]
+        if block.create_new_scope:
+            for input_name, bound_var in block.collector_spec.bound.iteritems():
+                sg_collector_node = collector_node_dict[uuid]
+                parent_uuid = bound_var.block_uuid
+                parent_block = blocks_dict[parent_uuid]
 
-            new_input = Input(parent_uuid, input_name, bound_var.data_type,
-                              from_cluster=parent_block.create_new_scope)
-            sg_collector_node.add_input(new_input)
+                new_input = Input(parent_uuid, input_name, bound_var.data_type,
+                                  from_cluster=parent_block.create_new_scope)
+                sg_collector_node.add_input(new_input)
 
     return root

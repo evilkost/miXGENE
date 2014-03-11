@@ -106,6 +106,20 @@ Constructor.controller('CollectorCtrl', function($scope, blockAccess){
         $scope.access.send_action($scope.block, "add_collector_var", true);
     }
 
+    $scope.remove_from_collector = function(name){
+        $scope.block.collector_spec["to_remove"] = name;
+        $scope.access.send_action($scope.block, "remove_collector_var");
+    }
+
+    $scope.show_add_button = function(){
+        return _.contains(
+            _.map($scope.block.actions, function(obj){
+                return obj.code
+            }),
+            'save_params'
+        );
+    }
+
 })
 
 Constructor.controller('DataFlowRenderCtrl', function($scope, $sce){

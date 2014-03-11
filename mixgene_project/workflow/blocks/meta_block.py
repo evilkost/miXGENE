@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from abc import abstractmethod
 
 from copy import deepcopy
 import logging
@@ -12,12 +13,38 @@ from environment.structures import SequenceContainer
 from webapp.scope import ScopeRunner, ScopeVar
 
 from generic import InnerOutputField
+from workflow.blocks.errors import PortError
 from workflow.blocks.generic import GenericBlock, ActionsList, save_params_actions_list, BlockField, FieldType, \
     ActionRecord, ParamField, InputType, OutputBlockField, InputBlockField, IteratedInnerFieldManager
 
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
+
+
+class CollectorSpecification(object):
+    def __init__(self):
+        self.bound = {}  # name -> scope_var
+
+    def register(self, name, scope_var):
+        """
+            @type scope_var: ScopeVar
+        """
+        # if not isinstance(scope_var, ScopeVar):
+        #     pprint(scope_var)
+        #     import  ipdb; ipdb.set_trace()
+
+        self.bound[name] = scope_var
+
+    def remove(self, name):
+        self.bound.pop(name)
+
+    def to_dict(self, *args, **kwargs):
+        return {
+            "bound": {str(name): scope_var.to_dict()
+                      for name, scope_var in self.bound.iteritems()},
+            "new": {"name": "", "scope_var": ""},
+        }
 
 
 class UniformMetaBlock(GenericBlock):
@@ -30,6 +57,9 @@ class UniformMetaBlock(GenericBlock):
                      user_title="Save parameters"),
         ActionRecord("on_params_is_valid", ["validating_params"], "valid_params"),
         ActionRecord("on_params_not_valid", ["validating_params"], "created"),
+
+        ActionRecord("add_collector_var", ["created", "ready", "done", "valid_params"], "validating_params"),
+        ActionRecord("remove_collector_var", ["created", "ready", "done", "valid_params"], "validating_params"),
 
         ActionRecord("execute", ["ready"], "generating_folds", user_title="Run block"),
 
@@ -50,6 +80,12 @@ class UniformMetaBlock(GenericBlock):
                                          "generating_folds", "execution_error"], "ready",
                      user_title="Reset execution"),
     ]))
+
+    _collector_spec = ParamField(name="collector_spec", title="",
+                                 field_type=FieldType.CUSTOM,
+                                 input_type=InputType.HIDDEN,
+                                 init_val=CollectorSpecification()
+    )
 
     _res_seq = OutputBlockField(name="res_seq", provided_data_type="SequenceContainer",
                                 field_type=FieldType.CUSTOM, init_val=SequenceContainer())
@@ -72,6 +108,7 @@ class UniformMetaBlock(GenericBlock):
             return True
         return False
 
+    @abstractmethod
     def get_fold_labels(self):
         pass
 
@@ -135,14 +172,38 @@ class UniformMetaBlock(GenericBlock):
     def success(self, exp, *args, **kwargs):
         pass
 
-    def add_collector_var(self, exp, *args, **kwargs):
-        super(UniformMetaBlock, self).add_collector_var(exp, *args, **kwargs)
+    def update_res_seq_fields(self):
         res_seq = self.get_out_var("res_seq")
         res_seq.fields = {
             name: var.data_type
             for name, var in self.collector_spec.bound.iteritems()
         }
+
+    def add_collector_var(self, exp, received_block, *args, **kwargs):
+        rec_new = received_block.get("collector_spec", {}).get("new", {})
+        if rec_new:
+            name = str(rec_new.get("name"))
+            scope_var_key = rec_new.get("scope_var")
+            data_type = rec_new.get("data_type")
+            if name and scope_var_key:
+                scope_var = ScopeVar.from_key(scope_var_key)
+                scope_var.data_type = data_type
+                self.collector_spec.register(name, scope_var)
+
+        self.update_res_seq_fields()
         exp.store_block(self)
+        self.validate_params(exp, received_block, *args, **kwargs)
+
+    def remove_collector_var(self, exp, received_block, *args, **kwargs):
+        to_remove = received_block.get("collector_spec", {}).get("to_remove")
+        if to_remove:
+            log.debug("Trying to remove: %s", to_remove)
+            self.collector_spec.remove(to_remove)
+
+            self.update_res_seq_fields()
+            exp.store_block(self)
+
+        self.validate_params(exp, received_block, *args, **kwargs)
 
     def register_inner_output_variables(self, inner_outputs_list):
         scope = self.get_sub_scope()
@@ -156,4 +217,15 @@ class UniformMetaBlock(GenericBlock):
 
         scope.store()
 
+    def validate_params_hook(self, exp, *args, **kwargs):
+        is_valid = True
+        if self.collector_spec.bound:
+            data_type_list = [scope_var for scope_var in self.collector_spec.bound.values()]
+            if len(set(data_type_list)) > 1:
+                self.errors.append(
+                    PortError(msg="Heterogeneous variables bound to the output collection",
+                              block=self, port_name="(results collector)", block_alias=self.base_name)
+                )
+                is_valid = False
 
+        return is_valid
