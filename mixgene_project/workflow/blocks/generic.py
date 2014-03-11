@@ -12,6 +12,7 @@ from webapp.scope import Scope, ScopeVar
 from collections import defaultdict
 from uuid import uuid1
 from webapp.tasks import auto_exec_task
+from workflow.blocks.errors import InputPortError
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -459,13 +460,13 @@ class InputManager(object):
     def register(self, input_field):
         self.input_fields.append(input_field)
 
-    def validate_inputs(self, bound_inputs, errors, warnings):
+    def validate_inputs(self, block, bound_inputs, errors, warnings):
         is_valid = True
         for f in self.input_fields:
             if f.multiply_extensible:
                 continue
             if bound_inputs.get(f.name) is None:
-                exception = Exception("Input %s hasn't bound variable" % f.name)
+                exception = InputPortError(block, f.name, "Input port not bound")
                 if f.required:
                     is_valid = False
                     errors.append(exception)
