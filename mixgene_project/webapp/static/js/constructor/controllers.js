@@ -114,9 +114,16 @@ Constructor.controller('DataFlowRenderCtrl', function($scope, $sce){
             $scope.viz_placeholder =  $sce.trustAsHtml(Viz(response.data, "svg"));
         }
     )
-
 })
 
+Constructor.controller('CustomIteratorAddCellFieldCtrl', function($scope){
+    $scope.add_cell_field = function(){
+        $scope.access.send_action($scope.block, "add_cell_prototype_field", false)
+    }
+})
+Constructor.controller('CustomIteratorDynInputsCtrl', function($scope){
+
+})
 
 Constructor.controller('UploadFieldCtrl', function($scope, $upload){
     $scope.upload_meta = {

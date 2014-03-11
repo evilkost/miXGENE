@@ -1,0 +1,10 @@
+<div class="btn-group-vertical center-block"
+     ng-hide="access.mode.ro"
+        >
+    <button type="button" class="btn btn-default"
+            ng-repeat="action in block.actions"
+            ng-click="access.send_action(block, action.code)"
+            >
+        {$ action.title $}
+    </button>
+</div>

@@ -114,7 +114,7 @@ class MultiFeature(UniformMetaBlock):
         self.inner_output_es_names_map[new_port.name] = new_inner_output.name
         self.register_inner_output_variables([new_inner_output])
 
-    def execute(self, exp, *arga, **kwargs):
+    def execute(self, exp, *args, **kwargs):
         # self.celery_task = wrapper_task.s(
         #
         # )

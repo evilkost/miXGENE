@@ -6,19 +6,10 @@
                     {$ input.name $} <small>[{$ input.required_data_type $}]</small>
                 </label>
                 <div class="col-sm-8">
-                    <select class="form-control"
-                        ng-model="block.bound_inputs[input.name]"
-                        ng-options="
-                            option.pk as option.title for option
-                            in access.vars
-                                |filter:access.fnFilterVarsByScope(block.visible_scopes_list)
-                                |filter:access.fnFilterVarsByType([input.required_data_type])
-                                |filter:access.fnFilterVarsByBlockUUID([block.uuid])
-                        "
-                    >
-                    </select>
+                    <div ng-include="'/static/js/constructor/partials/input_port_select.html'" />
                 </div>
             </div>
+
         </div>
         <div ng-if="input.multiply_extensible == true"
              ng-hide="access.mode.ro"
@@ -37,4 +28,3 @@
         </div>
     </div>
 </div>
-

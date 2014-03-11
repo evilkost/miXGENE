@@ -11,6 +11,13 @@ Constructor.factory("blockAccess", function($http, $log){
 
     access.blocks_by_group_json = {};
 
+    // TODO: fetch from server
+    access.available_data_types = [
+        "ExpressionSet",
+        "GeneSets",
+        "BinaryInteraction"
+    ]
+
     var sockjs = new SockJS('/subscribe');
     sockjs.onopen = function(){
         console.log('[*] open sockjs, protocol: ' + sockjs.protocol);

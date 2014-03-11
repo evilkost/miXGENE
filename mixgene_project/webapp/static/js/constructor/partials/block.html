@@ -63,7 +63,7 @@
                     </div>
                 </div>
 
-                <div class="row">
+                <div class="row" ng-if="!block.has_custom_layout">
 
                     <div class="col-xs-4 col-md-3">
                         <!--<h4 style="text-align: center"> <span class="label label-default"> Input variables </span> </h4>-->
@@ -94,16 +94,9 @@
 
                     <div class="col-xs-2">
                         <!--<h4 style="text-align: center"> <span class="label label-default"> Available actions </span> </h4>-->
-                        <div class="btn-group-vertical center-block"
-                            ng-hide="access.mode.ro"
-                                >
-                            <button type="button" class="btn btn-default"
-                                    ng-repeat="action in block.actions"
-                                    ng-click="access.send_action(block, action.code)"
-                                    >
-                                {$ action.title $}
-                            </button>
-                        </div>
+
+                        <div ng-include="'/static/js/constructor/partials/actions_list.html'" />
+
 
                         <!-- TODO: remove hardcoded link
                            use angular routing and ng-view
@@ -120,10 +113,9 @@
                             </a>
                         </div>
                     </div>
-
                 </div>
 
-                <hr />
+
                 <div class="row">
                     <div ng-repeat="element in block.elements" ng-controller="blockElementCtrl">
                         <div ng-include="template" >
@@ -132,7 +124,7 @@
                 </div>
 
                 <!-- Internal steps -->
-                <div class="panel panel-danger" ng-if="block.create_new_scope">
+                <div class="panel panel-success" ng-if="block.create_new_scope">
                     <div class="panel-heading">
                         <span style="text-align: center"> Internal steps: </span>
                     </div>

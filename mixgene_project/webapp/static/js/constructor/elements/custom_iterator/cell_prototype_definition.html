@@ -1,0 +1,70 @@
+<div ng-controller="CustomIteratorAddCellFieldCtrl"
+     class="col-lg-12"
+     ng-if="!block.is_cells_prototype_defined"
+>
+
+    <h3 class="text-center">
+        <span class="label label-default">
+            Iterator cell fields
+        </span>
+        &nbsp;&nbsp;&nbsp;&nbsp;
+        <a class="btn btn-primary"
+           ng-click="access.send_action(block, 'finish_cells_prototype_definition')"
+           ng-if="!block.is_cells_prototype_defined"
+                >
+            Finish cell definition
+        </a>
+    </h3>
+
+    <div class="col-md-5 col-lg-4">
+        <ul class="list-group">
+            <li class="list-group-item"
+                ng-repeat="field in block.cells_prototype.list">
+                {$ field.label $} [{$ field.data_type $}]
+            </li>
+        </ul>
+    </div>
+    <div class="col-md-7 col-lg-8"
+         ng-if="!block.is_cells_prototype_defined"
+    >
+        <div class="form-group col-xs-4">
+            <label class="control-label">
+                Field name
+            </label>
+
+            <input type="text" class="form-control"
+                   ng-model="block.cells_prototype.new_cell_field.label">
+
+        </div>
+
+        <div class="form-group col-xs-5">
+            <label class="control-label">
+                Data type
+            </label>
+
+            <select class="form-control"
+                    ng-model="block.cells_prototype.new_cell_field.data_type"
+                    ng-options="dt for dt in access.available_data_types">
+
+            </select>
+        </div>
+
+        <div class="col-xs-3">
+            <div class="form-group col-xs-4">
+                <label class="control-label">
+                </label>
+
+                <button class="btn btn-default" ng-click="add_cell_field()">
+                    <span class="glyphicon glyphicon-plus"></span>
+                    <span>Add field</span>
+                </button>
+
+            </div>
+        </div>
+
+
+
+
+    </div>
+
+</div>
