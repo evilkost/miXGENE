@@ -1,33 +1,35 @@
-<div class="container"
-        id="blocks-pallet-{$ bscope $}"  ng-controller="PalletCtrl">
+<div class=""
+    id="blocks-pallet-{$ bscope $}"  ng-controller="PalletCtrl">
 
+    <div class="container">
         <button type="button" class="btn btn-lg btn-block btn-default" ng-click="toggle_pallet()"
                 ng-hide="show_pallet">
             Click here to add block
             <!--<span class="label label-info">Scope: {$ bscope $} </span>-->
         </button>
-        <div class="row" ng-show="show_pallet">
-            <div class="col-xs-4 col-md-3 col-lg-2" ng-repeat="(name, blocks) in access.blocks_by_group">
-                <div class="panel panel-default">
-                    <div class="panel-heading">{$ name $}</div>
-                    <div class="panel-body">
-                        <div class="btn-group-vertical">
+    </div>
+    <div class="row" ng-show="show_pallet">
+        <div class="col-xs-4 col-md-3 col-lg-2" ng-repeat="(name, blocks) in access.blocks_by_group">
+            <div class="panel panel-default">
+                <div class="panel-heading">{$ name $}</div>
+                <div class="panel-body">
+                    <div class="btn-group-vertical">
 
-                            <button ng-repeat="block in blocks"
-                                    type="button" class="btn btn-default btn-block-provider"
-                                    ng-click="add_block(scopeName, block.name)"
-                                    >
-                                {$ block.title $}
-                            </button>
-                        </div>
-
-
+                        <button ng-repeat="block in blocks"
+                                type="button" class="btn btn-default btn-block-provider"
+                                ng-click="add_block(scopeName, block.name)"
+                                >
+                            {$ block.title $}
+                        </button>
                     </div>
+
+
                 </div>
             </div>
-            <div class="row">
-                <button class="btn btn-lg btn-block" ng-click="toggle_pallet()">Close pallet</button>
-            </div>
+        </div>
+        <div class="container">
+            <button class="btn btn-lg btn-block" ng-click="toggle_pallet()">Close pallet</button>
         </div>
     </div>
+
 </div>
