@@ -69,9 +69,14 @@ def prepare_folds(exp, block, features, es_dict, inner_output_es_names_map):
 class MultiFeature(UniformMetaBlock):
     block_base_name = "MULTI_FEATURE"
 
-    _block_actions = ActionsList([
+    _mf_block_actions = ActionsList([
         ActionRecord("on_feature_selection_updated", ["valid_params", "ready", "done"], "ready"),
     ])
+
+    _input_es_dyn = InputBlockField(
+        name="es_inputs", required_data_type="ExpressionSet",
+        required=True, multiply_extensible=True
+    )
 
     _is_sub_pages_visible = BlockField(
         "is_sub_pages_visible", FieldType.RAW,
@@ -107,14 +112,7 @@ class MultiFeature(UniformMetaBlock):
             provided_data_type=new_port.required_data_type
         )
         self.inner_output_es_names_map[new_port.name] = new_inner_output.name
-        self.inner_output_manager.register(new_inner_output)
-        self._block_serializer.register(new_inner_output)
-
-        scope = self.get_sub_scope()
-        scope.load()
-        scope.register_variable(ScopeVar(
-            self.uuid, new_inner_output.name, new_inner_output.provided_data_type))
-        scope.store()
+        self.register_inner_output_variables([new_inner_output])
 
     def execute(self, exp, *arga, **kwargs):
         # self.celery_task = wrapper_task.s(

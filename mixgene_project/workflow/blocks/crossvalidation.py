@@ -27,9 +27,17 @@ log.setLevel(logging.DEBUG)
 class CrossValidation(UniformMetaBlock):
     block_base_name = "CROSS_VALID"
 
+    _cv_actions = ActionsList([
+        ActionRecord("become_ready", ["valid_params"], "ready")
+    ])
     elements = BlockField(name="elements", field_type=FieldType.SIMPLE_LIST, init_val=[
         "cv_info.html"
     ])
+
+    _input_es_dyn = InputBlockField(
+        name="es_inputs", required_data_type="ExpressionSet",
+        required=True, multiply_extensible=True
+    )
 
     folds_num = ParamField(name="folds_num", title="Folds number",
                            input_type=InputType.TEXT, field_type=FieldType.INT, init_val=10)
@@ -54,18 +62,8 @@ class CrossValidation(UniformMetaBlock):
         )
         self.inner_output_es_names_map[new_port.name] = \
             (new_inner_output_train.name, new_inner_output_test.name)
-        self.inner_output_manager.register(new_inner_output_train)
-        self.inner_output_manager.register(new_inner_output_test)
-        self._block_serializer.register(new_inner_output_train)
-        self._block_serializer.register(new_inner_output_test)
 
-        scope = self.get_sub_scope()
-        scope.load()
-        scope.register_variable(ScopeVar(
-            self.uuid, new_inner_output_train.name, new_inner_output_train.provided_data_type))
-        scope.register_variable(ScopeVar(
-            self.uuid, new_inner_output_test.name, new_inner_output_test.provided_data_type))
-        scope.store()
+        self.register_inner_output_variables([new_inner_output_train, new_inner_output_test])
 
     def execute(self, exp, *args, **kwargs):
         self.clean_errors()
@@ -86,3 +84,10 @@ class CrossValidation(UniformMetaBlock):
         )
         exp.store_block(self)
         self.celery_task.apply_async()
+
+    def on_params_is_valid(self, exp, *args, **kwargs):
+        super(CrossValidation, self).on_params_is_valid(exp, *args, **kwargs)
+        self.do_action("become_ready", exp)
+
+    def become_ready(self, *args, **kwargs):
+        pass

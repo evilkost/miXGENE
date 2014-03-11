@@ -31,8 +31,6 @@ class UniformMetaBlock(GenericBlock):
         ActionRecord("on_params_is_valid", ["validating_params"], "valid_params"),
         ActionRecord("on_params_not_valid", ["validating_params"], "created"),
 
-        ActionRecord("on_feature_selection_updated", ["valid_params", "ready", "done"], "ready"),
-
         ActionRecord("execute", ["ready"], "generating_folds", user_title="Run block"),
 
         ActionRecord("on_folds_generation_success", ["generating_folds"], "ready_to_run_sub_scope", reload_block_in_client=True),
@@ -51,12 +49,7 @@ class UniformMetaBlock(GenericBlock):
         ActionRecord("reset_execution", ["*", "done", "sub_scope_executing", "ready_to_run_sub_scope",
                                          "generating_folds", "execution_error"], "ready",
                      user_title="Reset execution"),
-        ]))
-
-    _input_es_dyn = InputBlockField(
-        name="es_inputs", required_data_type="ExpressionSet",
-        required=True, multiply_extensible=True
-    )
+    ]))
 
     _res_seq = OutputBlockField(name="res_seq", provided_data_type="SequenceContainer",
                                 field_type=FieldType.CUSTOM, init_val=SequenceContainer())
@@ -150,5 +143,17 @@ class UniformMetaBlock(GenericBlock):
             for name, var in self.collector_spec.bound.iteritems()
         }
         exp.store_block(self)
+
+    def register_inner_output_variables(self, inner_outputs_list):
+        scope = self.get_sub_scope()
+        scope.load()
+
+        for new_inner_output in inner_outputs_list:
+            self.inner_output_manager.register(new_inner_output)
+            self._block_serializer.register(new_inner_output)
+            scope.register_variable(ScopeVar(
+                self.uuid, new_inner_output.name, new_inner_output.provided_data_type))
+
+        scope.store()
 
 

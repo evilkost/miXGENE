@@ -497,6 +497,9 @@ class GenericBlock(BaseBlock):
 
     ui_folded = BlockField("ui_folded", FieldType.BOOLEAN, init_val=False)
 
+    _has_custom_layout = BlockField("has_custom_layout", FieldType.BOOLEAN, init_val=False)
+    custom_layout_name = BlockField("custom_layout_name", FieldType.STR, init_val="")
+
     create_new_scope = False
     _create_new_scope = BlockField("create_new_scope", FieldType.BOOLEAN, False)
     _collector_spec = ParamField(name="collector_spec", title="",
@@ -504,7 +507,6 @@ class GenericBlock(BaseBlock):
                                  input_type=InputType.HIDDEN,
                                  init_val=CollectorSpecification()
     )
-
 
     is_block_supports_auto_execution = False
 
@@ -770,16 +772,16 @@ class GenericBlock(BaseBlock):
                 self.register_collector_bind(name, scope_var)
                 exp.store_block(self)
 
-
     def add_dyn_input_hook(self, exp, dyn_port, new_port):
         """ to override later
         """
         pass
 
-    def add_dyn_input(self, exp, received_block, *args, **kwargs):
-        # {u'_add_dyn_port': {u'input': },
-        #  u'new_port': {u'name': u'sad'}}
+    def add_input_port(self, new_port):
+        self._block_serializer.register(new_port)
+        self.input_manager.register(new_port)
 
+    def add_dyn_input(self, exp, received_block, *args, **kwargs):
         spec = received_block.get("_add_dyn_port")
         if not spec:
             return
@@ -794,25 +796,20 @@ class GenericBlock(BaseBlock):
 
         new_port = InputBlockField(name=spec['new_port'],
                                    required_data_type=dyn_port.required_data_type)
-        self._block_serializer.register(new_port)
-        self.input_manager.register(new_port)
 
+        self.add_input_port(new_port)
         getattr(self, dyn_port_name).append(spec["new_port"])
 
-        #import ipdb; ipdb.set_trace()
-        # adding to
-        #port = InputBlockField
-        #
         self.add_dyn_input_hook(exp, dyn_port, new_port)
         exp.store_block(self)
 
 
-    def validate_params(self, exp):
+    def validate_params(self, exp, *args, **kwargs):
         is_valid = True
 
         # check required inputs
         if not self.input_manager.validate_inputs(
-                self.bound_inputs, self.errors, self.warnings):
+                self, self.bound_inputs, self.errors, self.warnings):
             is_valid = False
         # check user provided values
         if not self._block_serializer.validate_params(self, exp):
@@ -824,11 +821,11 @@ class GenericBlock(BaseBlock):
         else:
             self.do_action("on_params_not_valid", exp)
 
-    def on_params_is_valid(self, exp):
+    def on_params_is_valid(self, exp, *args, **kwargs):
         self.errors = []
         exp.store_block(self)
 
-    def on_params_not_valid(self, exp):
+    def on_params_not_valid(self, exp, *args, **kwargs):
         pass
 
     def clean_errors(self):
