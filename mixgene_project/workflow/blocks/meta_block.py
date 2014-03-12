@@ -24,16 +24,13 @@ log.setLevel(logging.DEBUG)
 
 class CollectorSpecification(object):
     def __init__(self):
-        self.bound = {}  # name -> scope_var
+        self.bound = {}  # name -> scope_vars
+        self.label = ""
 
     def register(self, name, scope_var):
         """
             @type scope_var: ScopeVar
         """
-        # if not isinstance(scope_var, ScopeVar):
-        #     pprint(scope_var)
-        #     import  ipdb; ipdb.set_trace()
-
         self.bound[name] = scope_var
 
     def remove(self, name):
@@ -44,6 +41,7 @@ class CollectorSpecification(object):
             "bound": {str(name): scope_var.to_dict()
                       for name, scope_var in self.bound.iteritems()},
             "new": {"name": "", "scope_var": ""},
+            "label": self.label
         }
 
 
@@ -84,7 +82,7 @@ class UniformMetaBlock(GenericBlock):
     _collector_spec = ParamField(name="collector_spec", title="",
                                  field_type=FieldType.CUSTOM,
                                  input_type=InputType.HIDDEN,
-                                 init_val=CollectorSpecification()
+                                 init_val=None
     )
 
     _res_seq = OutputBlockField(name="res_seq", provided_data_type="SequenceContainer",
@@ -96,7 +94,9 @@ class UniformMetaBlock(GenericBlock):
                                               "generating_folds"])
 
         self.inner_output_manager = IteratedInnerFieldManager()
-        self.features = []
+        self.collector_spec = CollectorSpecification()
+        self.collector_spec.label = self.block_base_name + "_collection"
+
         self.inner_output_es_names_map = {}
         self.celery_task = None
 
@@ -143,7 +143,6 @@ class UniformMetaBlock(GenericBlock):
             self.set_out_var("res_seq", res_seq)
             exp.store_block(self)
 
-        # print "Collected fold results: %s " % cell
         if len(cell) < len(res_seq.fields):
             self.do_action("continue_collecting_sub_scope", exp)
         else:
@@ -178,6 +177,12 @@ class UniformMetaBlock(GenericBlock):
             name: var.data_type
             for name, var in self.collector_spec.bound.iteritems()
         }
+
+    def update_collector_label(self, exp, received_block, *args, **kwargs):
+        label = received_block.get("collector_spec", {}).get("label")
+        if label:
+            self.collector_spec.label = label
+            exp.store_block(self)
 
     def add_collector_var(self, exp, received_block, *args, **kwargs):
         rec_new = received_block.get("collector_spec", {}).get("new", {})

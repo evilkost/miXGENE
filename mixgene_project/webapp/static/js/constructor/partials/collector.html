@@ -6,29 +6,66 @@
             <!--<span class="label label-default"> Collect results </span>-->
         <!--</h3>-->
         <div class="col-xs-6 col-lg-4">
-            <h3 style="text-align: center">
-                <span class="label label-default"> Outputs to collect</span>
-            </h3>
+            <div class="panel panel-info">
+                <div class="panel-heading">
+                    <div class="text-center">
+                        <b> Outputs to collect</b>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <ul class="list-group">
+                        <li  class="list-group-item"
+                             ng-repeat="(name, bound_var) in block.collector_spec.bound"
+                             ng-init="var=access.vars_by_key[bound_var.pk] "
+                                >
+                            <b>{$ name $}</b>: {$ var.title $}
 
-            <ul class="list-group">
-                <li  class="list-group-item"
-                     ng-repeat="(name, bound_var) in block.collector_spec.bound"
-                     ng-init="var=access.vars_by_key[bound_var.pk] "
-                     >
-                    <b>{$ name $}</b>: {$ var.title $}
+                            <a class="pull-right glyphicon glyphicon-remove-circle"
+                               ng-if="!access.mode.ro"
+                               ng-click="remove_from_collector(name)">
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="panel-footer">
+                    <div ng-hide="show_set_label_control">
+                        <span class="small">
+                            Collection label: <b>{$ block.collector_spec.label $}</b>
+                        </span>
+                        <a class="glyphicon glyphicon-pencil"
+                           ng-click="show_set_label_control=!show_set_label_control">
 
-                    <a class="pull-right glyphicon glyphicon-remove-circle"
-                       ng-if="!access.mode.ro"
-                       ng-click="remove_from_collector(name)">
-                    </a>
-                </li>
-            </ul>
+                        </a>
+                    </div>
+
+
+                    <div ng-show="show_set_label_control" class="row">
+                        <div class="form-inline form-horizontal col-md-12">
+                            <label class="col-md-4 col-lg-3 control-label">Label:</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control"
+                                       ng-model="block.collector_spec.label">
+                                <span class="input-group-btn">
+                                    <button
+                                            ng-click="access.send_action(block, 'update_collector_label');
+                                              show_set_label_control=!show_set_label_control
+                                    "
+                                            class="btn btn-default"
+                                            >
+                                        Set
+                                    </button>
+                                </span>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
-
-        <div class="col-xs-6 col-lg-6" ng-if="!access.mode.ro">
-            <div class="row">
-                <div class="form-group col-xs-4">
+        <div class="col-xs-6 col-lg-4" ng-if="!access.mode.ro">
+            <div class="form-horizontal">
+                <div class="form-group">
                     <label class="control-label">
                         Output name
                         <!--{$ block.collector_spec.new.name $}-->
@@ -38,7 +75,7 @@
                 </div>
 
 
-                <div class="form-group col-xs-4">
+                <div class="form-group">
                     <label class="control-label">
                         Variable to bind
                     </label>
@@ -54,12 +91,12 @@
                     </select>
                 </div>
                 <div ng-if="show_add_button()"
-                        class="col-xs-4">
-                    <div class="form-group col-xs-4">
+                        class="">
+                    <div class="form-group">
                         <label class="control-label">
                         </label>
 
-                        <button class="btn btn-primary" ng-click="add_var()">
+                        <button class="btn btn-default" ng-click="add_var()">
                             <span class="glyphicon glyphicon-plus"></span>
                             Add output to result collection
                         </button>

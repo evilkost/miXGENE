@@ -99,7 +99,7 @@ Constructor.controller('PalletCtrl', function($scope, blockAccess){
 })
 
 Constructor.controller('CollectorCtrl', function($scope, blockAccess){
-
+    $scope.show_set_label_control = false;
     $scope.add_var = function(){
         var key = $scope.block.collector_spec.new.scope_var;
         $scope.block.collector_spec.new.data_type = $scope.access.vars_by_key[key].data_type;
