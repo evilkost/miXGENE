@@ -1,6 +1,5 @@
 from copy import deepcopy
 import logging
-from pprint import pprint
 from mixgene.redis_helper import ExpKeys
 
 from webapp.models import Experiment

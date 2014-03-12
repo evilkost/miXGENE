@@ -112,7 +112,6 @@ def blocks_resource(request, exp_id):
         try:
             received_block = json.loads(request.body)
         except Exception, e:
-            # print "BODY: X%sX " % request.body
             return HttpResponseBadRequest()
         add_block_to_exp_from_dict(exp, received_block)
 
@@ -173,7 +172,6 @@ def block_resource(request, exp_id, block_uuid, action_code=None):
     if request.method == "POST":
         try:
             received_block = json.loads(request.body)
-            # print received_block
         except Exception, e:
             # TODO log errors
             received_block = {}

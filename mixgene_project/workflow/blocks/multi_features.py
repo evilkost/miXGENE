@@ -3,7 +3,6 @@
 from copy import deepcopy
 import json
 import logging
-from pprint import pprint
 
 import redis_lock
 import pandas as pd
@@ -93,6 +92,7 @@ class MultiFeature(UniformMetaBlock):
 
     def __init__(self, *args, **kwargs):
         super(MultiFeature, self).__init__("Multi feature block", *args, **kwargs)
+        self.features = []
 
     @property
     def is_sub_pages_visible(self):
@@ -143,7 +143,6 @@ class MultiFeature(UniformMetaBlock):
         return res
 
     def update_feature_selection(self, exp, request, *args, **kwargs):
-        pprint(request.body)
         req = json.loads(request.body)
         self.features = req["features"]
         if self.features:

@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import logging
-from pprint import pprint
 import json
 
 from environment.structures import TableResult
@@ -88,7 +87,6 @@ class BoxPlot(GenericBlock):
         if res_seq is None:
             return {}
 
-        pprint(res_seq.to_dict())
         return res_seq.to_dict()
 
     # def execute(self, exp, *args, **kwargs):

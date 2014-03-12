@@ -1,6 +1,5 @@
 import abc
 import logging
-from pprint import pprint
 import collections
 import copy
 import itertools
@@ -247,13 +246,10 @@ class ParamField(object):
                     val = map(str, raw_val)
             return val
         except Exception, e:
-            pprint(e)
+            log.exception(e)
             # TODO: fix it
             return ""
 
-# class BoundInputs(dict):
-#     def to_dict(self):
-#         print list(self.iteritems())
 
 class BlockSerializer(object):
     def __init__(self):
@@ -370,7 +366,6 @@ class BlockSerializer(object):
 
 class BlockMeta(abc.ABCMeta):
     def __new__(cls, name, bases, attrs):
-        # print "BlockMeta new: %s " % name
         super_new = super(BlockMeta, cls).__new__
         module = attrs.pop('__module__')
         new_class = super_new(cls, name, bases, {'__module__': module})
@@ -641,7 +636,6 @@ class GenericBlock(BaseBlock):
 
     def to_dict(self):
         result = self._block_serializer.to_dict(self)
-        #pprint(result)
         # import ipdb; ipdb.set_trace()
         return result
 

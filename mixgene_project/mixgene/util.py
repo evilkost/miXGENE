@@ -36,7 +36,7 @@ def fetch_file_from_url(url, target_file):
         pass
     args = ['wget', '-nv', '-t', '3', '-O', str(target_file), str(url)]
     log.debug('Command to execute: %s' , ' '.join(args))
-    #print "args", args
+
     output = Popen(args, stdout=PIPE, stderr=PIPE)
     retcode = output.wait()
     pipe = output.communicate()

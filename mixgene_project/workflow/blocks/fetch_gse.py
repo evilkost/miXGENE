@@ -111,7 +111,7 @@ class FetchGSE(GenericBlock):
         """
         self.set_out_var("expression_set", es)
         self.set_out_var("gpl_annotation", ann)
-        # print "OUT_DATA: ", self._out_data
+
         self.clean_errors()
         exp.store_block(self)
 
