@@ -337,7 +337,6 @@ class BlockSerializer(object):
             @param block: GenericBlock
             @param received_block: dict
         """
-        # import  ipdb; ipdb.set_trace()
         for p_name, p in self.params.iteritems():
             # TODO: here invoke validator
             raw_val = received_block.get(p_name)
@@ -349,6 +348,8 @@ class BlockSerializer(object):
                 val = int(raw_val)
             elif p.field_type == FieldType.STR:
                 val = str(raw_val)
+            elif p.field_type == FieldType.RAW:
+                val = raw_val
             else:
                 continue
                 #val = raw_val

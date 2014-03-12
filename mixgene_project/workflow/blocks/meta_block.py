@@ -149,7 +149,11 @@ class UniformMetaBlock(GenericBlock):
                 var = exp.get_scope_var_value(scope_var)
                 log.debug("Collected %s from %s", var, scope_var.title)
                 if var is not None:
-                    cell[name] = deepcopy(var)
+                    if hasattr(var, "clone"):
+                        cell[name] = var.clone("%s_%s" %
+                           (self.uuid, self.inner_output_manager.iterator))
+                    else:
+                        cell[name] = deepcopy(var)
 
             self.res_seq.sequence[self.inner_output_manager.iterator] = cell
 

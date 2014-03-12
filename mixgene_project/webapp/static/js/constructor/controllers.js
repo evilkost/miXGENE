@@ -175,6 +175,29 @@ Constructor.controller('UploadFieldCtrl', function($scope, $upload){
     }
 })
 
+Constructor.controller('RcTableCtrl', function($scope, $sce){
+
+    $scope.$watch('block.table_config.header_axis', function(newVal){
+        if( $scope.block.table_config){
+            $scope.block.table_config.multi_index_axis_dict[newVal] = "";
+        }
+    });
+
+    $scope.$watch('block.table_config.multi_index_axis_dict', function(newVal){
+        if( $scope.block.table_config){
+            if( newVal[$scope.block.table_config.header_axis]){
+                $scope.block.table_config.header_axis = "";
+            }
+        }
+    }, true);
+
+    $scope.$watch('block.table.html', function(newVal){
+        if( newVal){
+            $scope.safe_table = $sce.trustAsHtml(newVal);
+        }
+    });
+})
+
 Constructor.controller('BoxPlotCtrl', function($scope){
     // TODO: keep in python and provide through `access` service
     $scope.data_type_info = {

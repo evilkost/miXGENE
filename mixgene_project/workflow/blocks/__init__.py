@@ -17,6 +17,7 @@ from workflow.blocks.sub_agg import SubAggregation
 from workflow.blocks.svd_agg import SvdAggregation
 from workflow.blocks.box_plot import BoxPlot
 from workflow.blocks.flatten_nested_res_seq import FlattenNestedResultSequences
+from workflow.blocks.rc_table import RenderTable
 
 block_classes_by_name = {}
 blocks_by_group = defaultdict(list)
@@ -48,7 +49,8 @@ register_block("multi_feature", "Multi feature validation", GroupType.META_PLUGI
 register_block("custom_iterator", "Custom iterator", GroupType.META_PLUGIN, CustomIterator)
 
 # register_block("Pca_visualize", "2D PCA Plot", GroupType.VISUALIZE, PCA_visualize)
-register_block("box_plot", "Box plot ML scores", GroupType.VISUALIZE, BoxPlot)
+#register_block("box_plot", "Box plot ML scores", GroupType.VISUALIZE, BoxPlot)
+register_block("rc_table", "Results container as table", GroupType.VISUALIZE, RenderTable)
 
 register_block("svm_classifier", "Linear SVM Classifier", GroupType.CLASSIFIER, SvmClassifier)
 
@@ -59,5 +61,5 @@ register_block("svd_agg", "Svd aggregation", GroupType.PROCESSING, SvdAggregatio
 register_block("sub_agg", "Subtractive aggregation", GroupType.PROCESSING, SubAggregation)
 register_block("merge_two_es", "Merge expression sets", GroupType.PROCESSING, MergeExpressionSets)
 
-register_block("flatten_nested_result_seq", "Flatten nested sequence",
-               GroupType.PROCESSING, FlattenNestedResultSequences)
+#register_block("flatten_nested_result_seq", "Flatten nested sequence",
+#               GroupType.PROCESSING, FlattenNestedResultSequences)

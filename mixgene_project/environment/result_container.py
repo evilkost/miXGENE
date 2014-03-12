@@ -53,17 +53,20 @@ class ResultsContainer(GenericStoreStructure):
             }
             pickle.dump(out, file_obj, protocol=pickle.HIGHEST_PROTOCOL)
 
-    def empty_clone(self):
-        new_rc = ResultsContainer()
-        new_rc.ar = np.empty(shape=self.ar.shape, dtype=object)
+    def empty_clone(self, base_filename):
+        new_rc = ResultsContainer(self.base_dir, base_filename)
+
         new_rc.axis_list = self.axis_list
         new_rc.labels_dict = copy.deepcopy(self.labels_dict)
+        new_rc.init_ar()
         new_rc.update_label_index()
         return new_rc
 
-    def clone(self):
-        new_rc = self.empty_clone()
+    def clone(self, base_filename):
+        new_rc = self.empty_clone(base_filename)
+        self.load()
         new_rc.ar = copy.deepcopy(self.ar)
+        new_rc.store()
         return new_rc
 
     def load(self):
@@ -173,9 +176,10 @@ class ResultsContainer(GenericStoreStructure):
             mask = tuple(slice(0, shp) for shp in rc.ar.shape) + (idx,)
             self.ar[mask] = rc.ar
 
-    def to_dict(self):
+    def to_dict(self, *args, **kwargs):
         self.load()
         return {
             "labels_dict": self.labels_dict,
             "shape": self.ar.shape,
+            "axis_list": self.axis_list
         }

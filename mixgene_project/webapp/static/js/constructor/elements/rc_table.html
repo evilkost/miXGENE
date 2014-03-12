@@ -1,0 +1,36 @@
+<div ng-controller="RcTableCtrl">
+    <div class="col-lg-6 col-md-8">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <td>Axis</td>
+                    <td>Ticks</td>
+                    <td>Us as header</td>
+                    <td>Include in index</td>
+                </tr>
+            </thead>
+            <tbody>
+                <tr ng-repeat="axis_name in block.rc.axis_list">
+                    <td>{$ axis_name $}</td>
+                    <td>
+                        {$ block.rc.labels_dict[axis_name] | labels_preview:2 $}
+                    </td>
+                    <td>
+                        <input type="radio"
+                               ng-model="block.table_config.header_axis"
+                               ng-value="axis_name" >
+                    </td>
+                    <td>
+                        <input type="checkbox"
+                               ng-model="block.table_config.multi_index_axis_dict[axis_name]"
+                               >
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="col-lg-6 col-md-8">
+        <div ng-bind-html='safe_table'>
+        </div>
+    </div>
+</div>
