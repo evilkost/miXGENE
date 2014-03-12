@@ -9,10 +9,14 @@ import redis_lock
 from mixgene.redis_helper import ExpKeys
 from mixgene.util import get_redis_instance
 from webapp.models import Experiment
+
 from environment.structures import SequenceContainer
+from environment.result_container import ResultsContainer
+
 from webapp.scope import ScopeRunner, ScopeVar
 
 from generic import InnerOutputField
+
 from workflow.blocks.errors import PortError
 from workflow.blocks.generic import GenericBlock, ActionsList, save_params_actions_list, BlockField, FieldType, \
     ActionRecord, ParamField, InputType, OutputBlockField, InputBlockField, IteratedInnerFieldManager
@@ -85,8 +89,15 @@ class UniformMetaBlock(GenericBlock):
                                  init_val=None
     )
 
-    _res_seq = OutputBlockField(name="res_seq", provided_data_type="SequenceContainer",
-                                field_type=FieldType.CUSTOM, init_val=SequenceContainer())
+    res_seq = BlockField(name="res_seq", provided_data_type="SequenceContainer",
+                         field_type=FieldType.HIDDEN, init_val=None)
+
+    _results_container = OutputBlockField(
+        name="results_container",
+        provided_data_type="ResultsContainer",
+        field_type=FieldType.HIDDEN,
+        init_val=None
+    )
 
     def __init__(self, *args, **kwargs):
         super(UniformMetaBlock, self).__init__(*args, **kwargs)
@@ -100,7 +111,8 @@ class UniformMetaBlock(GenericBlock):
         self.inner_output_es_names_map = {}
         self.celery_task = None
 
-        self.set_out_var("res_seq", SequenceContainer())
+        self.set_out_var("results_container", None)
+        self.res_seq = SequenceContainer()
 
     @property
     def is_sub_pages_visible(self):
@@ -131,19 +143,19 @@ class UniformMetaBlock(GenericBlock):
         """
         r = get_redis_instance()
         with redis_lock.Lock(r, ExpKeys.get_metablock_collect_lock_key(self.exp_id, self.uuid)):
-            res_seq = self.get_out_var("res_seq")
-            cell = res_seq.sequence[self.inner_output_manager.iterator]
+
+            cell = self.res_seq.sequence[self.inner_output_manager.iterator]
             for name, scope_var in self.collector_spec.bound.iteritems():
                 var = exp.get_scope_var_value(scope_var)
                 log.debug("Collected %s from %s", var, scope_var.title)
                 if var is not None:
                     cell[name] = deepcopy(var)
 
-            res_seq.sequence[self.inner_output_manager.iterator] = cell
-            self.set_out_var("res_seq", res_seq)
+            self.res_seq.sequence[self.inner_output_manager.iterator] = cell
+
             exp.store_block(self)
 
-        if len(cell) < len(res_seq.fields):
+        if len(cell) < len(self.res_seq.fields):
             self.do_action("continue_collecting_sub_scope", exp)
         else:
             try:
@@ -151,7 +163,96 @@ class UniformMetaBlock(GenericBlock):
                 self.do_action("run_sub_scope", exp)
             except StopIteration, e:
                 # All folds was processed without errors
+                self.build_result_collection(exp)
+
                 self.do_action("success", exp)
+
+    def build_result_collection(self, exp):
+        rc = ResultsContainer(
+            base_dir=exp.get_data_folder(),
+            base_filename="%s" % self.uuid
+        )
+        res_seq = self.res_seq
+
+        axis_meta_block = self.base_name
+        axis_meta_block_labels = self.get_fold_labels()
+
+        # WARNING: We only support homogeneous results, so we only check first element
+
+        def create_new_dim_rc(local_rc):
+            local_rc.axis_list = [axis_meta_block]
+            local_rc.labels_dict[axis_meta_block] = axis_meta_block_labels
+
+            local_rc.init_ar()
+            local_rc.update_label_index()
+
+        # 4 cases: we have single input or not X we have ClassifierResults[s] or ResultsCollector[s]
+        try:
+            res_seq_field_name, data_type = res_seq.fields.iteritems().next()
+        except Exception, e:
+            log.exception(e)
+            from celery.contrib import rdb
+            rdb.set_trace()
+
+        if data_type == "ClassifierResult":
+            # if len(res_seq.fields) > 1:
+            # we need to add 2 dimensions: meta block fold labels, and output collection names
+            single_rc_list = []
+            for field_name in res_seq.fields:
+                rc_single = ResultsContainer("", "")
+                create_new_dim_rc(rc_single)
+
+                for idx, res_seq_cell in enumerate(res_seq.sequence):
+                    rc_single.ar[idx] = res_seq_cell[field_name]
+                single_rc_list.append(rc_single)
+
+            rc.add_dim_layer(single_rc_list, self.collector_spec.label, res_seq.fields.keys())
+
+            # else:
+            #     create_new_dim_rc(rc)
+            #     for idx, res_seq_cell in enumerate(res_seq.sequence):
+            #         rc.ar[idx] = res_seq_cell[res_seq_field_name]
+
+        elif data_type == "ResultsContainer":
+            if len(res_seq.fields) > 1:
+                raise Exception("Meta block only support single output of type ResultsContainer")
+                # we need to add 2 dimensions: meta block fold labels, and output collection names
+                # rc_list = []
+                # for cell in res_seq.sequence:
+                #     sub_rc_list = []
+                #     rc_single = ResultsContainer("", "")
+                #
+                #     for field_name in res_seq.fields:
+                #         sub_rc = cell[field_name]
+                #         sub_rc.load()
+                #         sub_rc_list.append(sub_rc)
+                #     rc_single.add_dim_layer(sub_rc_list, self.collector_spec.label, res_seq.fields.keys())
+                #     rc_list.append(rc_single)
+                #
+                # rc.add_dim_layer(rc_list, self.base_name, self.get_fold_labels())
+
+            else:
+                rc_list = []
+                for cell in res_seq.sequence:
+                    sub_rc = cell[res_seq_field_name]
+                    sub_rc.load()
+                    rc_list.append(sub_rc)
+
+                rc.add_dim_layer(rc_list, self.base_name, self.get_fold_labels())
+
+        elif data_type == "SequenceContainer":
+            # TODO remove this check
+            pass
+        else:
+            raise Exception("Meta blocks only support ClassifierResult "
+                            "or ResultsContainer in the output collection. "
+                            " Instead got: %s" % data_type)
+
+        rc.store()
+        rc.ar = None
+        self.set_out_var("results_container", rc)
+
+        # self.do_action("success", exp)
 
     def continue_collecting_sub_scope(self, exp, *args, **kwargs):
         pass
@@ -160,10 +261,8 @@ class UniformMetaBlock(GenericBlock):
         self.inner_output_manager.sequence = sequence
         self.inner_output_manager.next()
 
-        res_seq = self.get_out_var("res_seq")
-        res_seq.clean_content()
-        res_seq.sequence = [{"__label__": label} for label in self.get_fold_labels()]
-        self.set_out_var("res_seq", res_seq)
+        self.res_seq.clean_content()
+        self.res_seq.sequence = [{"__label__": label} for label in self.get_fold_labels()]
 
         exp.store_block(self)
         self.do_action("run_sub_scope", exp)
@@ -172,8 +271,7 @@ class UniformMetaBlock(GenericBlock):
         pass
 
     def update_res_seq_fields(self):
-        res_seq = self.get_out_var("res_seq")
-        res_seq.fields = {
+        self.res_seq.fields = {
             name: var.data_type
             for name, var in self.collector_spec.bound.iteritems()
         }
@@ -225,12 +323,26 @@ class UniformMetaBlock(GenericBlock):
     def validate_params_hook(self, exp, *args, **kwargs):
         is_valid = True
         if self.collector_spec.bound:
-            data_type_list = [scope_var for scope_var in self.collector_spec.bound.values()]
-            if len(set(data_type_list)) > 1:
+            data_type_list = [scope_var.data_type for scope_var in self.collector_spec.bound.values()]
+            data_types = list(set(data_type_list))
+            if len(data_types) > 1:
                 self.errors.append(
                     PortError(msg="Heterogeneous variables bound to the output collection",
                               block=self, port_name="(results collector)", block_alias=self.base_name)
                 )
                 is_valid = False
+            elif data_types[0]  not in ["ClassifierResult", "ResultsContainer"]:
+                self.errors.append(
+                    PortError(msg="Data type `%s` is not allowed in the output collection" % data_types[0],
+                              block=self, port_name="(results collector)", block_alias=self.base_name)
+                )
+                is_valid = False
+
+        else:
+            self.errors.append(
+                PortError(msg="Block require at least one variable bound to the output collection",
+                          block=self, port_name="(results collector)", block_alias=self.base_name)
+            )
+            is_valid = False
 
         return is_valid

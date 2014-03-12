@@ -4,12 +4,17 @@ import copy
 # from webapp.models import Experiment
 from collections import defaultdict
 import cPickle as pickle
+import gzip
+import logging
 
 from itertools import product
 
 import numpy as np
 import pandas as pd
+from environment.structures import GenericStoreStructure
 
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
 
 def get_metric_vectorized(metric):
     def func(x):
@@ -18,26 +23,38 @@ def get_metric_vectorized(metric):
     return np.vectorize(func, otypes=[np.float])
 
 
-class ResultContainer(object):
-    def __init__(self):
+class ResultsContainer(GenericStoreStructure):
+    def __init__(self, *args, **kwargs):
+        super(ResultsContainer, self).__init__(*args, **kwargs)
+        self.filepath = self.form_filepath("_res_cont")
+
         self.ar = np.empty(shape=(), dtype=object)
         self.axis_list = []
         self.labels_dict = {}  # axis -> [label for 0, label for 1] and so on
         self.inverse_labels_dict = defaultdict(dict) # axis -> { label -> idx of element in axis }
 
+    def init_ar(self):
+        shape = tuple(map(len, [
+            self.labels_dict[axis]
+            for axis in self.axis_list
+        ]))
+        # noinspection PyNoneFunctionAssignment
+        self.ar = np.empty(shape=shape, dtype=object)
+
     def get_axis_dim(self, axis):
         return self.axis_list.index(axis)
 
-    def store(self, file_obj):
-        out = {
-            "ar": self.ar.tolist(),
-            "axis_list": self.axis_list,
-            "labels_dict": self.labels_dict
-        }
-        pickle.dump(out, file_obj, protocol=pickle.HIGHEST_PROTOCOL)
+    def store(self):
+        with gzip.open(self.filepath, "w") as file_obj:
+            out = {
+                "ar": self.ar.tolist(),
+                "axis_list": self.axis_list,
+                "labels_dict": self.labels_dict
+            }
+            pickle.dump(out, file_obj, protocol=pickle.HIGHEST_PROTOCOL)
 
     def empty_clone(self):
-        new_rc = ResultContainer()
+        new_rc = ResultsContainer()
         new_rc.ar = np.empty(shape=self.ar.shape, dtype=object)
         new_rc.axis_list = self.axis_list
         new_rc.labels_dict = copy.deepcopy(self.labels_dict)
@@ -49,21 +66,24 @@ class ResultContainer(object):
         new_rc.ar = copy.deepcopy(self.ar)
         return new_rc
 
-    @staticmethod
-    def load(file_obj):
-        data = pickle.load(file_obj)
+    def load(self):
+        try:
+            with gzip.open(self.filepath) as file_obj:
+                data = pickle.load(file_obj)
+                self.axis_list = data["axis_list"]
+                self.labels_dict = data["labels_dict"]
 
-        rc = ResultContainer()
-        rc.axis_list = data["axis_list"]
-        rc.labels_dict = data["labels_dict"]
-        rc.ar = np.array(data["ar"])
-        rc.update_label_index()
+                self.ar = np.array(data["ar"])
+                self.update_label_index()
 
-        return rc
+        except Exception, e:
+            log.exception(e)
+            raise Exception("Failed to load result container from path: `%s`:", self.filepath)
 
     def update_label_index(self):
         self.inverse_labels_dict = defaultdict(dict)
         for axis, labels_list in self.labels_dict.iteritems():
+            # log.debug("Labels list: %s", labels_list)
             for idx, label in enumerate(labels_list):
                 self.inverse_labels_dict[axis][label] = idx
 
@@ -99,10 +119,6 @@ class ResultContainer(object):
         return tuple(mask_list)
 
     def filter_by_spec(self, spec_dict):
-        """
-            Return new ResultCollections
-        """
-
         new_rc = self.empty_clone()
         new_rc.ar = self.ar[self.build_axis_mask(spec_dict)]
         return new_rc
@@ -124,12 +140,6 @@ class ResultContainer(object):
 
         without_avg_by = [e for e in all_dims if e not in avg_by]
 
-        #ref_axis = dict(enumerate(without_avg_by))
-        # new_axis_list = [
-        #     self.axis_list[idx]
-        #     for idx in without_avg_by
-        # ]
-
         float_ar = get_metric_vectorized(metric)(self.ar)
 
         if method == "avg":
@@ -150,20 +160,22 @@ class ResultContainer(object):
 
         return df
 
-    @staticmethod
-    def from_lower_dim_list(list_of_rcs, axis_name, labels_list):
+    def add_dim_layer(self, list_of_rcs, axis_name, labels_list):
         rc = list_of_rcs[0]
-        new_shape = rc.ar.shape + (len(labels_list), )
-        new_ar = np.empty(shape=new_shape, dtype=object)
+
+        self.axis_list = rc.axis_list + [axis_name]
+        self.labels_dict = copy.deepcopy(rc.labels_dict)
+        self.labels_dict[axis_name] = labels_list
+        self.update_label_index()
+        self.init_ar()
+
         for idx, rc in enumerate(list_of_rcs):
             mask = tuple(slice(0, shp) for shp in rc.ar.shape) + (idx,)
-            new_ar[mask] = rc.ar
+            self.ar[mask] = rc.ar
 
-        new_rc = ResultContainer()
-        new_rc.ar = new_ar
-        new_rc.axis_list = rc.axis_list + [axis_name]
-        new_rc.labels_dict = copy.deepcopy(rc.labels_dict)
-        new_rc.labels_dict[axis_name] = labels_list
-        new_rc.update_label_index()
-
-        return new_rc
+    def to_dict(self):
+        self.load()
+        return {
+            "labels_dict": self.labels_dict,
+            "shape": self.ar.shape,
+        }
