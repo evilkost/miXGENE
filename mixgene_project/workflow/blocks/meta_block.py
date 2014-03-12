@@ -177,7 +177,6 @@ class UniformMetaBlock(GenericBlock):
         axis_meta_block = self.base_name
         axis_meta_block_labels = self.get_fold_labels()
 
-        # WARNING: We only support homogeneous results, so we only check first element
 
         def create_new_dim_rc(local_rc):
             local_rc.axis_list = [axis_meta_block]
@@ -186,17 +185,9 @@ class UniformMetaBlock(GenericBlock):
             local_rc.init_ar()
             local_rc.update_label_index()
 
-        # 4 cases: we have single input or not X we have ClassifierResults[s] or ResultsCollector[s]
-        try:
-            res_seq_field_name, data_type = res_seq.fields.iteritems().next()
-        except Exception, e:
-            log.exception(e)
-            from celery.contrib import rdb
-            rdb.set_trace()
-
+        # WARNING: We only support homogeneous results, so we only check first element
+        res_seq_field_name, data_type = res_seq.fields.iteritems().next()
         if data_type == "ClassifierResult":
-            # if len(res_seq.fields) > 1:
-            # we need to add 2 dimensions: meta block fold labels, and output collection names
             single_rc_list = []
             for field_name in res_seq.fields:
                 rc_single = ResultsContainer("", "")
@@ -208,28 +199,9 @@ class UniformMetaBlock(GenericBlock):
 
             rc.add_dim_layer(single_rc_list, self.collector_spec.label, res_seq.fields.keys())
 
-            # else:
-            #     create_new_dim_rc(rc)
-            #     for idx, res_seq_cell in enumerate(res_seq.sequence):
-            #         rc.ar[idx] = res_seq_cell[res_seq_field_name]
-
         elif data_type == "ResultsContainer":
             if len(res_seq.fields) > 1:
                 raise Exception("Meta block only support single output of type ResultsContainer")
-                # we need to add 2 dimensions: meta block fold labels, and output collection names
-                # rc_list = []
-                # for cell in res_seq.sequence:
-                #     sub_rc_list = []
-                #     rc_single = ResultsContainer("", "")
-                #
-                #     for field_name in res_seq.fields:
-                #         sub_rc = cell[field_name]
-                #         sub_rc.load()
-                #         sub_rc_list.append(sub_rc)
-                #     rc_single.add_dim_layer(sub_rc_list, self.collector_spec.label, res_seq.fields.keys())
-                #     rc_list.append(rc_single)
-                #
-                # rc.add_dim_layer(rc_list, self.base_name, self.get_fold_labels())
 
             else:
                 rc_list = []
