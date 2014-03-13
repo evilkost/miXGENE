@@ -17,7 +17,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 
-from webapp.models import Experiment, UploadedData, delete_exp
+from webapp.models import Experiment, UploadedData, delete_exp, Article
 from webapp.forms import UploadForm
 from webapp.scope import Scope
 from webapp.store import add_block_to_exp_from_dict
@@ -48,6 +48,26 @@ def contact(request):
     template = loader.get_template('contact.html')
     context = RequestContext(request, {
         "next": "/",
+    })
+    return HttpResponse(template.render(context))
+
+
+def articles(request):
+    template = loader.get_template('articles/list.html')
+    context = RequestContext(request, {
+        "next": "/",
+        "articles": Article.objects.all(),
+        "articles_page_active": True,
+    })
+    return HttpResponse(template.render(context))
+
+
+def article(request, article_id):
+    template = loader.get_template('articles/page.html')
+    context = RequestContext(request, {
+        "next": "/",
+        "article": Article.objects.get(pk=int(article_id)),
+        "articles_page_active": True,
     })
     return HttpResponse(template.render(context))
 

@@ -60,6 +60,18 @@ class CachedFile(models.Model):
             return res[0]
 
 
+class Article(models.Model):
+    author_user = models.ForeignKey(User)
+    author_title = models.CharField(max_length=255)
+
+    title = models.CharField(max_length=255)
+    preview = models.TextField()
+    content = models.TextField()
+
+    dt_created = models.DateTimeField(auto_now_add=True)
+    dt_updated = models.DateTimeField(auto_now=True)
+
+
 class Experiment(models.Model):
     author = models.ForeignKey(User)
 

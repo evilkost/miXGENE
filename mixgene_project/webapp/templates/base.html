@@ -17,6 +17,10 @@
                     <a href="{% url 'webapp.views.add_experiment' %}">New</a>
                 </li>
             {% endif %}
+            <li {% if articles_page_active %} class="active" {% endif %}>
+                <a href="{% url 'articles' %}">Articles</a>
+            </li>
+
             <li><a href="{% url 'webapp.views.about' %}">About</a></li>
             <li><a href="{% url 'webapp.views.contact' %}">Contact</a></li>
         </ul>

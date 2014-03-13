@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block inner %}
+<div class="container">
+    <div class="page-header">
+        <h1>
+            {{ article.title }}
+            <small class="pull-right"> {{ article.dt_created }} by  <b>{{ article.author_title }}</b></small>
+        </h1>
+
+    </div>
+    <br />
+    <div class="well well-lg"
+            style="font-size: 140%">
+        {{ article.content }}
+    </div>
+
+
+
+
+
+</div>
+{% endblock %}

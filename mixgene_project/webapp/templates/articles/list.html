@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block inner %}
+<div class="container">
+
+    {% for article in articles %}
+        <div class="row">
+            <h1><a href="{% url 'article' article.pk %}">{{ article.title }}</a></h1>
+            <blockquote>
+                <p>{{ article.preview }}</p>
+
+                <footer><small>
+                    by  <b>{{article.author_title }}</b> at {{ article.dt_created }}
+                </small></footer>
+            </blockquote>
+        </div>
+        <hr />
+
+    {% endfor %}
+
+
+</div>
+{% endblock %}
