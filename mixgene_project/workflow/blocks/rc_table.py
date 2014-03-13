@@ -10,6 +10,7 @@ from workflow.blocks.generic import GenericBlock, ActionsList, save_params_actio
 
 from wrappers.boxplot_stats import boxplot_stats
 from wrappers.gt import global_test_task
+from wrappers.scoring import metrics
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -71,8 +72,9 @@ class RenderTable(GenericBlock):
         return [
             {"pk": x, "str": x} for x in
             [
-                "accuracy",
-                #"average_precision",
+                metric.name
+                for metric in metrics
+                if not metric.require_binary
             ]
         ]
 

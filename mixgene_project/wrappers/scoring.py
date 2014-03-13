@@ -1,4 +1,4 @@
-from sklearn.metrics import accuracy_score, average_precision_score, confusion_matrix
+from sklearn.metrics import accuracy_score, average_precision_score, confusion_matrix, auc
 
 import logging
 log = logging.getLogger(__name__)
@@ -22,9 +22,11 @@ class MetricInfo(object):
 
 metrics = [
     MetricInfo("accuracy", accuracy_score, require_binary=False),
+    MetricInfo("AUC", auc, require_binary=False),
     MetricInfo("average_precision", average_precision_score, require_binary=True)
     # ("confusion_matrix", confusion_matrix),
 ]
+
 
 def compute_scores(y_true, y_predicted, is_classes_binary=True):
     result = {}
