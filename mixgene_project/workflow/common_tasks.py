@@ -14,6 +14,7 @@ from environment.units import GeneUnits
 from environment.structures import ExpressionSet, PlatformAnnotation, \
     GS, FileInputVar
 
+from itertools import repeat, chain
 
 # TODO: invent magic to correct logging when called outside of celery task
 from celery.utils.log import get_task_logger
@@ -118,6 +119,7 @@ def generate_cv_folds(
         exp, block,
         folds_num,
         es_dict, inner_output_es_names_map,
+        repeats_num=1,
         success_action="success", error_action="error",
     ):
     """
@@ -140,10 +142,10 @@ def generate_cv_folds(
 
     classes_vector = pheno_df[es_0.pheno_metadata["user_class_title"]].values
     i = 0
-    for train_idx, test_idx in cross_validation.StratifiedKFold(
+    for train_idx, test_idx in chain(*repeat(cross_validation.StratifiedKFold(
         classes_vector,
         n_folds=folds_num
-    ):
+    ), repeats_num)):
         cell = {}
         for input_name, output_names in inner_output_es_names_map.iteritems():
             es_train_name, es_test_name = output_names

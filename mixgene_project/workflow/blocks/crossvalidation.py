@@ -39,13 +39,15 @@ class CrossValidation(UniformMetaBlock):
     )
 
     folds_num = ParamField(name="folds_num", title="Folds number",
-                           input_type=InputType.TEXT, field_type=FieldType.INT, init_val=10)
+                           input_type=InputType.TEXT, field_type=FieldType.INT, init_val=5)
+    repeats_num = ParamField(name="repeats_num", title="Repeats number",
+                             input_type=InputType.TEXT, field_type=FieldType.INT, init_val=1)
 
     def __init__(self, *args, **kwargs):
         super(CrossValidation, self).__init__("Cross Validation", *args, **kwargs)
 
     def get_fold_labels(self):
-        return ["fold_%s" % (num + 1, ) for num in range(self.folds_num)]
+        return ["fold_%s" % (num + 1, ) for num in range(self.folds_num * self.repeats_num)]
 
     def add_dyn_input_hook(self, exp, dyn_port, new_port):
         """
@@ -77,6 +79,7 @@ class CrossValidation(UniformMetaBlock):
             generate_cv_folds,
             exp, self,
             folds_num=self.folds_num,
+            repeats_num=self.repeats_num,
             es_dict=es_dict,
             inner_output_es_names_map=self.inner_output_es_names_map,
             success_action="on_folds_generation_success",
