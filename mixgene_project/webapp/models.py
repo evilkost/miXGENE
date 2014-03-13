@@ -71,6 +71,16 @@ class Article(models.Model):
     dt_created = models.DateTimeField(auto_now_add=True)
     dt_updated = models.DateTimeField(auto_now=True)
 
+    def to_dict(self, *args, **kwargs):
+        return {
+            "author_title": self.author_title,
+            "title": self.title,
+            "preview": self.preview,
+            "content": self.content,
+            "dt_created": str(self.dt_created),
+            "dt_updated": str(self.dt_updated)
+        }
+
 
 class Experiment(models.Model):
     author = models.ForeignKey(User)

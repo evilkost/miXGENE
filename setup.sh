@@ -34,7 +34,7 @@ npm install bower
 # installing Django from PIP
 sudo pip install -U Django South Celery django-celery redis hiredis \
     pandas biopython rpy2 fysom flower django-extensions \
-    scikit-learn
+    scikit-learn markdown
 
 
 
