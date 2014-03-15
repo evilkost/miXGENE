@@ -126,6 +126,38 @@ class ResultsContainer(GenericStoreStructure):
         new_rc.ar = self.ar[self.build_axis_mask(spec_dict)]
         return new_rc
 
+    def get_pandas_slice_for_boxplot(self, axis_list_for_index, metric):
+        rows_dim_list = map(self.get_axis_dim, axis_list_for_index)
+
+        shapes = self.ar.shape
+        all_dims = range(len(shapes))
+        ar = self.ar
+
+        index_labels = [self.labels_dict[axis] for axis in axis_list_for_index]
+        df_index = pd.MultiIndex.from_product(index_labels, names=axis_list_for_index)
+
+        row_def = product(*index_labels).next()
+        spec_def = {axis: val for val, axis in zip(row_def, axis_list_for_index)}
+        key = np.array(self.build_axis_mask(spec_def))
+        sliced = ar[tuple(key)]
+        if hasattr(sliced, 'flatten'):
+            length = len(sliced.flatten())
+        else:
+            length = 1
+        df = pd.DataFrame(index=df_index, columns=map(str, range(length)))
+
+        for row_def in product(*index_labels):
+            spec_def = {axis: val for val, axis in zip(row_def, axis_list_for_index)}
+            key = np.array(self.build_axis_mask(spec_def))
+            sliced = ar[tuple(key)]
+            if hasattr(sliced, 'flatten'):
+                df.ix[row_def, :] = [cr.scores[metric] for cr in sliced.flatten()]
+            else:
+                df.ix[row_def, :] = sliced.scores[metric]
+
+        return df
+
+
     def get_pandas_slice(self, axis_for_header, axis_list_for_index, metric, method=None):
         """
             Only one axis to be used as headers

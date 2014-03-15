@@ -199,45 +199,8 @@ Constructor.controller('RcTableCtrl', function($scope, $sce){
 })
 
 Constructor.controller('BoxPlotCtrl', function($scope){
-    // TODO: keep in python and provide through `access` service
-    $scope.data_type_info = {
-        ClassifierResult: {
-            numeric_fields: ["accuracy", "average_precision"]
-        }
-    }
-
-//    $scope.block.chart_series = [{data: [], name: "ML scores"}];
-    
-//    $scope.block.plot_inputs = [];
-
-    document._block = $scope.block;
-
-    $scope.field_to_add = {
-        name: "",
-        type: ""
-    };
-
-    $scope.select_element_to_add = function(field_name, field_type){
-        $scope.field_to_add.name = field_name;
-        $scope.field_to_add.type = field_type;
-    };
-
-    $scope.add_plot_input = function(metric){
-        input = _.clone($scope.field_to_add)
-        input.metric = metric;
-
-        $scope.block.plot_inputs.push(input);
-
-        $scope.field_to_add.name = "";
-        $scope.field_to_add.type = "";
-    };
-
-    $scope.remove_plot_input = function(idx){
-        $scope.block.plot_inputs.splice(idx, 1);
-    }
-
     $scope.redraw_plot = function(){
-        $scope.access.send_action($scope.block, "compute_boxplot_stats", false,
+        $scope.access.send_action($scope.block, "save_params", false,
             function(){
                 console.log("block should be updated");
                 console.log($scope.block.chart_series);
@@ -249,8 +212,6 @@ Constructor.controller('BoxPlotCtrl', function($scope){
 
             }
         );
-
-        document._plt = $scope.plotConfig;
     }
 
     $scope.plotConfig = {
@@ -282,7 +243,7 @@ Constructor.controller('BoxPlotCtrl', function($scope){
             }
 
         },
-//        categories: $scope.block.chart_categories,
+
         series: $scope.block.chart_series,
         title: {
             text: ''

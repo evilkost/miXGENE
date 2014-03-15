@@ -49,7 +49,7 @@ register_block("multi_feature", "Multi feature validation", GroupType.META_PLUGI
 register_block("custom_iterator", "Custom iterator", GroupType.META_PLUGIN, CustomIterator)
 
 # register_block("Pca_visualize", "2D PCA Plot", GroupType.VISUALIZE, PCA_visualize)
-#register_block("box_plot", "Box plot ML scores", GroupType.VISUALIZE, BoxPlot)
+register_block("box_plot", "Box plot ML scores", GroupType.VISUALIZE, BoxPlot)
 register_block("rc_table", "Results container as table", GroupType.VISUALIZE, RenderTable)
 
 register_block("svm_classifier", "Linear SVM Classifier", GroupType.CLASSIFIER, SvmClassifier)

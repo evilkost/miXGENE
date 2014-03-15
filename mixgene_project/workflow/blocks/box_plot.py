@@ -2,6 +2,8 @@
 import logging
 import json
 
+import numpy as np
+
 from environment.structures import TableResult
 from webapp.tasks import wrapper_task
 from workflow.blocks.generic import GenericBlock, ActionsList, save_params_actions_list, BlockField, FieldType, \
@@ -10,27 +12,45 @@ from workflow.blocks.generic import GenericBlock, ActionsList, save_params_actio
 
 from wrappers.boxplot_stats import boxplot_stats
 from wrappers.gt import global_test_task
+from wrappers.scoring import metrics
+
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
+
 class BoxPlot(GenericBlock):
     block_base_name = "BOX_PLOT"
-    # is_block_supports_auto_execution = False
+    is_block_supports_auto_execution = False
 
     _block_actions = ActionsList([
-        ActionRecord("save_params", ["created", "valid_params", "done", "ready", "input_bound"], "validating_params",
+        ActionRecord("save_params", ["created", "valid_params"], "validating_params",
                      user_title="Save parameters"),
-        ActionRecord("on_params_is_valid", ["validating_params"], "input_bound"),
+        ActionRecord("on_params_is_valid", ["validating_params", "input_bound" ], "input_bound"),
         ActionRecord("on_params_not_valid", ["validating_params"], "created"),
 
         ActionRecord("configure_plot", ["input_bound", "ready"], "ready"),
     ])
-    _block_actions.extend(execute_block_actions_list)
+    # _block_actions.extend(execute_block_actions_list)
 
-    _res_seq = InputBlockField(name="res_seq", required_data_type="SequenceContainer", required=True)
+    results_container = InputBlockField(name="results_container",
+                                        required_data_type="ResultsContainer",
+                                        required=True,
+                                        field_type=FieldType.CUSTOM)
+    _rc = BlockField(name="rc", field_type=FieldType.CUSTOM, is_a_property=True)
 
-    _res_seq_for_js = BlockField("res_seq_for_js", field_type=FieldType.RAW, is_a_property=True)
+    _available_metrics = BlockField(name="available_metrics",
+                                    field_type=FieldType.RAW,
+                                    is_a_property=True)
+
+    metric = ParamField(name="metric", title="Metric", field_type=FieldType.STR,
+                        input_type=InputType.SELECT, select_provider="available_metrics")
+
+    metric = ParamField(name="metric", title="Metric", field_type=FieldType.STR,
+                        input_type=InputType.SELECT, select_provider="available_metrics")
+    boxplot_config = ParamField(name="boxplot_config", title="",
+                              input_type=InputType.HIDDEN,
+                              field_type=FieldType.RAW)
 
     plot_inputs = BlockField(name="plot_inputs", field_type=FieldType.RAW, init_val=[])
     chart_series = BlockField(name="chart_series", field_type=FieldType.RAW,
@@ -38,70 +58,70 @@ class BoxPlot(GenericBlock):
     chart_categories = BlockField(name="chart_categories", field_type=FieldType.SIMPLE_LIST,
                                   init_val=[])
 
-
     elements = BlockField(name="elements", field_type=FieldType.SIMPLE_LIST, init_val=[
         "box_plot.html"
     ])
 
     def __init__(self, *args, **kwargs):
         super(BoxPlot, self).__init__("Box plot", *args, **kwargs)
+        self.boxplot_config = {
+            "multi_index_axis_dict": {},
+        }
 
-        self.is_block_supports_auto_execution = True
-        self.celery_task = None
+    @property
+    def available_metrics(self):
+        return [
+            {"pk": x, "str": x} for x in
+            [
+                metric.name
+                for metric in metrics
+                if not metric.require_binary
+            ]
+        ]
 
-    def compute_boxplot_stats(self, exp, request, *args, **kwargs):
-        self.plot_inputs = json.loads(request.body)["plot_inputs"]
-        X = []
-        seq = self.get_input_var("res_seq").sequence
+    @property
+    def rc(self):
+        return self.get_input_var("results_container")
+
+    def compute_boxplot_stats(self, exp, request=None, *args, **kwargs):
+        axis_to_plot = [
+            axis for axis, is_selected in
+            self.boxplot_config['multi_index_axis_dict'].items() if is_selected
+        ]
+        rc = self.rc
+        rc.load()
+
+        df = rc.get_pandas_slice_for_boxplot(axis_to_plot, self.metric)
 
         categories = []
-        for input_def in self.plot_inputs:
+        for row_id, _ in df.iterrows():
+            if type(row_id) == tuple:
+                title = ":".join(map(str, row_id))
+            else:
+                title = str(row_id)
 
-            input_name = input_def["name"]
-            metric  = input_def["metric"]
+            categories.append(title)
 
-            categories.append("%s:%s" % (input_name, metric))
-
-            X.append([cell[input_name].scores[metric] for cell in seq])
-
-        # return boxplot_stats(X)
-        bps = boxplot_stats(X)
+        bps = boxplot_stats(np.array(df.T))
         self.chart_series[0]["data"] = [
-             [
+            [
                 rec["whislo"],
                 rec["q1"],
                 rec["med"],
                 rec["q3"],
                 rec["whishi"]
-             ]
-             for rec in bps
+            ]
+            for rec in bps
         ]
         self.chart_categories = categories
-        log.debug("stored chart series: %s", self.chart_series)
         exp.store_block(self)
 
+    def on_params_is_valid(self, exp, *args, **kwargs):
+        super(BoxPlot, self).on_params_is_valid(exp, *args, **kwargs)
+        if self.rc is not None:
+            for axis in self.rc.axis_list:
+                if axis not in self.boxplot_config["multi_index_axis_dict"]:
+                    self.boxplot_config["multi_index_axis_dict"][axis] = ""
 
-    @property
-    def res_seq_for_js(self):
-        res_seq = self.get_input_var("res_seq")
-        if res_seq is None:
-            return {}
-
-        return res_seq.to_dict()
-
-    # def execute(self, exp, *args, **kwargs):
-    #     self.reset(exp)
-    #     self.do_action("success", exp)
-    #
-    # def reset_execution(self, exp, *args, **kwargs):
-    #     self.reset(exp)
-    #     pass
-    #
-    # def reset(self, exp):
-    #     self.clean_errors()
-    #     self.plot_inputs = []
-    #     self.chart_categories = []
-    #     self.chart_series = self._block_serializer.fields["chart_series"].init_val
-
-    def success(self, exp, result, *args, **kwargs):
-        pass
+            self.compute_boxplot_stats(exp)
+        exp.store_block(self)

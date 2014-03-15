@@ -1,4 +1,31 @@
 <div ng-controller="BoxPlotCtrl">
+    <div class="col-lg-5 col-md-8">
+        <table class="table table-striped">
+            <thead>
+            <tr>
+                <td>Axis</td>
+                <td>Ticks</td>
+                <td>Choose axis</td>
+
+            </tr>
+            </thead>
+            <tbody>
+            <tr ng-repeat="axis_name in block.rc.axis_list">
+                <td>{$ axis_name $}</td>
+                <td>
+                    {$ block.rc.labels_dict[axis_name] | labels_preview:2 $}
+                </td>
+                <td>
+                    <input type="checkbox"
+                           ng-model="block.boxplot_config.multi_index_axis_dict[axis_name]"
+                    >
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!--
     <div class="col-xs-4 col-lg-2">
         <h4 style="text-align: center"> <span class="label label-default">
             Choose element to add to plot
@@ -44,12 +71,13 @@
             </a>
         </div>
     </div>
+    -->
 
     <div class="col-xs-12 col-lg-6">
         <button class="btn btn-default btn-block"
                 ng-click="redraw_plot()">Re-draw plot</button>
 
-        <highchart style="min-height: 600px" id="chart1" config="plotConfig" ></highchart>
+        <highchart id="chart1" config="plotConfig" ></highchart>
 
     </div>
 
