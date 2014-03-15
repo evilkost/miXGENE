@@ -88,32 +88,36 @@ class BoxPlot(GenericBlock):
             axis for axis, is_selected in
             self.boxplot_config['multi_index_axis_dict'].items() if is_selected
         ]
-        rc = self.rc
-        rc.load()
+        if axis_to_plot:
+            rc = self.rc
+            rc.load()
 
-        df = rc.get_pandas_slice_for_boxplot(axis_to_plot, self.metric)
+            df = rc.get_pandas_slice_for_boxplot(axis_to_plot, self.metric)
 
-        categories = []
-        for row_id, _ in df.iterrows():
-            if type(row_id) == tuple:
-                title = ":".join(map(str, row_id))
-            else:
-                title = str(row_id)
+            categories = []
+            for row_id, _ in df.iterrows():
+                if type(row_id) == tuple:
+                    title = ":".join(map(str, row_id))
+                else:
+                    title = str(row_id)
 
-            categories.append(title)
+                categories.append(title)
 
-        bps = boxplot_stats(np.array(df.T))
-        self.chart_series[0]["data"] = [
-            [
-                rec["whislo"],
-                rec["q1"],
-                rec["med"],
-                rec["q3"],
-                rec["whishi"]
+            bps = boxplot_stats(np.array(df.T))
+            self.chart_series[0]["data"] = [
+                [
+                    rec["whislo"],
+                    rec["q1"],
+                    rec["med"],
+                    rec["q3"],
+                    rec["whishi"]
+                ]
+                for rec in bps
             ]
-            for rec in bps
-        ]
-        self.chart_categories = categories
+            self.chart_categories = categories
+        else:
+            self.chart_series[0]["data"] = []
+            self.chart_categories = []
         exp.store_block(self)
 
     def on_params_is_valid(self, exp, *args, **kwargs):
