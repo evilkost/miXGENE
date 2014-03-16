@@ -33,10 +33,10 @@ tmux select-pane -t 1
 tmux send-keys "cd notify_server/ && node server.js" C-m
 tmux resize-pane -R 20
 tmux select-pane -t 2
-tmux send-keys "python mixgene_project/manage.py celery worker --loglevel=INFO" C-m
+tmux send-keys "cd mixgene_project/ && celery worker --app=mixgene.celery --loglevel=INFO" C-m
 tmux split-window -v
 tmux select-pane -t 3
-tmux send-keys "python mixgene_project/manage.py celery flower --port=5555" C-m
+#tmux send-keys "python mixgene_project/manage.py celery flower --port=5555" C-m
 
 tmux select-pane -t 0
 

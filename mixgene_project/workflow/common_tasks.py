@@ -17,9 +17,8 @@ from environment.structures import ExpressionSet, PlatformAnnotation, \
 from itertools import repeat, chain
 
 # TODO: invent magic to correct logging when called outside of celery task
-from celery.utils.log import get_task_logger
 
-log = get_task_logger(__name__)
+log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
 

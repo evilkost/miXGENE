@@ -6,9 +6,7 @@ from mixgene.redis_helper import ExpKeys
 from mixgene.util import get_redis_instance
 from webapp.scope import LOCK_TIME, ScopeRunner
 
-from celery.utils.log import get_task_logger
-
-log = get_task_logger(__name__)
+log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
 @task(name="webapp.tasks.auto_exec")

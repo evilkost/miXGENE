@@ -48,6 +48,7 @@ CELERY_IMPORTS = (
     # "wrappers.aggregation",
 )
 CELERYD_HIJACK_ROOT_LOGGER = False
+CELERY_ACCEPT_CONTENT = ['pickle', 'json']
 
 ## End celery settings
 
@@ -180,6 +181,7 @@ INSTALLED_APPS = (
 # See http://docs.djangoproject.com/en/dev/topics/logging for
 # more details on how to customize your logging configuration.
 LOG_DIR = BASE_DIR + "/logs"
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -220,24 +222,6 @@ LOGGING = {
             'interval': 1,
             'backupCount': 3,
         },
-        'celery': {
-            'level': 'DEBUG',
-            'class': 'logging.handlers.TimedRotatingFileHandler',
-            'formatter': 'verbose',
-            'filename': LOG_DIR + '/celery.log',
-            'when': 'midnight',
-            'interval': 1,
-            'backupCount': 3,
-        },
-        'celery_task': {
-            'level': 'DEBUG',
-            'class': 'logging.handlers.TimedRotatingFileHandler',
-            'formatter': 'verbose',
-            'filename': LOG_DIR + '/celery_task.log',
-            'when': 'midnight',
-            'interval': 1,
-            'backupCount': 3,
-        },
         'console': {
             'level': 'DEBUG',
             'formatter': 'verbose',
@@ -274,22 +258,6 @@ LOGGING = {
             'handlers': ['file_info', 'file_debug', 'console'],
             'level': 'INFO',
             'propagate': True,
-        },
-        'celery.task': {
-            'handlers': ['file_debug', 'console'],
-            'level': 'DEBUG',
-            'propagate': False,
-        },
-        'celery.worker': {
-            'handlers': ['file_debug', 'console'],
-            'level': 'WARNING',
-            'propagate': False,
-        },
-        'celery': {
-            'handlers': ['celery', 'console'],
-            'level': 'INFO',
-            'propagate': False,
-        },
-
+        }
     }
 }
