@@ -5,10 +5,11 @@ import pandas as pd
 import rpy2.robjects as R
 from copy import deepcopy
 
-
 import json
 
 from workflow.input import AbsInputVar
+from wrappers.scoring import metrics
+
 
 class PickleStorage(object):
     def __init__(self, filepath):
@@ -432,6 +433,8 @@ class ClassifierResult(GenericStoreStructure):
         self.classifier = ""
         self.labels_encode_vector = []
         self.scores = {}  # metric -> value
+        self.y_true = []
+        self.y_predicted = []
         self.model_storage = None
 
     def get_model(self):
@@ -445,9 +448,15 @@ class ClassifierResult(GenericStoreStructure):
         self.model_storage.store(model)
 
     def to_dict(self):
+        scores_dict = {}
+        for metric in metrics:
+            if metric.name in self.scores:
+                scores_dict[metric.name] =\
+                    metric.to_dict(self.scores[metric.name])
+
         return {
             "classifier": self.classifier,
-            "scores": self.scores,
+            "scores": scores_dict,
         }
 
 

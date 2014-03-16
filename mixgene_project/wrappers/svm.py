@@ -1,3 +1,4 @@
+import logging
 import traceback, sys
 
 from sklearn import svm
@@ -8,6 +9,8 @@ from celery import task
 from environment.structures import ExpressionSet, ClassifierResult
 from wrappers.scoring import compute_scores
 
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
 
 def linear_svm(exp, block,
         train_es, test_es,

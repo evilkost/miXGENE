@@ -8,7 +8,7 @@ from environment.structures import TableResult
 from webapp.tasks import wrapper_task
 from workflow.blocks.generic import GenericBlock, ActionsList, save_params_actions_list, BlockField, FieldType, \
     ActionRecord, ParamField, InputType, execute_block_actions_list, OutputBlockField, InputBlockField
-
+from workflow.blocks.rc_vizualize import RcVisualizer
 
 from wrappers.boxplot_stats import boxplot_stats
 from wrappers.gt import global_test_task
@@ -19,35 +19,9 @@ log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
 
-class BoxPlot(GenericBlock):
+class BoxPlot(RcVisualizer):
     block_base_name = "BOX_PLOT"
-    is_block_supports_auto_execution = False
 
-    _block_actions = ActionsList([
-        ActionRecord("save_params", ["created", "valid_params"], "validating_params",
-                     user_title="Save parameters"),
-        ActionRecord("on_params_is_valid", ["validating_params", "input_bound" ], "input_bound"),
-        ActionRecord("on_params_not_valid", ["validating_params"], "created"),
-
-        ActionRecord("configure_plot", ["input_bound", "ready"], "ready"),
-    ])
-    # _block_actions.extend(execute_block_actions_list)
-
-    results_container = InputBlockField(name="results_container",
-                                        required_data_type="ResultsContainer",
-                                        required=True,
-                                        field_type=FieldType.CUSTOM)
-    _rc = BlockField(name="rc", field_type=FieldType.CUSTOM, is_a_property=True)
-
-    _available_metrics = BlockField(name="available_metrics",
-                                    field_type=FieldType.RAW,
-                                    is_a_property=True)
-
-    metric = ParamField(name="metric", title="Metric", field_type=FieldType.STR,
-                        input_type=InputType.SELECT, select_provider="available_metrics")
-
-    metric = ParamField(name="metric", title="Metric", field_type=FieldType.STR,
-                        input_type=InputType.SELECT, select_provider="available_metrics")
     boxplot_config = ParamField(name="boxplot_config", title="",
                               input_type=InputType.HIDDEN,
                               field_type=FieldType.RAW)
@@ -67,21 +41,6 @@ class BoxPlot(GenericBlock):
         self.boxplot_config = {
             "multi_index_axis_dict": {},
         }
-
-    @property
-    def available_metrics(self):
-        return [
-            {"pk": x, "str": x} for x in
-            [
-                metric.name
-                for metric in metrics
-                if not metric.require_binary
-            ]
-        ]
-
-    @property
-    def rc(self):
-        return self.get_input_var("results_container")
 
     def compute_boxplot_stats(self, exp, request=None, *args, **kwargs):
         axis_to_plot = [
