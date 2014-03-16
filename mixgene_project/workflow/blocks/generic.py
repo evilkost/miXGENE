@@ -11,7 +11,7 @@ from webapp.scope import Scope, ScopeVar
 
 from collections import defaultdict
 from uuid import uuid1
-from webapp.tasks import auto_exec_task
+from webapp.tasks import auto_exec_task, halt_execution_task
 from workflow.blocks.errors import PortError
 
 log = logging.getLogger(__name__)
@@ -682,6 +682,10 @@ class GenericBlock(BaseBlock):
                     and self.is_block_supports_auto_execution:
                 log.debug("Propagate execution: %s ", self.base_name)
                 auto_exec_task.s(exp, self.scope_name).apply_async()
+            elif self.state in self.auto_exec_status_error \
+                    and self.is_block_supports_auto_execution:
+                log.debug("Detected error during automated workflow execution")
+                halt_execution_task.s(exp, self.scope_name).apply_async()
 
         else:
             raise RuntimeError("Action %s isn't available for block %s in state %s" %
@@ -793,7 +797,7 @@ class GenericBlock(BaseBlock):
     def error(self, exp, new_errors=None):
         if isinstance(new_errors, collections.Iterable):
             self.errors.extend(new_errors)
-        else:
+        elif new_errors:
             self.errors.append(new_errors)
 
         exp.store_block(self)

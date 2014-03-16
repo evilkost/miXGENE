@@ -7,16 +7,26 @@ from mixgene.redis_helper import ExpKeys
 log = logging.getLogger("mixgene.notify")
 log.setLevel(logging.DEBUG)
 
+
 class NotifyType(object):
     ALL = "updated_all"
     BLOCK = "updated_block"
     SCOPE = "updated_scope"
 
 
+class NotifyMode(object):
+    INFO = "info"
+    WARN = "warning"
+    ERROR = "error"
+    SUCCESS = "success"
+
+
 class Notification(object):
-    def __init__(self, exp_id, type_, comment=None, silent=True):
+    def __init__(self, exp_id, type_,
+                 comment=None, silent=True, mode=None):
         self.exp_id = exp_id
         self.type_ = type_
+        self.mode = mode or NotifyMode.INFO
         self.silent = silent
         self.comment = comment
 
@@ -34,6 +44,7 @@ class Notification(object):
             "type": self.type_,
             "silent": self.silent,
             "comment": self.comment,
+            "mode": self.mode
         }
 
 

@@ -25,13 +25,13 @@ Constructor.factory("blockAccess", function($http, $log){
         // TODO: export public key in exp object from server
         sockjs.send(angular.toJson({type: "init", content: "ENPK-" + access.exp_id}));
     };
-    toastr.options["timeOut"] = 10000;
+    toastr.options["timeOut"] = 100000;
     toastr.options["extendedTimeOut"] = 0;
     toastr.options["closeButton"] = true;
 
     sockjs.onmessage = function(e){
         if(e.type === "message"){
-            msg = angular.fromJson(e.data);
+            var msg = angular.fromJson(e.data);
             console.log("Got message through WS: " + e.data);
             if( msg.type === "updated_block"){
                 var block_ = access.block_bodies[msg.block_uuid];
@@ -44,7 +44,7 @@ Constructor.factory("blockAccess", function($http, $log){
             }
 
             if( ! msg.silent){
-                toastr.info(msg.comment);
+                toastr[msg.mode](msg.comment);
             }
 
         }

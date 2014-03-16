@@ -74,7 +74,7 @@ class UniformMetaBlock(GenericBlock):
 
         ActionRecord("success", ["working", "ready_to_run_sub_scope"], "done",
                      propagate_auto_execution=True, reload_block_in_client=True),
-        ActionRecord("error", ["ready", "working", "sub_scope_executing",
+        ActionRecord("error", ["*", "ready", "working", "sub_scope_executing",
                                "generating_folds", "ready_to_run_sub_scope"],
                      "execution_error", reload_block_in_client=True),
 

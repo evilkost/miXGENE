@@ -15,7 +15,7 @@ gzip on;
 
 server {
     listen 80 default;
-    server_name  localhost;
+    server_name  mixgene;
     access_log  /var/log/nginx.localhost.access.log;
 
     client_max_body_size 200M;

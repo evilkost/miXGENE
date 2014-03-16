@@ -5,7 +5,7 @@ import logging
 
 from mixgene.redis_helper import ExpKeys
 from mixgene.util import get_redis_instance
-from webapp.notification import AllUpdated
+from webapp.notification import AllUpdated, NotifyMode
 
 # TODO: invent magic to correct logging when called outside of celery task
 
@@ -179,7 +179,12 @@ class ScopeRunner(object):
                 block = self.exp.get_meta_block_by_sub_scope(self.scope_name)
                 block.do_action("on_sub_scope_done", self.exp)
             else:
-                AllUpdated(self.exp.pk, comment=u"Workflow execution completed", silent=False).send()
+                AllUpdated(
+                    self.exp.pk,
+                    comment=u"Workflow execution completed",
+                    mode=NotifyMode.SUCCESS,
+                    silent=False
+                ).send()
         elif blocks_to_execute:
             # for block in blocks_to_execute:
             #     block.do_action("execute", self.exp
