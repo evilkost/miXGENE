@@ -4,6 +4,9 @@ from settings import REDIS_HOST, REDIS_PORT
 from subprocess import Popen, PIPE
 import os
 import time
+from contextlib import contextmanager
+from datetime import datetime
+
 from urlparse import urlparse
 import re
 
@@ -119,3 +122,20 @@ def log_timing(func_to_decorate):
     wrapper.__doc__ = func_to_decorate.__doc__
     wrapper.__name__ = func_to_decorate.__name__
     return wrapper
+
+@contextmanager
+def stopwatch(name="execution_time",
+              swallow_exception=True,
+              threshold=None):
+    start = time.time()
+    status = "OK"
+    try:
+        yield
+    except Exception, e:
+        status = "ERROR: " + str(e)
+        if not swallow_exception:
+            raise
+    finally:
+        elapsed = name, time.time() - start
+        if threshold is None or elapsed < threshold:
+            log.debug("[Stopwatch]%s: %s (%s)", elapsed, status)

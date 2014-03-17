@@ -23,7 +23,7 @@ from webapp.scope import Scope
 from webapp.store import add_block_to_exp_from_dict
 from workflow.blocks import blocks_by_group
 
-from mixgene.util import dyn_import, get_redis_instance, mkdir
+from mixgene.util import dyn_import, get_redis_instance, mkdir, log_timing
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -120,6 +120,7 @@ def exp_sub_resource(request, exp_id, sub):
 
 
 @csrf_protect
+@log_timing
 def blocks_resource(request, exp_id):
     allowed = ["GET", "POST"]
     if request.method not in allowed:
@@ -178,6 +179,7 @@ def blocks_resource(request, exp_id):
 
 
 @csrf_protect
+@log_timing
 def block_resource(request, exp_id, block_uuid, action_code=None):
     """
 

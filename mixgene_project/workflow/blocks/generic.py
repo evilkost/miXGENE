@@ -4,6 +4,7 @@ import collections
 import copy
 import itertools
 import random
+from mixgene.util import log_timing, stopwatch
 
 from webapp.models import Experiment, UploadedData, UploadedFileWrapper
 from webapp.notification import Notification, NotifyType, BlockUpdated
@@ -295,8 +296,10 @@ class BlockSerializer(object):
         for f_name, f in self.fields.iteritems():
             if f.field_type == FieldType.HIDDEN:
                 continue
-            raw_val = getattr(block, f_name)
-            result[f_name] = f.value_to_dict(raw_val, block)
+
+            with stopwatch(name="Serializing block field %s" % f_name, threshold=0.01):
+                raw_val = getattr(block, f_name)
+                result[f_name] = f.value_to_dict(raw_val, block)
 
         params_protype = {
             str(param_name): param_field.to_dict()
@@ -306,8 +309,9 @@ class BlockSerializer(object):
         result["_params_prototype_list"] = params_protype.values()
 
         for f_name, f in self.params.iteritems():
-            raw_val = getattr(block, f.name)
-            result[f_name] = f.value_to_dict(raw_val, block)
+            with stopwatch(name="Serializing block param %s" % f_name, threshold=0.01):
+                raw_val = getattr(block, f.name)
+                result[f_name] = f.value_to_dict(raw_val, block)
 
         result["actions"] = [{
             "code": ar.name,
@@ -635,6 +639,7 @@ class GenericBlock(BaseBlock):
         """
         return self._trans.user_visible(self.state)
 
+    @log_timing
     def to_dict(self):
         result = self._block_serializer.to_dict(self)
         # import ipdb; ipdb.set_trace()
@@ -644,6 +649,7 @@ class GenericBlock(BaseBlock):
         self.out_manager.register(scope_var.var_name, scope_var.data_type)
         scope.register_variable(scope_var)
 
+    @log_timing
     def apply_action_from_js(self, action_name, *args, **kwargs):
         if self._trans.is_action_available(self.state, action_name):
             self.do_action(action_name, *args, **kwargs)
