@@ -2,9 +2,11 @@
 """
     Brute-force approach to generate .dot graph definition from block structure.
 """
-
+import logging
 from collections import defaultdict
 
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
 
 class Input(object):
     def __init__(self, src, name, dtype, from_cluster=False):
@@ -129,18 +131,23 @@ def root_from_exp(exp):
     for uuid, block in blocks_dict.iteritems():
         node = node_by_uuid[uuid]
         for input_name, bound_var in block.bound_inputs.iteritems():
+            # log.debug("Adding edge to %s-%s from %s", block.base_name, input_name, bound_var)
             parent_uuid = bound_var.block_uuid
             parent_block = blocks_dict[parent_uuid]
             if parent_block.scope_name != block.scope_name and \
-                    block.create_new_scope and not parent_block.create_new_scope:
-                pass
+                    block.create_new_scope and not parent_block.create_new_scope and \
+                    parent_block.out_manager.contains(bound_var.var_name):
+
+                new_input = Input(parent_uuid, input_name, bound_var.data_type,
+                                  from_cluster=parent_block.create_new_scope)
+                node.add_input(new_input)
+
             elif parent_block.scope_name != block.scope_name and \
                     parent_block.create_new_scope:
                 # inner block access iterated inputs
                 sg_input_node = iterated_input_node_dict[parent_uuid]
                 new_input = Input(sg_input_node.name, input_name, bound_var.data_type)
                 node.add_input(new_input)
-
             else:
                 new_input = Input(parent_uuid, input_name, bound_var.data_type,
                                   from_cluster=parent_block.create_new_scope)
