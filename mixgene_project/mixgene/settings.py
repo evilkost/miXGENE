@@ -256,6 +256,11 @@ LOGGING = {
             'level': MAIN_LOG_LEVEL,
             'propagate': True,
         },
+        'environment': {
+            'handlers': ['file_debug', 'file_info', 'console'],
+            'level': MAIN_LOG_LEVEL,
+            'propagate': True,
+        },
         'django.request': {
             'handlers': ['file_info', 'file_debug', 'console'],
             'level': 'INFO',
