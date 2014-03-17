@@ -15,7 +15,7 @@ from redis.client import StrictPipeline
 
 
 from mixgene.settings import MEDIA_ROOT
-from mixgene.util import get_redis_instance
+from mixgene.util import get_redis_instance, log_timing
 from mixgene.redis_helper import ExpKeys
 
 from environment.structures import GmtStorage, GeneSets
@@ -159,6 +159,7 @@ class Experiment(models.Model):
 
         return r.hgetall(ExpKeys.get_scope_creating_block_uuid_keys(self.pk))
 
+    @log_timing
     def store_block(self, block, new_block=False, redis_instance=None, dont_execute_pipe=False):
         if redis_instance is None:
             r = get_redis_instance()
@@ -358,7 +359,6 @@ class Experiment(models.Model):
         dot_string = root_from_exp(self).to_dot()[0]
         # return dot_string
 
-        # import ipdb; ipdb.set_trace()
         g = pgv.AGraph(dot_string)
         s = StringIO.StringIO()
         g.draw(path=s, format='svg', prog='dot')

@@ -1,4 +1,6 @@
 # Django settings for mixgene project.
+MAIN_LOG_LEVEL = "INFO"
+
 from local_settings import *
 
 MANAGERS = ADMINS
@@ -231,27 +233,27 @@ LOGGING = {
     'loggers': {
         'mixgene': {
             'handlers': ['file_debug', 'file_info', 'console'],
-            'level': 'DEBUG',
+            'level': MAIN_LOG_LEVEL,
             'propagate': True,
         },
         'workflow': {
             'handlers': ['file_debug', 'file_info', 'console'],
-            'level': 'DEBUG',
+            'level': MAIN_LOG_LEVEL,
             'propagate': True,
         },
         'converters': {
             'handlers': ['file_debug', 'file_info', 'console'],
-            'level': 'DEBUG',
+            'level': MAIN_LOG_LEVEL,
             'propagate': True,
         },
         'wrappers': {
             'handlers': ['file_debug', 'file_info', 'console'],
-            'level': 'DEBUG',
+            'level': MAIN_LOG_LEVEL,
             'propagate': True,
         },
         'webapp': {
             'handlers': ['file_debug', 'file_info', 'console'],
-            'level': 'DEBUG',
+            'level': MAIN_LOG_LEVEL,
             'propagate': True,
         },
         'django.request': {

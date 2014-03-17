@@ -3,6 +3,7 @@ from redis import StrictRedis
 from settings import REDIS_HOST, REDIS_PORT
 from subprocess import Popen, PIPE
 import os
+import time
 from urlparse import urlparse
 import re
 
@@ -104,3 +105,17 @@ def transpose_dict_list(gene_sets):
         for gen in genes:
             set_by_gene[gen].append(set_id)
     return set_by_gene
+
+
+def log_timing(func_to_decorate):
+    def wrapper(*args, **kwargs):
+        start = time.time()
+        result = func_to_decorate(*args, **kwargs)
+        elapsed = (time.time() - start)
+
+        log.warn("[TIMING]:%s - %s" % (func_to_decorate.__name__, elapsed))
+
+        return result
+    wrapper.__doc__ = func_to_decorate.__doc__
+    wrapper.__name__ = func_to_decorate.__name__
+    return wrapper

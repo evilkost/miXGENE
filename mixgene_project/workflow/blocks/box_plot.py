@@ -5,6 +5,7 @@ import json
 import numpy as np
 
 from environment.structures import TableResult
+from mixgene.util import log_timing
 from webapp.tasks import wrapper_task
 from workflow.blocks.generic import GenericBlock, ActionsList, save_params_actions_list, BlockField, FieldType, \
     ActionRecord, ParamField, InputType, execute_block_actions_list, OutputBlockField, InputBlockField
@@ -18,6 +19,7 @@ from wrappers.scoring import metrics
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
+import time
 
 class BoxPlot(RcVisualizer):
     block_base_name = "BOX_PLOT"
@@ -42,6 +44,7 @@ class BoxPlot(RcVisualizer):
             "multi_index_axis_dict": {},
         }
 
+    @log_timing
     def compute_boxplot_stats(self, exp, request=None, *args, **kwargs):
         axis_to_plot = [
             axis for axis, is_selected in
