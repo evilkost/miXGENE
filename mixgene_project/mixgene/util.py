@@ -125,7 +125,7 @@ def log_timing(func_to_decorate):
 
 @contextmanager
 def stopwatch(name="execution_time",
-              swallow_exception=True,
+              swallow_exception=False,
               threshold=None):
     start = time.time()
     status = "OK"
@@ -138,4 +138,4 @@ def stopwatch(name="execution_time",
     finally:
         elapsed = name, time.time() - start
         if threshold is None or elapsed < threshold:
-            log.debug("[Stopwatch]%s: %s (%s)", elapsed, status)
+            log.debug("[Stopwatch]%s: %s (%s)", name, elapsed, status)
