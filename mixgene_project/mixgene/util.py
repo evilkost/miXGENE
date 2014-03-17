@@ -136,6 +136,6 @@ def stopwatch(name="execution_time",
         if not swallow_exception:
             raise
     finally:
-        elapsed = name, time.time() - start
-        if threshold is None or elapsed < threshold:
+        elapsed = time.time() - start
+        if threshold is None or elapsed > threshold:
             log.debug("[Stopwatch]%s: %s (%s)", name, elapsed, status)

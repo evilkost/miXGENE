@@ -71,8 +71,8 @@ class ResultsContainer(GenericStoreStructure):
 
     def load(self):
         try:
-            with gzip.open(self.filepath) as file_obj:
-                data = pickle.load(file_obj)
+            with gzip.open(self.filepath).read() as pickled:
+                data = pickle.loads(pickled)
                 self.axis_list = data["axis_list"]
                 self.labels_dict = data["labels_dict"]
 

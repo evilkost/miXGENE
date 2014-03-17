@@ -4,6 +4,7 @@ import logging
 import json
 
 from environment.structures import TableResult
+from mixgene.util import log_timing
 from webapp.tasks import wrapper_task
 from workflow.blocks.generic import GenericBlock, ActionsList, save_params_actions_list, BlockField, FieldType, \
     ActionRecord, ParamField, InputType, execute_block_actions_list, OutputBlockField, InputBlockField
@@ -43,6 +44,7 @@ class RcVisualizer(GenericBlock):
         super(RcVisualizer, self).__init__(*args, **kwargs)
 
     @property
+    @log_timing
     def available_metrics(self):
         try:
             rc = self.rc

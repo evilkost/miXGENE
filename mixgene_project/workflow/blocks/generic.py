@@ -291,6 +291,7 @@ class BlockSerializer(object):
         bs.inputs = copy.deepcopy(other.inputs)
         return bs
 
+    @log_timing
     def to_dict(self, block):
         result = {}
         for f_name, f in self.fields.iteritems():
