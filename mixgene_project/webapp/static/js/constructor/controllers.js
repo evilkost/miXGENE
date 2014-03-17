@@ -125,7 +125,9 @@ Constructor.controller('CollectorCtrl', function($scope, blockAccess){
 Constructor.controller('DataFlowRenderCtrl', function($scope, $sce){
     $scope.access.exp_sub_resource("get_dataflow_graphviz",
         function(response){
-            $scope.viz_placeholder =  $sce.trustAsHtml(Viz(response.data, "svg"));
+//            $scope.viz_placeholder =  $sce.trustAsHtml(Viz(response.data, "svg"));
+            $scope.viz_placeholder =  $sce.trustAsHtml(response.data);
+            document._graph = response.data;
         }
     )
 })

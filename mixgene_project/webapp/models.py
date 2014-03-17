@@ -13,6 +13,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from redis.client import StrictPipeline
 
+
 from mixgene.settings import MEDIA_ROOT
 from mixgene.util import get_redis_instance
 from mixgene.redis_helper import ExpKeys
@@ -351,8 +352,20 @@ class Experiment(models.Model):
 
     def get_dataflow_graphviz(self):
         from workflow.graphviz import root_from_exp
-        root = root_from_exp(self).to_dot()[0]
-        return root
+        import cStringIO as StringIO
+        import pygraphviz as pgv
+
+        dot_string = root_from_exp(self).to_dot()[0]
+        # return dot_string
+
+        # import ipdb; ipdb.set_trace()
+        g = pgv.AGraph(dot_string)
+        s = StringIO.StringIO()
+        g.draw(path=s, format='svg', prog='dot')
+        s.seek(0)
+        result = s.read()
+        return result
+
 
 def delete_exp(exp):
     """

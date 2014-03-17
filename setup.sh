@@ -16,7 +16,7 @@ sudo apt-get update
 
 sudo apt-get install -y python python-dev python-pip git-core tmux mysql-server mysql-common \
     mysql-client python-mysqldb nginx redis-server=2:2.6.13-1~bpo70+1+b1 gunicorn  \
-    r-base-core libxml2-dev r-cran-xml \
+    r-base-core libxml2-dev r-cran-xml libgraphviz-dev \
     python-redis-lock python-nose python-django-nose python-scipy libatlas-dev libatlas3-base
 
 ###
@@ -34,7 +34,7 @@ npm install bower
 # installing Django from PIP
 sudo pip install -U Django South Celery django-celery redis hiredis \
     pandas biopython rpy2 fysom flower django-extensions \
-    scikit-learn markdown
+    scikit-learn markdown pygraphviz
 
 
 
