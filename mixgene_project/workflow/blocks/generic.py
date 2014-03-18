@@ -206,7 +206,7 @@ class InputType(object):
 class ParamField(object):
     def __init__(self, name, title, input_type, field_type, init_val=None,
                  validator=None, select_provider=None,
-                 required=True, order_num=None,
+                 required=True, order_num=None, options=None,
                  *args, **kwargs):
         self.name = name
         self.title = title
@@ -227,7 +227,8 @@ class ParamField(object):
         getattr(cls, "_block_serializer").register(self)
 
     def to_dict(self):
-        return {k: unicode(v) for k, v in self.__dict__.iteritems()}
+        ignore_fields = set(["validator"])
+        return {k: v for k, v in self.__dict__.iteritems() if k not in ignore_fields}
 
     def value_to_dict(self, raw_val, block):
         val = str(raw_val)
@@ -545,16 +546,16 @@ class GenericBlock(BaseBlock):
             #     setattr(self, f.name, f.init_val)
         scope.store()
 
-        if hasattr(self, "create_new_scope") and self.create_new_scope:
-            log.debug("Trying to add inner outputs for block %s in exp: %s",
-                      self.name, self.exp_id)
-            scope = self.get_sub_scope()
-            scope.load()
-            for f_name, f in self._block_serializer.inner_outputs.iteritems():
-                log.debug("Registering inner outputs: %s in block: %s, exp: %s",
-                          f_name, self.name, self.exp_id)
-                scope.register_variable(ScopeVar(self.uuid, f_name, f.provided_data_type))
-            scope.store()
+        # if hasattr(self, "create_new_scope") and self.create_new_scope:
+        #     log.debug("Trying to add inner outputs for block %s in exp: %s",
+        #               self.name, self.exp_id)
+        #     scope = self.get_sub_scope()
+        #     scope.load()
+        #     for f_name, f in self._block_serializer.inner_outputs.iteritems():
+        #         log.debug("Registering inner outputs: %s in block: %s, exp: %s",
+        #                   f_name, self.name, self.exp_id)
+        #         scope.register_variable(ScopeVar(self.uuid, f_name, f.provided_data_type))
+        #     scope.store()
 
         for f_name, f in self._block_serializer.inputs.iteritems():
             self.input_manager.register(f)

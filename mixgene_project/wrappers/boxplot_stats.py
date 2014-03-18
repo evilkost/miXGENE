@@ -144,17 +144,17 @@ def boxplot_stats(X, whis=1.5, bootstrap=None, labels=None):
         stats['mean'] = np.mean(x)
 
         # medians and quartiles
-        q1, med, q3 =  np.percentile(x, [25, 50, 75])
+        q1, med, q3 = np.percentile(x, [25, 50, 75])
 
         # interquartile range
-        stats['iqr'] = q3 - q1
+        stats['iqr'] = float(q3 - q1)
         if stats['iqr'] == 0:
             whis = 'range'
 
         # conf. interval around median
-        stats['cilo'], stats['cihi'] = _compute_conf_interval(
+        stats['cilo'], stats['cihi'] = map(float, _compute_conf_interval(
             x, med, stats['iqr'], bootstrap
-        )
+        ))
 
         # lowest/highest non-outliers
         if np.isscalar(whis):
@@ -175,16 +175,16 @@ def boxplot_stats(X, whis=1.5, bootstrap=None, labels=None):
         # get high extreme
         wiskhi = np.compress(x <= hival, x)
         if len(wiskhi) == 0 or np.max(wiskhi) < q3:
-            stats['whishi'] = q3
+            stats['whishi'] = float(q3)
         else:
-            stats['whishi'] = np.max(wiskhi)
+            stats['whishi'] = float(np.max(wiskhi))
 
         # get low extreme
         wisklo = np.compress(x >= loval, x)
         if len(wisklo) == 0 or np.min(wisklo) > q1:
-            stats['whislo'] = q1
+            stats['whislo'] = float(q1)
         else:
-            stats['whislo'] = np.min(wisklo)
+            stats['whislo'] = float(np.min(wisklo))
 
         # compute a single array of outliers
         stats['fliers'] = list(np.hstack([
@@ -193,7 +193,7 @@ def boxplot_stats(X, whis=1.5, bootstrap=None, labels=None):
         ]))
 
         # add in teh remaining stats and append to final output
-        stats['q1'], stats['med'], stats['q3'] = q1, med, q3
+        stats['q1'], stats['med'], stats['q3'] = map(float, [q1, med, q3])
         bxpstats.append(stats)
 
     return bxpstats

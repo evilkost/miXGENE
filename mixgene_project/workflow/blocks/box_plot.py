@@ -50,8 +50,8 @@ class BoxPlot(RcVisualizer):
             axis for axis, is_selected in
             self.boxplot_config['multi_index_axis_dict'].items() if is_selected
         ]
-        if axis_to_plot:
-            rc = self.rc
+        rc = self.rc
+        if axis_to_plot and rc:
             rc.load()
 
             df = rc.get_pandas_slice_for_boxplot(axis_to_plot, self.metric)
@@ -66,21 +66,22 @@ class BoxPlot(RcVisualizer):
                 categories.append(title)
 
             bps = boxplot_stats(np.array(df.T))
-            self.chart_series[0]["data"] = [
-                [
-                    rec["whislo"],
-                    rec["q1"],
-                    rec["med"],
-                    rec["q3"],
-                    rec["whishi"]
+
+            if bps:
+                self.chart_series = [{}]
+                self.chart_series[0]["data"] = [
+                    [
+                        rec["whislo"],
+                        rec["q1"],
+                        rec["med"],
+                        rec["q3"],
+                        rec["whishi"]
+                    ]
+                    for rec in bps
                 ]
-                for rec in bps
-            ]
-            self.chart_categories = categories
-        else:
-            self.chart_series[0]["data"] = []
-            self.chart_categories = []
-        exp.store_block(self)
+                self.chart_categories = categories
+
+                exp.store_block(self)
 
     def on_params_is_valid(self, exp, *args, **kwargs):
         super(BoxPlot, self).on_params_is_valid(exp, *args, **kwargs)

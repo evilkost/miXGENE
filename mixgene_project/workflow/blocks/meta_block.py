@@ -86,7 +86,7 @@ class UniformMetaBlock(GenericBlock):
     _collector_spec = ParamField(name="collector_spec", title="",
                                  field_type=FieldType.CUSTOM,
                                  input_type=InputType.HIDDEN,
-                                 init_val=None
+                                 init_val=None, required=False
     )
 
     res_seq = BlockField(name="res_seq", provided_data_type="SequenceContainer",
@@ -142,7 +142,7 @@ class UniformMetaBlock(GenericBlock):
             when all blocks in sub-scope have exec status == done
         """
         r = get_redis_instance()
-        with redis_lock.Lock(r, ExpKeys.get_metablock_collect_lock_key(self.exp_id, self.uuid)):
+        with redis_lock.Lock(r, ExpKeys.get_block_global_lock_key(self.exp_id, self.uuid)):
 
             cell = self.res_seq.sequence[self.inner_output_manager.iterator]
             for name, scope_var in self.collector_spec.bound.iteritems():

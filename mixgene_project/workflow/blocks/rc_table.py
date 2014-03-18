@@ -43,7 +43,6 @@ class RenderTable(RcVisualizer):
     @property
     def table(self):
         rc = self.rc
-        rc.load()
         to = TableObj()
         if rc:
             rc.load()
@@ -54,16 +53,16 @@ class RenderTable(RcVisualizer):
                     index_axis_list.append(axis)
 
             if header_axis and index_axis_list and hasattr(self, "metric"):
-                log.debug("Can build table slice")
+                # log.debug("Can build table slice")
 
                 df = rc.get_pandas_slice(header_axis, index_axis_list, metric=self.metric)
-                log.debug(df)
+                # log.debug(df)
                 to.html = df.to_html()
             else:
                 log.debug("Can't build table slice, header axis `%s`, index axis_list `%s`",
                           header_axis, index_axis_list)
 
-            log.debug("Table: %s", to.to_dict())
+            # log.debug("Table: %s", to.to_dict())
         return to
 
     def on_params_is_valid(self, exp, *args, **kwargs):

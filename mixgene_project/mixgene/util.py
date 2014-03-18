@@ -112,11 +112,12 @@ def transpose_dict_list(gene_sets):
 
 def log_timing(func_to_decorate):
     def wrapper(*args, **kwargs):
+        threshold = 0.01
         start = time.time()
         result = func_to_decorate(*args, **kwargs)
         elapsed = (time.time() - start)
-
-        log.warn("[TIMING]:%s - %s" % (func_to_decorate.__name__, elapsed))
+        if elapsed > threshold:
+            log.debug("[TIMING]:%s - %s" % (func_to_decorate.__name__, elapsed))
 
         return result
     wrapper.__doc__ = func_to_decorate.__doc__
