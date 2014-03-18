@@ -1,25 +1,72 @@
 <div class="form-group"  ng-controller="UploadFieldCtrl" >
 
-    <div class="row">
-        <label class="col-sm-4 control-label">
-            {$ field.title $}
-
-
+    <div class="row"
+            ng-if="!show_progress">
+        <label class="col-sm-2 control-label">
+            {$ field.title $}:
         </label>
-        <div class="col-sm-6">
-            <input type="file" class="form-control" name="{{ field.name }}"
-                   ng-file-select="onFileSelect($files)"
-                   ng-model="block[field.name]"
-                   >
-            </input>
+
+        <div class="col-sm-4 col-md-4 col-lg-3 text-right">
+            <span class="btn btn-primary btn-file"
+                    ng-if="!field.options.multiple">
+                Choose file ...
+                <input
+                    type="file"
+                    name="{{ field.name }}"
+                    ng-file-select="onFileSelect($files)"
+                    ng-model="block[field.name]"
+                />
+            </span>
+            <span
+                class="btn btn-primary btn-file"
+                ng-if="field.options.multiple"
+            >
+                Choose files ...
+                <input
+                    type="file"
+                    name="{{ field.name }}"
+                    ng-file-select="onFileSelect($files)"
+                    ng-model="block[field.name]"
+                    multiple
+                />
+            </span>
         </div>
+
+        <div class="col-md-4" ng-if="stored">
+            <span ng-if="!field.options.multiple">
+                Uploaded: {$ stored.filename $} size: {$ stored.size $}
+            </span>
+            <span
+                class="dotted"
+                ng-if="field.options.multiple"
+                popover="{$ storedPreview $}"
+                popover-trigger="mouseenter"
+                popover-placement="bottom"
+            >
+                Uploaded: {$ stored.count $} files.
+            </span>
+        </div>
+
+        <div class="col-md-2" ng-if="stored">
+            <button class="btn btn-danger">Clean</button>
+        </div>
+
     </div>
 
-    <div class="row" ng-if="stored_file">
-        Uploaded: {$ stored_file.filename $} size: {$ stored_file.size $}
-    </div>
+    <progressbar
+            ng-if="show_progress"
+            max="progress_max"
+            value="progress_dynamic"
+    >
+        <span style="color:black; white-space:nowrap;">
+            Uploading ...
+        </span>
+    </progressbar>
+
+
     <div class="row">
-        <div ng-repeat="error in block.form_errors[field.name]" class="col-sm-9 col-sm-offset-3">
+        <div ng-repeat="error in block.form_errors[field.name]"
+             class="col-sm-9 col-sm-offset-3">
             <span class="label label-danger">
                 {$ error $}
             </span>

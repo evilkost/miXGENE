@@ -4,7 +4,9 @@ import collections
 import copy
 import itertools
 import random
-from mixgene.util import log_timing, stopwatch
+import redis_lock
+from mixgene.redis_helper import ExpKeys
+from mixgene.util import log_timing, stopwatch, get_redis_instance
 
 from webapp.models import Experiment, UploadedData, UploadedFileWrapper
 from webapp.notification import Notification, NotifyType, BlockUpdated
@@ -217,6 +219,7 @@ class ParamField(object):
         self.select_provider = select_provider
         self.is_a_property = False
         self.required = required
+        self.options = options or {}
         if order_num is None:
             self.order_num = random.randint(0, 1000)
         else:
@@ -239,7 +242,11 @@ class ParamField(object):
                 if self.field_type in [FieldType.RAW, FieldType.INT, FieldType.FLOAT] :
                     val = raw_val
                 if self.field_type == FieldType.CUSTOM:
-                    val = raw_val.to_dict(block)
+                    try:
+                        val = raw_val.to_dict(block)
+                    except Exception, e:
+                        log.exception("Failed to serialize field %s with error: %s", self.name, e)
+                        val = str(raw_val)
                 if self.field_type in [FieldType.STR, FieldType.BOOLEAN]:
                     val = str(raw_val)
                 if self.field_type == FieldType.SIMPLE_DICT:
@@ -715,27 +722,56 @@ class GenericBlock(BaseBlock):
         exp.store_block(self)
         self.validate_params(exp)
 
-    def save_file_input(self, exp, field_name, file_obj, upload_meta=None):
+    def save_file_input(self, exp, field_name, file_obj, multiple=False, upload_meta=None):
         if upload_meta is None:
             upload_meta = {}
 
         if not hasattr(self, field_name):
             raise Exception("Block doesn't have field: %s" % field_name)
 
-        ud, is_created = UploadedData.objects.get_or_create(
-            exp=exp, block_uuid=self.uuid, var_name=field_name)
-        # import ipdb; ipdb.set_trace()
         orig_name = file_obj.name
-
         local_filename = "%s_%s_%s" % (self.uuid[:8], field_name, file_obj.name)
-        file_obj.name = local_filename
-        ud.data = file_obj
-        ud.save()
 
-        ufw = UploadedFileWrapper(ud.pk)
-        ufw.orig_name = orig_name
-        setattr(self, field_name, ufw)
+        if not multiple:
+            log.debug("Storing single upload to field: %s", field_name)
+            ud, is_created = UploadedData.objects.get_or_create(
+                exp=exp, block_uuid=self.uuid, var_name=field_name)
 
+            file_obj.name = local_filename
+            ud.data = file_obj
+            ud.save()
+
+            ufw = UploadedFileWrapper(ud.pk)
+            ufw.orig_name = orig_name
+            setattr(self, field_name, ufw)
+            exp.store_block(self)
+        else:
+            log.debug("Adding upload to field: %s", field_name)
+
+            ud, is_created = UploadedData.objects.get_or_create(
+                exp=exp, block_uuid=self.uuid, var_name=field_name, filename=orig_name)
+
+            file_obj.name = local_filename
+            ud.data = file_obj
+            ud.filename = orig_name
+            ud.save()
+
+            ufw = UploadedFileWrapper(ud.pk)
+            ufw.orig_name = orig_name
+
+            r = get_redis_instance()
+            with redis_lock.Lock(r, ExpKeys.get_block_global_lock_key(self.exp_id, self.uuid)):
+                log.debug("Enter lock, file: %s", orig_name)
+                block = exp.get_block(self.uuid)
+                attr = getattr(block, field_name)
+
+                attr[orig_name] = ufw
+                log.debug("Added upload `%s` to collection: %s", orig_name, attr.keys())
+                exp.store_block(block)
+                log.debug("Exit lock, file: %s", orig_name)
+
+    def erase_file_input(self, exp, field_name, multiple=False):
+        # TODO:
         exp.store_block(self)
 
     def add_dyn_input_hook(self, exp, dyn_port, new_port):

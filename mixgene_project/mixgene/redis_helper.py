@@ -41,7 +41,7 @@ class ExpKeys(object):
         return "AETLK-%s-%s" % (exp_id, scope_name)
 
     @staticmethod
-    def get_metablock_collect_lock_key(exp_id, block_uuid):
+    def get_block_global_lock_key(exp_id, block_uuid):
         return "MBCLK-%s-%s" % (exp_id, block_uuid)
 
 

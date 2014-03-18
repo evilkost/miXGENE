@@ -246,10 +246,16 @@ def upload_data(request):
             block_uuid = form.cleaned_data['block_uuid']
             field_name = form.cleaned_data['field_name']
             file_obj = form.cleaned_data['file']
+            multiple = form.cleaned_data['multiple']
 
+            log.debug("Multiple: %s", multiple)
             exp = Experiment.get_exp_by_id(exp_id)
             block = exp.get_block(block_uuid)
-            block.save_file_input(exp, field_name, file_obj, request.POST["upload_meta"])
+            block.save_file_input(
+                exp, field_name, file_obj,
+                multiple=multiple,
+                upload_meta=request.POST["upload_meta"]
+            )
 
     return HttpResponse(status=204)
 

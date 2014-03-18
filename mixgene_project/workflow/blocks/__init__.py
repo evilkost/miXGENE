@@ -11,6 +11,7 @@ from globaltest import GlobalTest
 from user_upload import UserUpload, UserUploadComplex, UploadInteraction
 from expression_sets_merge import MergeExpressionSets
 from workflow.blocks.custom_iterator import CustomIterator
+from workflow.blocks.mass_upload import MassUpload
 
 from workflow.blocks.multi_features import MultiFeature
 from workflow.blocks.sub_agg import SubAggregation
@@ -47,6 +48,7 @@ register_block("get_bi_gene_set", "Get MSigDB gene set", GroupType.INPUT_DATA, G
 register_block("cross_validation", "Cross validation K-fold", GroupType.META_PLUGIN, CrossValidation)
 register_block("multi_feature", "Multi feature validation", GroupType.META_PLUGIN, MultiFeature)
 register_block("custom_iterator", "Custom iterator", GroupType.META_PLUGIN, CustomIterator)
+register_block("mass_upload", "Mass upload", GroupType.META_PLUGIN, MassUpload)
 
 # register_block("Pca_visualize", "2D PCA Plot", GroupType.VISUALIZE, PCA_visualize)
 register_block("box_plot", "Box plot ML scores", GroupType.VISUALIZE, BoxPlot)

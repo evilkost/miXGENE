@@ -7,3 +7,4 @@ class UploadForm(forms.Form):
     exp_id = forms.IntegerField()
     block_uuid = forms.CharField()
     field_name = forms.CharField()
+    multiple = forms.BooleanField(required=False)

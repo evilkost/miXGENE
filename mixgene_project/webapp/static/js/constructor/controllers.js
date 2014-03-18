@@ -142,15 +142,42 @@ Constructor.controller('CustomIteratorDynInputsCtrl', function($scope){
 })
 
 Constructor.controller('UploadFieldCtrl', function($scope, $upload){
+    $scope.show_progress = false;
     $scope.upload_meta = {
         "exp_id": $scope.access.exp_id,
         "block_uuid": $scope.block.uuid,
         "field_name": $scope.field.name,
         "upload_meta": {}
     }
-    $scope.stored_file = $scope.block[$scope.field.name];
+    if($scope.field.options && $scope.field.options.multiple){
+        $scope.upload_meta["multiple"] = 'true';
+    }
+    $scope.stored = $scope.block[$scope.field.name];
+    $scope.storedPreview = "";
+    if( $scope.stored && $scope.stored.previews){
+        $scope.storedPreview = $scope.stored.previews.join(" ");
+    }
+
+    $scope.progress_max = 0;
+    $scope.progress_dynamic = 0;
+    var add_tick = function(){
+        $scope.progress_dynamic += 1;
+        if( $scope.progress_dynamic == $scope.progress_max){
+            $scope.show_progress = false;
+
+            $scope.access.reload_block($scope.block);
+
+            toastr.info("Finished uploading files for parameter: " + $scope.field.name +
+                " in block: " + $scope.block.base_name );
+        }
+    }
 
     $scope.onFileSelect = function($files){
+        $scope.show_progress = true;
+
+        $scope.progress_max = $files.length;
+        $scope.progress_dynamic = 0;
+
         for (var i = 0; i < $files.length; i++) {
             var file = $files[i];
             $scope.upload = $upload.upload({
@@ -169,9 +196,15 @@ Constructor.controller('UploadFieldCtrl', function($scope, $upload){
                 console.log('percent: ' + parseInt(100.0 * evt.loaded / evt.total));
             }).success(function(data, status, headers, config) {
                 // file is uploaded successfully
-                console.log(data);
+                // console.log(data);
+
+
+
+                add_tick();
+            }).error(function(){
+                toastr.error("Failed to upload file: " + file.name + " for parameter: " + $scope.field.name);
+                add_tick();
             });
-            //.error(...)
             //.then(success, error, progress);
         }
     }
