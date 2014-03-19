@@ -1,9 +1,9 @@
 #from django import forms
 from webapp.models import BroadInstituteGeneSet
+from workflow.blocks.fields import FieldType, BlockField, OutputBlockField, InputBlockField, InputType, ParamField, \
+    ActionRecord, ActionsList
 
-
-from workflow.blocks.generic import GenericBlock, ActionsList, save_params_actions_list, BlockField, FieldType, \
-    ActionRecord, ParamField, InputType, execute_block_actions_list, OutputBlockField, InputBlockField
+from workflow.blocks.generic import GenericBlock, save_params_actions_list, execute_block_actions_list
 
 
 # class GeneSetSelectionForm(forms.Form):

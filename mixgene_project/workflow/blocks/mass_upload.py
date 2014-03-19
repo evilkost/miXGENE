@@ -8,11 +8,10 @@ import sys
 import pandas as pd
 
 from environment.structures import ExpressionSet, BinaryInteraction, prepare_phenotype_for_js_from_es
-from workflow.blocks.generic import GenericBlock, ActionsList, BlockField, FieldType, \
-    ActionRecord, ParamField, InputType, OutputBlockField, InnerOutputField
+from workflow.blocks.fields import MultiUploadField, FieldType, BlockField, OutputBlockField, InnerOutputField, \
+    InputType, ParamField, ActionRecord, ActionsList
+from workflow.blocks.generic import GenericBlock
 from workflow.blocks.meta_block import UniformMetaBlock
-
-from workflow.blocks.fields.upload import MultiUploadField
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)

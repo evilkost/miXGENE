@@ -3,9 +3,8 @@ import logging
 import cStringIO as StringIO
 
 from django.core.urlresolvers import reverse
+from workflow.blocks.fields import FieldType, BlockField, InputType, ParamField
 
-from workflow.blocks.generic import BlockField, FieldType, \
-    ParamField, InputType
 from workflow.blocks.rc_vizualize import RcVisualizer
 
 

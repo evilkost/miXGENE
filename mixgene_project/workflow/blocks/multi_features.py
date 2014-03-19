@@ -14,11 +14,12 @@ from webapp.models import Experiment
 from environment.structures import SequenceContainer
 from webapp.scope import ScopeRunner, ScopeVar
 from webapp.tasks import wrapper_task
+from workflow.blocks.fields import FieldType, BlockField, OutputBlockField, InnerOutputField, InputBlockField, InputType, \
+    ParamField, ActionRecord, ActionsList
+from workflow.blocks.managers import IteratedInnerFieldManager
 from workflow.blocks.meta_block import UniformMetaBlock
 from workflow.common_tasks import generate_cv_folds
-from generic import InnerOutputField
-from workflow.blocks.generic import GenericBlock, ActionsList, save_params_actions_list, BlockField, FieldType, \
-    ActionRecord, ParamField, InputType, OutputBlockField, InputBlockField, IteratedInnerFieldManager
+from workflow.blocks.generic import GenericBlock, save_params_actions_list
 
 from environment.structures import prepare_phenotype_for_js_from_es
 

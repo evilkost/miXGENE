@@ -6,8 +6,9 @@ import sys
 import pandas as pd
 
 from environment.structures import ExpressionSet, BinaryInteraction, prepare_phenotype_for_js_from_es
-from workflow.blocks.generic import GenericBlock, ActionsList, BlockField, FieldType, \
-    ActionRecord, ParamField, InputType, OutputBlockField
+from workflow.blocks.fields import FieldType, BlockField, OutputBlockField, InputType, ParamField, ActionRecord, \
+    ActionsList
+from workflow.blocks.generic import GenericBlock
 
 
 class UserUpload(GenericBlock):

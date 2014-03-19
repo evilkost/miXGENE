@@ -15,11 +15,11 @@ from environment.result_container import ResultsContainer
 
 from webapp.scope import ScopeRunner, ScopeVar
 
-from generic import InnerOutputField
-
 from workflow.blocks.errors import PortError
-from workflow.blocks.generic import GenericBlock, ActionsList, save_params_actions_list, BlockField, FieldType, \
-    ActionRecord, ParamField, InputType, OutputBlockField, InputBlockField, IteratedInnerFieldManager
+from workflow.blocks.fields import FieldType, BlockField, OutputBlockField, InnerOutputField, InputBlockField, InputType, \
+    ParamField, ActionRecord, ActionsList
+from workflow.blocks.generic import GenericBlock, save_params_actions_list
+from workflow.blocks.managers import IteratedInnerFieldManager
 
 
 log = logging.getLogger(__name__)

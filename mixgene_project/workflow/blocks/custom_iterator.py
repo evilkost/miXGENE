@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-from workflow.blocks.generic import BlockField, FieldType, InputBlockField, InnerOutputField
+from workflow.blocks.fields import FieldType, BlockField, InnerOutputField, InputBlockField, ActionRecord, ActionsList
 from workflow.blocks.meta_block import UniformMetaBlock
-from workflow.blocks.generic import ActionsList, ActionRecord
+
 
 class CellField(object):
     def __init__(self, label, data_type, name=None, *args, **kwargs):
