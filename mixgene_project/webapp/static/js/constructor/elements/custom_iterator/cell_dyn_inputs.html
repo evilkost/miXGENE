@@ -11,9 +11,9 @@
                     <b>{$ cell.label $} </b>
                 </div>
                 <div class="panel-body">
-                    <fieldset ng-disabled="access.mode.ro">
-                        <div ng-repeat="inp_tuple in cell.inputs_list">
-                            <div class="form-group" ng-init="input=block.inputs.dict[inp_tuple[1]]">
+                    <!--<fieldset ng-disabled="access.mode.ro">-->
+                        <div ng-repeat="inp_tuple in cell.inputs_list ">
+                            <div class="row form-group" ng-init="input=block.inputs.dict[inp_tuple[1]]">
                                 <label class="col-sm-6 control-label">
                                     {$ inp_tuple[0] $} <small>[{$ input.required_data_type $}]</small>
                                 </label>
@@ -23,7 +23,7 @@
                                 </div>
                             </div>
                         </div>
-                    </fieldset>
+                    <!--</fieldset>-->
                 </div>
             </div>
         </div>
