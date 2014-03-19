@@ -17,15 +17,18 @@ class SvmClassifier(GenericBlock):
     _block_actions.extend(execute_block_actions_list)
 
     # User defined parameters
-    C = ParamField(name="C", title="Penalty",
+    C = ParamField(name="C", title="Penalty", order_num=10,
                    input_type=InputType.TEXT, field_type=FieldType.FLOAT, init_val=1.0)
-    tol = ParamField(name="tol", title="Tolerance for stopping criteria",
+    tol = ParamField(name="tol", order_num=20,
+                     title="Tolerance for stopping criteria",
                      input_type=InputType.TEXT, field_type=FieldType.FLOAT, init_val=0.0001)
 
     # Input ports definition
-    _train_es = InputBlockField(name="train_es", required_data_type="ExpressionSet",
+    _train_es = InputBlockField(name="train_es", order_num=10,
+                                required_data_type="ExpressionSet",
                                 required=True)
-    _test_es = InputBlockField(name="test_es", required_data_type="ExpressionSet",
+    _test_es = InputBlockField(name="test_es", order_num=10,
+                               required_data_type="ExpressionSet",
                                required=True)
 
     # Provided outputs

@@ -19,8 +19,10 @@ class GlobalTest(GenericBlock):
     ])
     _block_actions.extend(execute_block_actions_list)
 
-    _input_es = InputBlockField(name="es", required_data_type="ExpressionSet", required=True)
-    _input_gs = InputBlockField(name="gs", required_data_type="GeneSets", required=True)
+    _input_es = InputBlockField(name="es", order_num=10,
+                                required_data_type="ExpressionSet", required=True)
+    _input_gs = InputBlockField(name="gs", order_num=20,
+                                required_data_type="GeneSets", required=True)
 
     _result = OutputBlockField(name="result", field_type=FieldType.STR,
                                provided_data_type="TableResult", init_val=None)

@@ -18,8 +18,10 @@ class MergeGeneSetWithPlatformAnnotation(GenericBlock):
     ])
     _block_actions.extend(execute_block_actions_list)
 
-    _input_gs = InputBlockField(name="gs", required_data_type="GeneSets", required=True)
-    _input_ann = InputBlockField(name="ann", required_data_type="PlatformAnnotation", required=True)
+    _input_gs = InputBlockField(name="gs", order_num=10,
+                                required_data_type="GeneSets", required=True)
+    _input_ann = InputBlockField(name="ann", order_num=20,
+                                 required_data_type="PlatformAnnotation", required=True)
 
     _gs = OutputBlockField(name="gs", field_type=FieldType.HIDDEN, init_val=None,
                            provided_data_type="GeneSets")

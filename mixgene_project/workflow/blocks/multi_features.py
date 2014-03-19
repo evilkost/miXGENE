@@ -74,7 +74,8 @@ class MultiFeature(UniformMetaBlock):
     ])
 
     _input_es_dyn = InputBlockField(
-        name="es_inputs", required_data_type="ExpressionSet",
+        name="es_inputs", order_num=-10,
+        required_data_type="ExpressionSet",
         required=True, multiply_extensible=True
     )
 

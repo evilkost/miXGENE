@@ -41,8 +41,10 @@ class MergeExpressionSets(GenericBlock):
         ])
     _block_actions.extend(execute_block_actions_list)
 
-    _es_1 = InputBlockField(name="es_1", title="Set 1", required_data_type="ExpressionSet", required=True)
-    _es_2 = InputBlockField(name="es_2", title="Set 2", required_data_type="ExpressionSet", required=True)
+    _es_1 = InputBlockField(name="es_1", title="Set 1", order_num=10,
+                            required_data_type="ExpressionSet", required=True)
+    _es_2 = InputBlockField(name="es_2", title="Set 2", order_num=20,
+                            required_data_type="ExpressionSet", required=True)
 
     merged_es = OutputBlockField(name="merged_es", provided_data_type="ExpressionSet")
 

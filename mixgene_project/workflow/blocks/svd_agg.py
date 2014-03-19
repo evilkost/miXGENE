@@ -20,9 +20,12 @@ class SvdAggregation(GenericBlock):
     ])
     _block_actions.extend(execute_block_actions_list)
 
-    _mRNA_es = InputBlockField(name="mRNA_es", required_data_type="ExpressionSet", required=True)
-    _miRNA_es = InputBlockField(name="miRNA_es", required_data_type="ExpressionSet", required=True)
-    _interaction = InputBlockField(name="interaction", required_data_type="BinaryInteraction", required=True)
+    _mRNA_es = InputBlockField(name="mRNA_es", order_num=10,
+                               required_data_type="ExpressionSet", required=True)
+    _miRNA_es = InputBlockField(name="miRNA_es", order_num=20,
+                                required_data_type="ExpressionSet", required=True)
+    _interaction = InputBlockField(name="interaction", order_num=30,
+                                   required_data_type="BinaryInteraction", required=True)
 
     c = ParamField(name="c", title="Constant c",
                    input_type=InputType.TEXT, field_type=FieldType.FLOAT, init_val=1.0)
