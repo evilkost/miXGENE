@@ -251,7 +251,11 @@ class InputManager(object):
             "list": [
                 field.to_dict()
                 for field in self.input_fields
-            ]
+            ],
+            "dict": {
+                field.name: field.to_dict()
+                for field in self.input_fields
+            }
         }
 
 
