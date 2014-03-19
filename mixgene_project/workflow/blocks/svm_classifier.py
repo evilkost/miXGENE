@@ -27,7 +27,7 @@ class SvmClassifier(GenericBlock):
     _train_es = InputBlockField(name="train_es", order_num=10,
                                 required_data_type="ExpressionSet",
                                 required=True)
-    _test_es = InputBlockField(name="test_es", order_num=10,
+    _test_es = InputBlockField(name="test_es", order_num=20,
                                required_data_type="ExpressionSet",
                                required=True)
 
