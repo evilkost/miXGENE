@@ -17,7 +17,6 @@ from workflow.blocks.multi_features import MultiFeature
 from workflow.blocks.sub_agg import SubAggregation
 from workflow.blocks.svd_agg import SvdAggregation
 from workflow.blocks.box_plot import BoxPlot
-from workflow.blocks.flatten_nested_res_seq import FlattenNestedResultSequences
 from workflow.blocks.rc_table import RenderTable
 
 block_classes_by_name = {}
@@ -62,6 +61,3 @@ register_block("globaltest", "Global test", GroupType.PROCESSING, GlobalTest)
 register_block("svd_agg", "Svd aggregation", GroupType.PROCESSING, SvdAggregation)
 register_block("sub_agg", "Subtractive aggregation", GroupType.PROCESSING, SubAggregation)
 register_block("merge_two_es", "Merge expression sets", GroupType.PROCESSING, MergeExpressionSets)
-
-#register_block("flatten_nested_result_seq", "Flatten nested sequence",
-#               GroupType.PROCESSING, FlattenNestedResultSequences)
