@@ -27,24 +27,27 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-6 col-lg-4">
+        <div class="col-md-6 col-lg-4"
+             ng-hide="access.mode.ro"
+        >
             <div class="well">
             <form class="form-inline">
-                <fieldset ng-disabled="access.mode.ro">
-                    <label class="control-label">
-                        Cell label
-                    </label>
-                    <div class="form-group">
 
-                        <input type="text" class="form-control"
-                               ng-model="block.cells.new.label">
-                    </div>
-                    <button class="btn btn-primary"
-                       ng-click="access.send_action(block, 'add_cell')"
-                    >
-                        Add cell
-                    </button>
-                </fieldset>
+                <label class="control-label">
+                    Cell label
+                </label>
+                <div class="form-group">
+
+                    <input type="text" class="form-control"
+                           ng-model="block.cells.new.label">
+                </div>
+                <button class="btn btn-primary"
+
+                   ng-click="access.send_action(block, 'add_cell')"
+                >
+                    Add cell
+                </button>
+
             </form>
             </div>
             <div ng-include="'/static/js/constructor/partials/actions_list.html'" />

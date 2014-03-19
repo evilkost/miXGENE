@@ -1,10 +1,17 @@
 <div ng-controller="PortInputSelectCtrl">
-    <div ng-click="open()">
+    <div ng-if="!access.mode.ro"
+            ng-click="open()">
         <span class="dotted" ng-show="block.bound_inputs[input.name]">
             {$ access.vars_by_key[block.bound_inputs[input.name]].title $}
         </span>
         <span class="dotted" ng-hide="block.bound_inputs[input.name]">
             click to select
+        </span>
+    </div>
+
+    <div ng-if="access.mode.ro">
+        <span class="dotted" ng-show="block.bound_inputs[input.name]">
+            {$ access.vars_by_key[block.bound_inputs[input.name]].title $}
         </span>
     </div>
 
