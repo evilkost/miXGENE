@@ -1,0 +1,48 @@
+<div class="modal-header">
+    <h3>
+        Select input for
+        <b>
+            {$ input.name $}
+        </b>
+        <small>[{$ input.required_data_type $}]</small>
+    </h3>
+</div>
+<div class="modal-body">
+    <p ng-if="block.bound_inputs[input.name]">
+        Bound to: {$ access.vars_by_pk[block.bound_inputs[input.name]].title $}
+    </p>
+
+    <br />
+    <div class="row">
+        <div class="list-group col-xs-6">
+            <a class="list-group-item"
+               ng-repeat="block_provider_uuid in  blocks_uuid_set"
+               ng-class="{active: selected.block_uuid == block_provider_uuid}"
+               ng-click="select_block_provider(block_provider_uuid)"
+            >
+            {$ access.block_bodies[block_provider_uuid].base_name $}
+            </a>
+        </div>
+
+        <div ng-if="selected.block_uuid"
+                class="list-group col-xs-6">
+
+            <a class="list-group-item"
+               ng-click="bind_input(scope_var.pk)"
+               ng-repeat="scope_var
+                    in access.vars
+                        |filter:access.fnFilterVarsByType([input.required_data_type])
+                        |filter:access.fnIncludeVarsByBlockUUID([selected.block_uuid])
+                    "
+            >
+                {$ scope_var.var_name $}
+            </a>
+        </div>
+
+    </div>
+
+</div>
+<div class="modal-footer">
+    <!--<button class="btn btn-primary" ng-click="ok()">OK</button>-->
+    <button class="btn btn-warning" ng-click="cancel()">Cancel</button>
+</div>

@@ -1,11 +1,17 @@
-<select class="form-control"
-        ng-model="block.bound_inputs[input.name]"
-        ng-options="
-                    option.pk as option.title for option
-                    in access.vars
-                        |filter:access.fnFilterVarsByScope(block.visible_scopes_list)
-                        |filter:access.fnFilterVarsByType([input.required_data_type])
-                        |filter:access.fnFilterVarsByBlockUUID([block.uuid])
-                "
-        >
-</select>
+<div ng-controller="PortInputSelectCtrl">
+    <a
+          class="dotted"
+          ng-click="open()"
+    >
+        <span ng-show="block.bound_inputs[input.name]">
+            {$ access.vars_by_key[block.bound_inputs[input.name]].title $}
+        </span>
+        <span ng-hide="block.bound_inputs[input.name]">
+            click to select
+        </span>
+    </a>
+
+
+
+</div>
+

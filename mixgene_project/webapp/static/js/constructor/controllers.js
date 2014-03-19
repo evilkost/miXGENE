@@ -137,8 +137,85 @@ Constructor.controller('CustomIteratorAddCellFieldCtrl', function($scope){
         $scope.access.send_action($scope.block, "add_cell_prototype_field", false)
     }
 })
-Constructor.controller('CustomIteratorDynInputsCtrl', function($scope){
+var ModalInstancePortInputSelectCtrl = function($scope, $modalInstance, blockAccess, block, input){
+    $scope.access = blockAccess;
+    $scope.block = block;
+    $scope.input = input;
 
+    $scope.selected = {
+        block_uuid: "",
+//        block_alias: "",
+        output: ""
+    }
+
+//    $scope.filtered_vars = $scope.access.vars;
+    $scope.filtered_vars = _.filter(
+        $scope.access.vars,
+        $scope.access.fnFilterVarsByScope($scope.block.visible_scopes_list)
+    );
+    $scope.filtered_vars = _.filter(
+        $scope.filtered_vars,
+        $scope.access.fnFilterVarsByType([$scope.input.required_data_type])
+    );
+    $scope.filtered_vars = _.filter(
+        $scope.filtered_vars,
+        $scope.access.fnFilterVarsByBlockUUID([$scope.block.uuid])
+    );
+
+    $scope.blocks_uuid_set = []
+    $scope.scope_keys_by_block_uuids = {}
+    _.each($scope.filtered_vars, function(scope_var, index){
+        $scope.scope_keys_by_block_uuids[scope_var.block_uuid] = scope_var.pk;
+        if( !_.contains($scope.blocks_uuid_set, scope_var.block_uuid)){
+            $scope.blocks_uuid_set.push(scope_var.block_uuid);
+        }
+    });
+
+
+    $scope.select_block_provider = function(block_uuid){
+        $scope.selected.block_uuid = block_uuid;
+//        $scope.selected.block_alias =
+    }
+
+    $scope.bind_input = function(scope_var_pk){
+        $scope.block.bound_inputs[$scope.input.name] = scope_var_pk;
+        $scope.ok();
+    }
+
+    $scope.ok = function () {
+        $scope.access.send_action($scope.block, "save_params", false);
+        $modalInstance.close();
+    };
+
+    $scope.cancel = function () {
+        $modalInstance.dismiss('cancel');
+    };
+}
+Constructor.controller('ModalInstancePortInputSelectCtrl', ModalInstancePortInputSelectCtrl);
+
+Constructor.controller('PortInputSelectCtrl', function($scope, $modal, $log){
+    $scope.items = ['item1', 'item2', 'item3'];
+
+    $scope.open = function () {
+        var modalInstance = $modal.open({
+            templateUrl: '/static/js/constructor/partials/input_port_modal.html',
+            controller: ModalInstancePortInputSelectCtrl,
+            resolve: {
+                block: function () {
+                    return $scope.block;
+                },
+                input: function () {
+                    return $scope.input;
+                }
+
+            }
+        });
+
+        modalInstance.result.then(function () {
+        }, function () {
+            $log.info('Modal dismissed at: ' + new Date());
+        });
+    };
 })
 
 Constructor.controller('UploadFieldCtrl', function($scope, $upload){

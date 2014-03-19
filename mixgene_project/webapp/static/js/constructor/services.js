@@ -156,18 +156,6 @@ Constructor.factory("blockAccess", function($http, $log){
         })
     }
 
-    access.get_port_input_options = function (port){
-        // TODO: split into another service with dependency to blockAccess
-        var result = []
-        angular.forEach(port.bscopes, function(bscope, idx){
-            angular.forEach(access.vars_by_bscope[bscope][port.data_type], function(option, idx){
-                result.push(option);
-            })
-        })
-        return result;
-    }
-
-
     access.fnFilterVarsByType = function(data_type_list){
         return function(scope_var){
             return _.contains(data_type_list, scope_var.data_type);
@@ -181,6 +169,11 @@ Constructor.factory("blockAccess", function($http, $log){
     access.fnFilterVarsByBlockUUID = function(uuid_list){
         return function(scope_var){
             return !_.contains(uuid_list, scope_var.block_uuid);
+        }
+    }
+    access.fnIncludeVarsByBlockUUID = function(uuid_list){
+        return function(scope_var){
+            return _.contains(uuid_list, scope_var.block_uuid);
         }
     }
 
