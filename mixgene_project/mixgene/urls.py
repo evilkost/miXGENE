@@ -28,6 +28,8 @@ urlpatterns = patterns('',
         'webapp.views.block_resource', name="block_resource_with_action"),
     url(r'^experiments/(?P<exp_id>\d+)/blocks/(?P<block_uuid>[\w|\d]+)/(?P<field>\w+)$',
         'webapp.views.block_field_resource', name="block_field"),
+    url(r'^experiments/(?P<exp_id>\d+)/blocks/(?P<block_uuid>[\w|\d]+)/(?P<field>\w+)/(?P<format>[\w|\d|_]+)$',
+        'webapp.views.block_field_resource', name="block_field_formatted"),
 
 
     url(r'^block_sub_page/(?P<exp_id>\d+)/(?P<block_uuid>[\w|\d]+)/(?P<sub_page>\w+)/',

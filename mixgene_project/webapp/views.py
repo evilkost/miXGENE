@@ -213,14 +213,26 @@ def block_resource(request, exp_id, block_uuid, action_code=None):
 
 
 #@csrf_protect
-def block_field_resource(request, exp_id, block_uuid, field):
+def block_field_resource(request, exp_id, block_uuid, field, format=None):
+    format = format or "json"
     exp = Experiment.objects.get(pk=exp_id)
     # import ipdb; ipdb.set_trace()
     block = exp.get_block(str(block_uuid))
-    data = getattr(block, field)(exp, request)
+    attr = getattr(block, field)
+    if callable(attr):
+        data = attr(exp, request)
+    else:
+        data = attr
 
-    resp = HttpResponse(content_type="application/json")
-    json.dump(data, resp)
+    if format == "json":
+        content_type = "application/json"
+        resp = HttpResponse(content_type=content_type)
+        json.dump(data, resp)
+    elif format == "csv":
+        content_type = "text/csv"
+        resp = HttpResponse(content_type=content_type)
+        resp.write(data)
+
     return resp
 
 

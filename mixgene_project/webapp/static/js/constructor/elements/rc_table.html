@@ -28,6 +28,11 @@
                 </tr>
             </tbody>
         </table>
+        <div ng-if="block.table">
+            <a href="{$ block.export_table_url $}">
+                Export as .csv
+            </a>
+        </div>
     </div>
     <div class="col-lg-6 col-md-8">
         <div ng-bind-html='safe_table'>
