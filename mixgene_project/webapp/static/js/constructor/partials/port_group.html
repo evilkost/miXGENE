@@ -1,8 +1,9 @@
 <div>
-    <div ng-repeat="input in block.inputs" ng-controller="PortCtrl">
+    <div ng-repeat="input in block.inputs.list | orderBy:'order_num' " ng-controller="PortCtrl">
         <div ng-if="input.multiply_extensible != true" class="row">
             <div class="form-group">
                 <label class="col-sm-4 control-label">
+                    <!--[{$ input.order_num $}] -->
                     {$ input.name $} <small>[{$ input.required_data_type $}]</small>
                 </label>
                 <div class="col-sm-8">
@@ -16,13 +17,16 @@
              class="row">
             <div class="form-group">
                 <label class="col-sm-4 control-label">
+                    <!--[{$ input.order_num $}] -->
                     New input field <small> [{$ input.required_data_type $}] </small>
                 </label>
-                <div class="col-sm-6">
-                    <input ng-model="new_port.name" type="text" class="form-control">
-                </div>
-                <div class="col-sm-2">
-                    <button class="btn btn-primary" ng-click="add_port()">Add</button>
+                <div class="col-sm-8">
+                    <div class="input-group">
+                        <input ng-model="new_port.name" type="text" class="form-control">
+                        <span class="input-group-btn">
+                            <button class="btn btn-primary" ng-click="add_port()">Add</button>
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>

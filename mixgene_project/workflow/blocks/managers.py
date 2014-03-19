@@ -248,9 +248,12 @@ class InputManager(object):
 
     def to_dict(self):
         return {
-            field.name: field.to_dict()
-            for field in self.input_fields
+            "list": [
+                field.to_dict()
+                for field in self.input_fields
+            ]
         }
+
 
 
 class IteratedInnerFieldManager(object):

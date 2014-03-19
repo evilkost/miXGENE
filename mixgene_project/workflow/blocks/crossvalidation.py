@@ -36,12 +36,13 @@ class CrossValidation(UniformMetaBlock):
 
     _input_es_dyn = InputBlockField(
         name="es_inputs", required_data_type="ExpressionSet",
-        required=True, multiply_extensible=True
+        required=True, multiply_extensible=True,
+        order_num=-1
     )
 
-    folds_num = ParamField(name="folds_num", title="Folds number",
+    folds_num = ParamField(name="folds_num", title="Folds number", order_num=10,
                            input_type=InputType.TEXT, field_type=FieldType.INT, init_val=5)
-    repeats_num = ParamField(name="repeats_num", title="Repeats number",
+    repeats_num = ParamField(name="repeats_num", title="Repeats number", order_num=20,
                              input_type=InputType.TEXT, field_type=FieldType.INT, init_val=1)
 
     def __init__(self, *args, **kwargs):

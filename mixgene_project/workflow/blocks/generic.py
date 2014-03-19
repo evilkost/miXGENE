@@ -381,8 +381,16 @@ class GenericBlock(BaseBlock):
         if not dyn_port:
             return
 
-        new_port = InputBlockField(name=spec['new_port'],
-                                   required_data_type=dyn_port.required_data_type)
+        order_num = 1000 + abs(dyn_port.order_num) * 10
+        dp = getattr(self, dyn_port_name)
+        if dp:
+            order_num += len(dp)
+
+        new_port = InputBlockField(
+            name=spec['new_port'],
+            required_data_type=dyn_port.required_data_type,
+            order_num=order_num
+        )
 
         self.add_input_port(new_port)
         getattr(self, dyn_port_name).append(spec["new_port"])
