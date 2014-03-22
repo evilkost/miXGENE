@@ -118,7 +118,7 @@ def boxplot_stats(X, whis=1.5, bootstrap=None, labels=None):
         elif len(X.shape) == 2:
             nrows, ncols = X.shape
             if nrows == 1:
-                X = [X]
+                X = [X[0]]  # TODO: create patch request for matplotlib
             elif ncols == 1:
                 X = [X.ravel()]
             else:

@@ -60,7 +60,8 @@ class RenderTable(RcVisualizer):
             if header_axis and index_axis_list and hasattr(self, "metric"):
                 # log.debug("Can build table slice")
 
-                df = rc.get_pandas_slice(header_axis, index_axis_list, metric=self.metric)
+                df = rc.get_pandas_slice(header_axis, index_axis_list,
+                                         metric_name=self.metric)
                 # log.debug(df)
                 to.html = df.to_html()
                 to.df = df

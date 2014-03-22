@@ -4,21 +4,32 @@ import copy
 # from webapp.models import Experiment
 from collections import defaultdict
 import cPickle as pickle
+import functools
 import gzip
 import logging
 
 from itertools import product
+#from functools import reduce
 
 import numpy as np
 import pandas as pd
-from environment.structures import GenericStoreStructure
+
+from environment.structures import GenericStoreStructure, ClassifierResult
+from wrappers.scoring import compute_score_by_metric_name
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
+
 def get_metric_vectorized(metric):
     def func(x):
-        return float(x.scores[metric])
+        try:
+            return float(x.scores[metric])
+        except Exception, e:
+            log.exception("Failed to get value from `%s` metric: `%s` with error: %s",
+                          x.scores, metric, e)
+            # import  ipdb; ipdb.set_trace()
+            return np.nan
 
     return np.vectorize(func, otypes=[np.float])
 
@@ -42,6 +53,10 @@ class ResultsContainer(GenericStoreStructure):
         self.ar = np.empty(shape=shape, dtype=object)
 
     def get_axis_dim(self, axis):
+        """
+            @return: axis idx in array shape
+            @rtype: int
+        """
         return self.axis_list.index(axis)
 
     def store(self):
@@ -105,9 +120,11 @@ class ResultsContainer(GenericStoreStructure):
     def dim_num(self, axis_name):
         return self.axis_list.index(axis_name)
 
-    def build_axis_mask(self, spec_dict):
+    def build_axis_mask(self, spec_dict, axis_list=None):
         mask_list = []
-        for axis in self.axis_list:
+        if not axis_list:
+            axis_list = self.axis_list
+        for axis in axis_list:
             if axis in spec_dict:
                 key = spec_dict[axis]
                 if type(key) == str or type(key) == unicode:
@@ -115,7 +132,7 @@ class ResultsContainer(GenericStoreStructure):
                 elif hasattr(key, "__iter__"):
                     idx = [self.inverse_labels_dict[axis][key_i] for key_i in key]
                 else:
-                    raise Exception("Gor wrong defenition for axis %s value" % axis)
+                    raise Exception("Gor wrong definition for axis %s value" % axis)
 
                 mask_list.append(idx)
             else:
@@ -127,72 +144,127 @@ class ResultsContainer(GenericStoreStructure):
         new_rc.ar = self.ar[self.build_axis_mask(spec_dict)]
         return new_rc
 
-    def get_pandas_slice_for_boxplot(self, axis_list_for_index, metric):
-        rows_dim_list = map(self.get_axis_dim, axis_list_for_index)
+    def aggregate_prediction_vectors(self, axis_list_to_preserve):
+        """
+            Produce new np.array be merging `y_true`, `y_predicted` fields of ClassifierResult objects
+                in axis that not present in axis_list_to_preserve. New array is reshaped to complain
+                with axis order in axis_list_to_preserve.
 
-        shapes = self.ar.shape
-        all_dims = range(len(shapes))
-        ar = self.ar
+            @return: Array of len(axis_axis_list_to_preserve) dimensions
+                each element [ClassifierResult] would have joined y_true and y_predicted vectors
+            @rtype: np.array
+        """
 
-        index_labels = [self.labels_dict[axis] for axis in axis_list_for_index]
-        df_index = pd.MultiIndex.from_product(index_labels, names=axis_list_for_index)
+        if len(axis_list_to_preserve) == len(self.axis_list):
+            return np.transpose(self.ar, [
+                self.axis_list.index(axis)
+                for axis in axis_list_to_preserve
+            ])
 
-        row_def = product(*index_labels).next()
-        spec_def = {axis: val for val, axis in zip(row_def, axis_list_for_index)}
-        key = np.array(self.build_axis_mask(spec_def))
-        sliced = ar[tuple(key)]
-        if hasattr(sliced, 'flatten'):
-            length = len(sliced.flatten())
-        else:
-            length = 1
-        df = pd.DataFrame(index=df_index, columns=map(str, range(length)))
+        new_shape = tuple([
+            len(self.labels_dict[axis_name])
+            for axis_name in axis_list_to_preserve
+        ])
+        result = np.empty(shape=new_shape, dtype=object)
+        index_labels = [self.labels_dict[axis] for axis in axis_list_to_preserve]
 
         for row_def in product(*index_labels):
-            spec_def = {axis: val for val, axis in zip(row_def, axis_list_for_index)}
+            # log.debug("processing row: %s", row_def)
+            spec_def = {axis: val for val, axis in zip(row_def, axis_list_to_preserve)}
             key = np.array(self.build_axis_mask(spec_def))
-            sliced = ar[tuple(key)]
+            key_for_result = tuple([
+                self.inverse_labels_dict[axis_name][label]
+                for label, axis_name
+                in zip(row_def, axis_list_to_preserve)
+            ])
+            sliced = self.ar[tuple(key)]
             if hasattr(sliced, 'flatten'):
-                df.ix[row_def, :] = [cr.scores[metric] for cr in sliced.flatten()]
-            else:
-                df.ix[row_def, :] = sliced.scores[metric]
+                flatten = sliced.flatten()
+                new_cr = ClassifierResult("", "")
+                new_cr.classifier = "aggregated_result"
+                for cr in flatten:
+                    # new_cr.labels_encode_vector.extend(cr.labels_encode_vector)
+                    new_cr.y_true.extend(cr.y_true)
+                    new_cr.y_predicted.extend(cr.y_predicted)
+
+                # import  ipdb; ipdb.set_trace()
+                result[key_for_result] = new_cr
+
+        return result
+
+    def compute_score(self, axis_list_to_preserve, metric_name, propogate_error=False):
+        """
+            @return: Array with computed score or NA if we failed to compute score
+            @rtype: np.array
+        """
+        agg_ar = self.aggregate_prediction_vectors(axis_list_to_preserve)
+
+        scoring_function = functools.partial(
+            compute_score_by_metric_name, metric_name=metric_name)
+
+        def func(cr):
+            """
+                @type cr: ClassifierResult
+                @rtype: float
+            """
+            try:
+                return scoring_function(cr.y_true, cr.y_predicted)
+            except Exception, e:
+                if propogate_error:
+                    raise e
+                return np.nan
+
+        vectorized_func = np.vectorize(func, otypes=[np.float])
+
+        score_ar = vectorized_func(agg_ar)
+        return score_ar
+
+    def get_pandas_slice_for_boxplot(
+            self,
+            compare_axis_by_boxplot,
+            agg_axis_for_scoring,
+            metric_name
+    ):
+        axis_list_to_preserve = set(self.axis_list).difference(agg_axis_for_scoring)
+        log.debug("Axis to preserve: %s", axis_list_to_preserve)
+        score_ar = self.compute_score(axis_list_to_preserve, metric_name=metric_name)
+
+        index_labels = [self.labels_dict[axis] for axis in compare_axis_by_boxplot]
+        df_index = pd.MultiIndex.from_product(index_labels, names=compare_axis_by_boxplot)
+        cols_num = reduce(lambda x, y: x * y, [
+            len(self.labels_dict[axis_name]) for axis_name
+            in set(axis_list_to_preserve).difference(compare_axis_by_boxplot)
+        ])
+        df = pd.DataFrame(index=df_index, columns=map(str, range(cols_num)))
+
+        for row_def in product(*index_labels):
+            spec_def = {axis: val for val, axis in zip(row_def, compare_axis_by_boxplot)}
+            key = np.array(self.build_axis_mask(spec_def, axis_list=axis_list_to_preserve))
+            sliced = score_ar[tuple(key)]
+            df.ix[row_def, :] = np.array(sliced.flatten())
 
         return df
 
-
-    def get_pandas_slice(self, axis_for_header, axis_list_for_index, metric, method=None):
+    def get_pandas_slice(self, axis_for_header, axis_list_for_index, metric_name):
         """
             Only one axis to be used as headers
             And more than one could be used for rows index
         """
-        if method is None:
-            method = "avg"
-
-        header_dim = self.get_axis_dim(axis_for_header)
-        rows_dim_list = map(self.get_axis_dim, axis_list_for_index)
-
-        shapes = self.ar.shape
-        all_dims = range(len(shapes))
-        avg_by = tuple(set(all_dims).difference(rows_dim_list + [header_dim]))
-
-        without_avg_by = [e for e in all_dims if e not in avg_by]
-
-        float_ar = get_metric_vectorized(metric)(self.ar)
-
-        if method == "avg":
-            avg_ar = np.average(float_ar, axis=avg_by)
-        else:
-            raise NotImplementedError("Not implemented method %s" % method)
-
         index_labels = [self.labels_dict[axis] for axis in axis_list_for_index]
         df_index = pd.MultiIndex.from_product(index_labels, names=axis_list_for_index)
         df = pd.DataFrame(index=df_index, columns=[self.labels_dict[axis_for_header]])
+
+        axis_list_to_preserve = axis_list_for_index + [axis_for_header]
+        score_ar = self.compute_score(axis_list_to_preserve, metric_name=metric_name)
 
         for row_def in product(*index_labels):
             spec_def = {axis: val for val, axis in zip(row_def, axis_list_for_index)}
             for column in self.labels_dict[axis_for_header]:
                 spec_def[axis_for_header] = column
-                key = tuple(np.array(self.build_axis_mask(spec_def))[[without_avg_by]])
-                df.ix[row_def, column] = avg_ar[key]
+                key = tuple(np.array(self.build_axis_mask(spec_def, axis_list_to_preserve)))
+
+                val = score_ar[key]
+                df.ix[row_def, column] = val
 
         return df
 

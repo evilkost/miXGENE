@@ -48,13 +48,10 @@ class RcVisualizer(GenericBlock):
     @log_timing
     def available_metrics(self):
         try:
-            rc = self.rc
-            rc.load()
-            single_cr = rc.ar.flat.next()
-
             return [
-                {"pk": metric_name, "str": metrics_dict[metric_name].title}
-                for metric_name in single_cr.scores.keys()
+                {"pk": metric_name, "str": metric.title}
+                for metric_name, metric in metrics_dict.iteritems()
+                if metric.produce_single_number
             ]
         except Exception, e:
             log.exception(e)

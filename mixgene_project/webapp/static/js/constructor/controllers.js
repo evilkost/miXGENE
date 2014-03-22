@@ -18,14 +18,14 @@ Constructor.controller('MainCtrl', function($scope, blockAccess){
     }
 
 
-})
+});
 
 Constructor.controller('WorktableCtrl', function WorktableCtrl($scope, blockAccess){
     $scope.access = blockAccess;
     $scope.bscope = "root";  // change for sub blocks worktable
     $scope.show_pallet = false;
 
-})
+});
 
 Constructor.controller('BlockCtrl', function BlockCtrl($scope, blockAccess){
     $scope.access = blockAccess;
@@ -42,19 +42,19 @@ Constructor.controller('BlockCtrl', function BlockCtrl($scope, blockAccess){
     $scope.toggleEditBaseName = function(){
         $scope.edit_base_name =!$scope.edit_base_name;
 
-    }
+    };
     $scope.changeBaseName = function(){
         $scope.access.send_action($scope.block, "change_base_name", true);
         $scope.edit_base_name = false;
-    }
+    };
 
-})
+});
 
 Constructor.controller('PortGroupCtrl', function PortGroupCtrl($scope){
     //$scope.showPortGroup = $scope.ports != null;
     $scope.showPortGroup = true;
 
-})
+});
 
 Constructor.controller('PortCtrl', function PortCtrl($scope, blockAccess){
     $scope.access = blockAccess;
@@ -62,7 +62,7 @@ Constructor.controller('PortCtrl', function PortCtrl($scope, blockAccess){
 
     $scope.add_port = function(){
         // used only for dynamic input ports
-        var block_to_send = $scope.block
+        var block_to_send = $scope.block;
         block_to_send._add_dyn_port = {
             "input": $scope.input.name,
             "new_port": $scope.new_port.name
@@ -71,7 +71,7 @@ Constructor.controller('PortCtrl', function PortCtrl($scope, blockAccess){
         $scope.access.send_action(block_to_send, 'add_dyn_input', true);
 
     }
-})
+});
 
 Constructor.controller('formFieldCtrl', function($scope, $log){
     $scope.template = "/static/js/constructor/forms/field_" +
@@ -80,23 +80,23 @@ Constructor.controller('formFieldCtrl', function($scope, $log){
     $scope.predicate = "order_num";
 
     $scope.field = $scope.param_proto;
-})
+});
 
 Constructor.controller('blockElementCtrl', function($scope){
     $scope.template = "/static/js/constructor/elements/" + $scope.element;
 
-})
+});
 Constructor.controller('PalletCtrl', function($scope, blockAccess){
     $scope.show_pallet = false;
     $scope.access = blockAccess;
     $scope.toggle_pallet = function(){
         $scope.show_pallet = !$scope.show_pallet;
-    }
+    };
     $scope.add_block = function(scopeName, block_name){
         $scope.access.add_block(scopeName, block_name);
         $scope.toggle_pallet();
-    }
-})
+    };
+});
 
 Constructor.controller('CollectorCtrl', function($scope, blockAccess){
     $scope.show_set_label_control = false;
@@ -104,7 +104,7 @@ Constructor.controller('CollectorCtrl', function($scope, blockAccess){
         var key = $scope.block.collector_spec.new.scope_var;
         $scope.block.collector_spec.new.data_type = $scope.access.vars_by_key[key].data_type;
         $scope.access.send_action($scope.block, "add_collector_var", true);
-    }
+    };
 
     $scope.remove_from_collector = function(name){
         $scope.block.collector_spec["to_remove"] = name;
@@ -120,7 +120,7 @@ Constructor.controller('CollectorCtrl', function($scope, blockAccess){
         );
     }
 
-})
+});
 
 Constructor.controller('DataFlowRenderCtrl', function($scope, $sce){
     $scope.access.exp_sub_resource("get_dataflow_graphviz",
@@ -130,13 +130,14 @@ Constructor.controller('DataFlowRenderCtrl', function($scope, $sce){
             document._graph = response.data;
         }
     )
-})
+});
 
 Constructor.controller('CustomIteratorAddCellFieldCtrl', function($scope){
     $scope.add_cell_field = function(){
         $scope.access.send_action($scope.block, "add_cell_prototype_field", false)
     }
-})
+});
+
 var ModalInstancePortInputSelectCtrl = function($scope, $modalInstance, blockAccess, block, input){
     $scope.access = blockAccess;
     $scope.block = block;
@@ -146,7 +147,7 @@ var ModalInstancePortInputSelectCtrl = function($scope, $modalInstance, blockAcc
         block_uuid: "",
 //        block_alias: "",
         output: ""
-    }
+    };
 
 //    $scope.filtered_vars = $scope.access.vars;
     $scope.filtered_vars = _.filter(
@@ -175,12 +176,12 @@ var ModalInstancePortInputSelectCtrl = function($scope, $modalInstance, blockAcc
     $scope.select_block_provider = function(block_uuid){
         $scope.selected.block_uuid = block_uuid;
 //        $scope.selected.block_alias =
-    }
+    };
 
     $scope.bind_input = function(scope_var_pk){
         $scope.block.bound_inputs[$scope.input.name] = scope_var_pk;
         $scope.ok();
-    }
+    };
 
     $scope.ok = function () {
         $scope.access.send_action($scope.block, "save_params", false);
@@ -190,7 +191,8 @@ var ModalInstancePortInputSelectCtrl = function($scope, $modalInstance, blockAcc
     $scope.cancel = function () {
         $modalInstance.dismiss('cancel');
     };
-}
+};
+
 Constructor.controller('ModalInstancePortInputSelectCtrl', ModalInstancePortInputSelectCtrl);
 
 Constructor.controller('PortInputSelectCtrl', function($scope, $modal, $log){
@@ -216,7 +218,7 @@ Constructor.controller('PortInputSelectCtrl', function($scope, $modal, $log){
             $log.info('Modal dismissed at: ' + new Date());
         });
     };
-})
+});
 
 Constructor.controller('UploadFieldCtrl', function($scope, $upload){
     $scope.show_progress = false;
@@ -225,7 +227,7 @@ Constructor.controller('UploadFieldCtrl', function($scope, $upload){
         "block_uuid": $scope.block.uuid,
         "field_name": $scope.field.name,
         "upload_meta": {}
-    }
+    };
     if($scope.field.options && $scope.field.options.multiple){
         $scope.upload_meta["multiple"] = 'true';
     }
@@ -247,7 +249,7 @@ Constructor.controller('UploadFieldCtrl', function($scope, $upload){
             toastr.info("Finished uploading files for parameter: " + $scope.field.name +
                 " in block: " + $scope.block.base_name );
         }
-    }
+    };
 
     $scope.onFileSelect = function($files){
         $scope.show_progress = true;
@@ -285,7 +287,7 @@ Constructor.controller('UploadFieldCtrl', function($scope, $upload){
             //.then(success, error, progress);
         }
     }
-})
+});
 
 Constructor.controller('RcTableCtrl', function($scope, $sce){
 
@@ -308,9 +310,9 @@ Constructor.controller('RcTableCtrl', function($scope, $sce){
             $scope.safe_table = $sce.trustAsHtml(newVal);
         }
     });
-})
+});
 
-Constructor.controller('BoxPlotCtrl', function($scope){
+Constructor.controller('BoxPlotCtrl', function($scope, $log){
     $scope.redraw_plot = function(){
         $scope.access.send_action($scope.block, "save_params", false,
             function(){
@@ -324,7 +326,30 @@ Constructor.controller('BoxPlotCtrl', function($scope){
 
             }
         );
-    }
+    };
+
+    $scope.$watch('block.boxplot_config.agg_axis_for_scoring', function(newVal){
+        if( $scope.block.boxplot_config){
+            _.each(newVal, function(value, key) {
+                if( value === true){
+                    $scope.block.boxplot_config.compare_axis_by_boxplot[key] = "";
+                }
+            });
+
+        }
+    }, true);
+
+
+    $scope.$watch('block.boxplot_config.compare_axis_by_boxplot', function(newVal){
+        if( $scope.block.boxplot_config){
+            _.each(newVal, function(value, key) {
+                if( value === true){
+                    $scope.block.boxplot_config.agg_axis_for_scoring[key] = "";
+                }
+            });
+
+        }
+    }, true);
 
     $scope.plotConfig = {
         options: {
@@ -366,4 +391,4 @@ Constructor.controller('BoxPlotCtrl', function($scope){
         loading: false
     }
 
-})
+});

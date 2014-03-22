@@ -1,26 +1,18 @@
 # -*- coding: utf-8 -*-
 import logging
-import json
 
 import numpy as np
 
-from environment.structures import TableResult
 from mixgene.util import log_timing
 from webapp.tasks import wrapper_task
-from workflow.blocks.fields import FieldType, BlockField, OutputBlockField, InputBlockField, InputType, ParamField, \
-    ActionRecord, ActionsList
-from workflow.blocks.generic import GenericBlock, save_params_actions_list, execute_block_actions_list
+from workflow.blocks.fields import FieldType, BlockField, InputType, ParamField
+
 from workflow.blocks.rc_vizualize import RcVisualizer
 
 from wrappers.boxplot_stats import boxplot_stats
-from wrappers.gt import global_test_task
-from wrappers.scoring import metrics
-
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
-
-import time
 
 class BoxPlot(RcVisualizer):
     block_base_name = "BOX_PLOT"
@@ -42,20 +34,30 @@ class BoxPlot(RcVisualizer):
     def __init__(self, *args, **kwargs):
         super(BoxPlot, self).__init__("Box plot", *args, **kwargs)
         self.boxplot_config = {
-            "multi_index_axis_dict": {},
+            "agg_axis_for_scoring": {},
+            "compare_axis_by_boxplot": {},
         }
 
     @log_timing
-    def compute_boxplot_stats(self, exp, request=None, *args, **kwargs):
-        axis_to_plot = [
+    def compute_boxplot_stats(self, exp, *args, **kwargs):
+        agg_axis_for_scoring = [
             axis for axis, is_selected in
-            self.boxplot_config['multi_index_axis_dict'].items() if is_selected
+            self.boxplot_config["agg_axis_for_scoring"].items() if is_selected
+        ]
+        compare_axis_by_boxplot = [
+            axis for axis, is_selected in
+            self.boxplot_config["compare_axis_by_boxplot"].items() if is_selected
         ]
         rc = self.rc
-        if axis_to_plot and rc:
+
+        if compare_axis_by_boxplot and rc:
             rc.load()
 
-            df = rc.get_pandas_slice_for_boxplot(axis_to_plot, self.metric)
+            df = rc.get_pandas_slice_for_boxplot(
+                compare_axis_by_boxplot,
+                agg_axis_for_scoring or [],
+                self.metric
+            )
 
             categories = []
             for row_id, _ in df.iterrows():
@@ -66,7 +68,8 @@ class BoxPlot(RcVisualizer):
 
                 categories.append(title)
 
-            bps = boxplot_stats(np.array(df.T))
+            # import ipdb; ipdb.set_trace()
+            bps = boxplot_stats(np.array(df.T, dtype=float))
 
             if bps:
                 self.chart_series = [{}]
@@ -81,15 +84,17 @@ class BoxPlot(RcVisualizer):
                     for rec in bps
                 ]
                 self.chart_categories = categories
-
                 exp.store_block(self)
 
     def on_params_is_valid(self, exp, *args, **kwargs):
         super(BoxPlot, self).on_params_is_valid(exp, *args, **kwargs)
         if self.rc is not None:
             for axis in self.rc.axis_list:
-                if axis not in self.boxplot_config["multi_index_axis_dict"]:
-                    self.boxplot_config["multi_index_axis_dict"][axis] = ""
+                if axis not in self.boxplot_config["agg_axis_for_scoring"]:
+                    self.boxplot_config["agg_axis_for_scoring"][axis] = ""
+                if axis not in self.boxplot_config["compare_axis_by_boxplot"]:
+                    self.boxplot_config["compare_axis_by_boxplot"][axis] = ""
+
 
             self.compute_boxplot_stats(exp)
         exp.store_block(self)

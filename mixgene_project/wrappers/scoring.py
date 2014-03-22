@@ -64,6 +64,14 @@ metrics_dict = {
 }
 
 
+def compute_score(y_true, y_predicted, metric):
+    return metric.apply(y_true, y_predicted)
+
+
+def compute_score_by_metric_name(y_true, y_predicted, metric_name):
+    return metrics_dict[metric_name].apply(y_true, y_predicted)
+
+
 def compute_scores(y_true, y_predicted, metrics_subset=None, is_classes_binary=True):
     result = {}
     for metric in metrics:

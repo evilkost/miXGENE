@@ -12,6 +12,7 @@ from wrappers.scoring import compute_scores
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
+
 def linear_svm(exp, block,
         train_es, test_es,
         lin_svm_options,
@@ -32,7 +33,7 @@ def linear_svm(exp, block,
     x_test = test_es.get_assay_data_frame().as_matrix().transpose()
     y_test = test_es.get_pheno_data_frame()[target_class_column].as_matrix()
 
-    if len(set(y_test)) == 2 and len(set(y_train)) == 2:
+    if len(set(y_train)) == 2 and 0 < len(set(y_test)) <= 2:
         is_class_binary = True
 
     # Unfortunately svm can't operate with string labels as a target classes
@@ -54,6 +55,10 @@ def linear_svm(exp, block,
     # Here we build result object
     cr = ClassifierResult(base_folder, base_filename)
     cr.labels_encode_vector = le.classes_  # Store target class labels
+
+    cr.y_true = y_test_fixed
+    cr.y_predicted = y_test_predicted
+
     cr.classifier = "linear_svm"
     cr.scores = compute_scores(y_test_fixed, y_test_predicted,
                                is_classes_binary=is_class_binary)  # Hmm what about parametric scores?
