@@ -60,7 +60,6 @@ def linear_svm(exp, block,
     cr.y_predicted = y_test_predicted
 
     cr.classifier = "linear_svm"
-    cr.scores = compute_scores(y_test_fixed, y_test_predicted,
-                               is_classes_binary=is_class_binary)  # Hmm what about parametric scores?
+
     cr.store_model(classifier)
     return [cr], {}
