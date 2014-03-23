@@ -80,7 +80,8 @@
                         <!--<h4 style="text-align: center"> <span class="label label-default"> Parameters </span> </h4>-->
                         <div class="row">
                             <fieldset ng-disabled="access.mode.ro">
-                                <div ng-repeat="param_proto in block._params_prototype_list | orderBy:'order_num' "
+                                <div class="row"
+                                        ng-repeat="param_proto in block._params_prototype_list | orderBy:'order_num' "
                                      ng-controller="formFieldCtrl">
 
                                     <!--[{$ field.order_num $}]-->
