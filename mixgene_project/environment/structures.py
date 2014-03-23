@@ -469,7 +469,7 @@ class TableResult(GenericStoreStructure):
         self.headers = []
 
     def to_dict(self):
-        df = self.get_table()
+        # df = self.get_table()
         return {
             "headers": self.headers
         }

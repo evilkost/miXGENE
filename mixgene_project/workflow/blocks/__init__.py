@@ -19,7 +19,7 @@ from workflow.blocks.svd_agg import SvdAggregation
 from workflow.blocks.box_plot import BoxPlot
 from workflow.blocks.rc_table import RenderTable
 from workflow.blocks.feature_selection import SvmrfeRanking, \
-    SvmrfeRestrictedRanking, TTestRanking, RandomRanking
+    SvmrfeRestrictedRanking, TTestRanking, RandomRanking, FeatureSelectionByCut
 
 block_classes_by_name = {}
 blocks_by_group = defaultdict(list)
@@ -68,3 +68,4 @@ register_block("svmrfe", "SVMRFE Ranking", GroupType.PROCESSING, SvmrfeRanking)
 register_block("res_svmrfe", "Restricted SVMRFE", GroupType.PROCESSING, SvmrfeRestrictedRanking)
 register_block("ttest_rank", "TTest ranking", GroupType.PROCESSING, TTestRanking)
 register_block("randm_rank", "Random ranking", GroupType.PROCESSING, RandomRanking)
+register_block("fs_by_cut", "Feature selection, cut by threshold", GroupType.PROCESSING, FeatureSelectionByCut)
