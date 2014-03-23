@@ -90,6 +90,9 @@ mkdir -p $BASE_DIR/logs/
 mkdir -p $BASE_DIR/media/data/cache/
 mkdir -p $BASE_DIR/media/data/broad_institute/
 
+mkdir -p $BASE_DIR/media/data/R/
+# instal R modules
+cp R/ranking.Methods.r $BASE_DIR/media/data/R/
 
 # run server
 sh run_all.sh

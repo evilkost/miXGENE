@@ -18,6 +18,8 @@ from workflow.blocks.sub_agg import SubAggregation
 from workflow.blocks.svd_agg import SvdAggregation
 from workflow.blocks.box_plot import BoxPlot
 from workflow.blocks.rc_table import RenderTable
+from workflow.blocks.feature_selection import SvmrfeRanking, \
+    SvmrfeRestrictedRanking, TTestRanking, RandomRanking
 
 block_classes_by_name = {}
 blocks_by_group = defaultdict(list)
@@ -61,3 +63,8 @@ register_block("globaltest", "Global test", GroupType.PROCESSING, GlobalTest)
 register_block("svd_agg", "Svd aggregation", GroupType.PROCESSING, SvdAggregation)
 register_block("sub_agg", "Subtractive aggregation", GroupType.PROCESSING, SubAggregation)
 register_block("merge_two_es", "Merge expression sets", GroupType.PROCESSING, MergeExpressionSets)
+
+register_block("svmrfe", "SVMRFE Ranking", GroupType.PROCESSING, SvmrfeRanking)
+register_block("res_svmrfe", "Restricted SVMRFE", GroupType.PROCESSING, SvmrfeRestrictedRanking)
+register_block("ttest_rank", "TTest ranking", GroupType.PROCESSING, TTestRanking)
+register_block("randm_rank", "Random ranking", GroupType.PROCESSING, RandomRanking)
