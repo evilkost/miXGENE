@@ -168,22 +168,25 @@ class BlockSerializer(object):
         """
         for p_name, p in self.params.iteritems():
             # TODO: here invoke validator
-            raw_val = received_block.get(p_name)
+            try:
+                raw_val = received_block.get(p_name)
 
-            # TODO: add conversion to BlockField class
-            if p.field_type == FieldType.FLOAT:
-                val = float(raw_val)
-            elif p.field_type == FieldType.INT:
-                val = int(raw_val)
-            elif p.field_type == FieldType.STR:
-                val = str(raw_val)
-            elif p.field_type == FieldType.RAW:
-                val = raw_val
-            else:
-                continue
-                #val = raw_val
+                # TODO: add conversion to BlockField class
+                if p.field_type == FieldType.FLOAT:
+                    val = float(raw_val)
+                elif p.field_type == FieldType.INT:
+                    val = int(raw_val)
+                elif p.field_type == FieldType.STR:
+                    val = str(raw_val)
+                elif p.field_type == FieldType.RAW:
+                    val = raw_val
+                else:
+                    continue
+                    #val = raw_val
 
-            setattr(block, p_name, val)
+                setattr(block, p_name, val)
+            except:
+                pass
 
         inputs_dict = received_block.get('bound_inputs')
         if inputs_dict:

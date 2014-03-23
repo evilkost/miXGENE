@@ -14,6 +14,7 @@ from wrappers.boxplot_stats import boxplot_stats
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
+
 class BoxPlot(RcVisualizer):
     block_base_name = "BOX_PLOT"
 
