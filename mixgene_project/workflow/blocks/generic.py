@@ -90,7 +90,7 @@ class GenericBlock(BaseBlock):
         self._block_serializer = BlockSerializer.clone(self.__class__._block_serializer)
 
         self.state = "created"
-        self.uuid = uuid1().hex
+        self.uuid = uuid1().hex[:8]
         self.name = name
         self.exp_id = exp_id
         self.scope_name = scope_name
