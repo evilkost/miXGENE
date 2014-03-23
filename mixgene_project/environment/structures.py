@@ -466,11 +466,12 @@ class TableResult(GenericStoreStructure):
 
         self.table_storage = None
         self.metadata = dict()
+        self.headers = []
 
     def to_dict(self):
         df = self.get_table()
         return {
-            "head": df.head().to_dict()
+            "headers": self.headers
         }
 
     def store_table(self, df):

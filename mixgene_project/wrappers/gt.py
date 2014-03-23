@@ -58,7 +58,8 @@ class GlobalTest(object):
 def global_test_task(
         exp, block,
         es, gene_sets,
-        base_dir, base_filename,
+        # base_dir, base_filename,
+        table_result
     ):
     """
     @param es: Expression set with defined user class in pheno
@@ -74,9 +75,6 @@ def global_test_task(
     """
 
     result_df = GlobalTest.gt_basic(es, gene_sets, es.pheno_metadata["user_class_title"])
-
-    res = TableResult(base_dir, base_filename)
-    res.store_table(result_df)
-
-    return [res], {}
+    table_result.store_table(result_df)
+    return [table_result], {}
 

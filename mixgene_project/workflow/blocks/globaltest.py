@@ -1,4 +1,5 @@
 from environment.structures import TableResult
+from webapp.models import Experiment
 from webapp.tasks import wrapper_task
 from workflow.blocks.fields import FieldType, BlockField, OutputBlockField, InputBlockField, InputType, ParamField, \
     ActionRecord, ActionsList
@@ -33,9 +34,14 @@ class GlobalTest(GenericBlock):
 
     def __init__(self, *args, **kwargs):
         super(GlobalTest, self).__init__("Global test", *args, **kwargs)
-
-        self.is_block_supports_auto_execution = True
         self.celery_task = None
+
+        exp = Experiment.get_exp_by_id(self.exp_id)
+        self.result = TableResult(
+            base_dir=exp.get_data_folder(),
+            base_filename="%s_gt_result" % self.uuid,
+        )
+        self.result.headers = ['p-value', 'Statistic', 'Expected', 'Std.dev', '#Cov']
 
     def execute(self, exp, *args, **kwargs):
         self.clean_errors()
@@ -44,13 +50,12 @@ class GlobalTest(GenericBlock):
             exp, self,
             es=self.get_input_var("es"),
             gene_sets=self.get_input_var("gs"),
-            base_dir=exp.get_data_folder(),
-            base_filename="%s_gt_result" % self.uuid,
+            table_result=self.result
         )
         exp.store_block(self)
         self.celery_task.apply_async()
 
     def success(self, exp, result, *args, **kwargs):
-        self.set_out_var("result", result)
         self.result = result
+        self.set_out_var("result", self.result)
         exp.store_block(self)
