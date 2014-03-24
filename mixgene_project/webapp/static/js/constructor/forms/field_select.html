@@ -1,16 +1,21 @@
 <div class="form-group">
-
-    <label class="col-sm-4 col-lg-2 control-label">
-        {$ field.title $}:
+    <label class="col-sm-4 control-label">
+        {$ field.title $}
     </label>
 
     <div class="col-sm-6">
-        <select class="form-control"
+        <select ng-if="!field.options.inline_select_provider"
+                class="form-control"
                 name="{{ field.name }}"
                 ng-model="block[field.name]"
                 ng-options="o.pk as o.str for o in block[field.select_provider]"
-        >
-        </select>
+        />
+        <select ng-if="field.options.inline_select_provider"
+                class="form-control"
+                name="{{ field.name }}"
+                ng-model="block[field.name]"
+                ng-options="o[0] as o[1] for o in field.options.select_options"
+        />
     </div>
 
     <!--<div class="row">-->

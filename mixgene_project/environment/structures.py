@@ -16,10 +16,10 @@ class PickleStorage(object):
         self.filepath = filepath
 
     def load(self):
-        return pickle.load(open(self.filepath, "rb"))
+        return pickle.loads(gzip.open(self.filepath, "rb").read())
 
     def store(self, obj):
-        with open(self.filepath, "wb") as out:
+        with gzip.open(self.filepath, "wb") as out:
             pickle.dump(obj, out, 2)
 
 
@@ -85,7 +85,7 @@ class GenericStoreStructure(object):
         self.base_filename = base_filename
 
     def form_filepath(self, suffix):
-        return "%s/%s_%s.csv.gz" % (self.base_dir, self.base_filename, suffix)
+        return "%s/%s_.%s.gz" % (self.base_dir, self.base_filename, suffix)
 
 
 class PcaResult(GenericStoreStructure):

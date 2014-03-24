@@ -266,15 +266,23 @@ class FeatureSelectionByCut(GenericBlock):
         input_type=InputType.TEXT,
         field_type=FieldType.INT,
     )
-    _cut_direction_options = BlockField(name="cut_direction_options", field_type=FieldType.RAW)
-    cut_direction_options = [{"pk": direction, "str": direction} for direction in ["<", "<=", ">=", ">"]]
+    _cut_direction_options = BlockField(name="cut_direction_options",
+                                        field_type=FieldType.RAW)
+    cut_direction_options = ["<", "<=", ">=", ">"]
     cut_direction = ParamField(
         name="cut_direction",
         title="Direction of cut",
         input_type=InputType.SELECT,
         field_type=FieldType.STR,
         select_provider="cut_direction_options",
-        order_num=30
+        order_num=30,
+        options={
+            "inline_select_provider": True,
+            "select_options": [
+                [op, op] for op in
+                ["<", "<=", ">=", ">"]
+            ]
+        }
     )
 
     es = OutputBlockField(name="es", provided_data_type="ExpressionSet")

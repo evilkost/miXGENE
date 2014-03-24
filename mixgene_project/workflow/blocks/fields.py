@@ -90,11 +90,13 @@ class InnerOutputField(OutputBlockField):
 
 
 class InputBlockField(BlockField):
-    def __init__(self, required_data_type=None, multiply_extensible=False, *args, **kwargs):
+    def __init__(self, required_data_type=None, multiply_extensible=False, options=None,
+                 *args, **kwargs):
         super(InputBlockField, self).__init__(*args, **kwargs)
         self.required_data_type = required_data_type
         self.field_type = FieldType.INPUT_PORT
         self.bound_var_key = None
+        self.options = options or {}
         self.multiply_extensible = multiply_extensible
 
     def contribute_to_class(self, cls, name):
@@ -147,7 +149,10 @@ class ParamField(object):
         val = str(raw_val)
         try:
             if raw_val is None:
-                val = None
+                if self.field_type in [FieldType.STR]:
+                    val = ""
+                else:
+                    val = None
             else:
                 if self.field_type in [FieldType.RAW, FieldType.INT, FieldType.FLOAT] :
                     val = raw_val
