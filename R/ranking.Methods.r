@@ -43,10 +43,10 @@ RestrictedSVMRFE <- function(x, y, best=NA){
   #
   n <- ncol(x)
   if(is.na(best)) {best <- n}
-  if(best<1 | best>n) stop("Argument 'best' is out of its range.")
+  if(best<2 | best>n) stop("Argument 'best' is out of its range.")
   #
   survivingFeaturesIndexes <- seq(1:n)
-  featureRankedList <- vector(length = best, mode="numeric")
+  featureRankedList <- vector(length = n, mode="numeric")
   rankedFeatureIndex <- best
   # generate selecting sequence
   seq.remain <-  c( 0, 1:best, best+2^(0:log(n-best+1,2)) )
@@ -62,15 +62,19 @@ RestrictedSVMRFE <- function(x, y, best=NA){
     #compute ranking criteria
     rankingCriteria <- w * w
     #rank the features
-    ranking.rel <- sort(rankingCriteria, index.return = TRUE, decreasing = T)$ix 
+    ranking.rel <- sort(rankingCriteria, index.return = TRUE, decreasing = T)$ix
     ranking.abs <- survivingFeaturesIndexes[ranking.rel]
     #update feature ranked list
-    if(seq.remain[i] < best) {     
+    if(seq.remain[i] < best) {
       survivingFeaturesIndexes <- setdiff(survivingFeaturesIndexes, tail(ranking.abs,1))
       featureRankedList[rankedFeatureIndex] <- tail(ranking.abs,1)
       rankedFeatureIndex <- rankedFeatureIndex - 1
-    }else{      
-      survivingFeaturesIndexes <- intersect(survivingFeaturesIndexes,ranking.abs[1:seq.remain[i]])
+    }else{
+      survivingFeaturesIndexes <- intersect(survivingFeaturesIndexes, ranking.abs[1:seq.remain[i]])
+      removedFeatures <- setdiff(ranking.abs,  survivingFeaturesIndexes)
+      index <- ranking.abs %in% removedFeatures
+      removedFeaturesRightOrder <- ranking.abs[index]
+      featureRankedList[(seq.remain[i]+1):(seq.remain[i]+length(removedFeatures))] <- removedFeaturesRightOrder
     }
     i <- i-1
   }
