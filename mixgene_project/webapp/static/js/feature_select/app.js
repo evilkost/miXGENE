@@ -1,18 +1,18 @@
 'use strict';
 
-var PhenotypeEditor = angular.module("PhenotypeEditor",
-    ['ngCookies', 'ngGrid', 'angularSpinner']
-//    ,function ($interpolateProvider) {
-//        $interpolateProvider.startSymbol("{$");
-//        $interpolateProvider.endSymbol("$}");
-//    }
+var FeatureSelector = angular.module("FeatureSelector",
+    ['ngCookies', 'ngTable', 'angularSpinner']
+    ,function ($interpolateProvider) {
+        $interpolateProvider.startSymbol("{$");
+        $interpolateProvider.endSymbol("$}");
+    }
 );
 
-PhenotypeEditor.run(function ($http, $cookies) {
+FeatureSelector.run(function ($http, $cookies) {
     $http.defaults.headers.common['X-CSRFToken'] = $cookies['csrftoken'];
 });
 
-PhenotypeEditor.factory("phenoIO", function($http){
+FeatureSelector.factory("phenoIO", function($http){
     var io = {
         pheno: {},
         exp_id: undefined,
@@ -54,30 +54,73 @@ PhenotypeEditor.factory("phenoIO", function($http){
     return io;
 });
 
-PhenotypeEditor.controller('PhenoCtrl', function($scope, phenoIO){
+FeatureSelector.controller('PhenoCtrl', function($scope, phenoIO, $filter, ngTableParams){
     $scope.init_done = false;
     $scope.phenoIO = phenoIO;
     $scope.features = [];
 
+    var table_config = {};
+    $scope.table_config = table_config;
+    table_config["filter_dict"] = {};
+    table_config["data"] = [];
+    table_config["columns"] = [];
+    table_config["tableParams"] = null;
 
-    $scope.gridOptions = {
-        data: 'phenoIO.pheno.table',
-        columnDefs: 'phenoIO.pheno.headers',
-        selectedItems: $scope.selected_rows,
-        enableColumnResize: true,
-        jqueryUITheme: true
+    $scope.table_config.tableParams = new ngTableParams({
+        page: 1,            // show first page
+        count: 10          // count per page
+        //        ,debugMode: false
+    }, {
+        total: $scope.table_config.data.length, // length of data
+        getData: function($defer, params) {
+            if(!$scope.init_done){
+                var orderedData=[];
+            } else {
+                var filteredData = $scope.table_config.filter_dict ?
+                    $filter('filter')($scope.table_config.data, $scope.table_config.filter_dict) :
+                    $scope.table_config.data;
+
+                // use build-in angular filter
+                var orderedData = params.sorting() ?
+                    $filter('orderBy')(filteredData, params.orderBy()) :
+                    filteredData;
+            }
+            params.total(orderedData.length); // set total for recalc pagination
+            $defer.resolve(orderedData.slice((params.page() - 1) * params.count(), params.page() * params.count()));
+        }
+    });
+
+    $scope.toggle_sorting = function(column){
+        $scope.table_config.tableParams.sorting(
+            column.field,
+            $scope.table_config.tableParams.isSortBy(column.field, 'asc') ? 'desc' : 'asc'
+        );
     };
 
+    $scope.on_data_fetched_ng = function(){
+        _.each($scope.phenoIO.pheno.headers, function(header){
+            console.log(header.displayName);
+            $scope.table_config.filter_dict[header.field]  = "";
+            $scope.table_config.columns.push(
+                {title: header.displayName, field: String(header.field), visible: true}
+            );
+        });
+        $scope.table_config.data = $scope.phenoIO.pheno.table;
+    };
 
     $scope.on_data_fetched = function(){
         _.each($scope.phenoIO.pheno.headers, function(header){
-            $scope.features.push({
-                name: header.displayName,
-                active: _.contains($scope.phenoIO.pheno.features, header.displayName)
-            })
-
+            if(header.displayName != $scope.phenoIO.pheno.user_class_title) {
+                $scope.features.push({
+                    name: header.displayName,
+                    active: _.contains($scope.phenoIO.pheno.features, header.displayName)
+                })
+            };
         });
         $scope.init_done = true;
+        $scope.on_data_fetched_ng();
+        $scope.table_config.tableParams.reload();
+
         console.log("Initiated phenoIO with exp_id=" + $scope.phenoIO.exp_id +
             " block_uuid=" + $scope.phenoIO.block_uuid);
     };
@@ -86,10 +129,7 @@ PhenotypeEditor.controller('PhenoCtrl', function($scope, phenoIO){
         console.log("Initiating phenoIO with exp_id=" + exp_id + " block_uuid=" + block_uuid);
         $scope.phenoIO.init_source(exp_id, block_uuid);
         $scope.phenoIO.fetch_data($scope.on_data_fetched);
-
-
     };
-
 
     $scope.switch_selection = function(feature){
         feature.active = !feature.active;

@@ -21,7 +21,6 @@
     "angular-sanitize": "~1.2.14",
     "angular-slider": "~0.1.6",
     "angular-bootstrap": "~0.10.0",
-    "ng-grid": "~2.0.7",
     "angular": "~1.2.13",
     "bootstrap": "~3.0.3",
     "datatables": "~1.9.4",
@@ -34,7 +33,8 @@
     "angular-spinner": "~0.3.1",
     "highcharts-components": "~3.0.9",
     "highstock-components": "~1.3.9",
-    "highcharts-ng": "~0.0.4"
+    "highcharts-ng": "~0.0.4",
+    "ng-table": "~0.3.1"
   },
   "resolutions": {
     "jquery": ">= 1.9.0",

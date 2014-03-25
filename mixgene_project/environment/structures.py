@@ -558,7 +558,7 @@ def prepare_phenotype_for_js_from_es(es):
 
     # ng-grid specific
     column_title_to_code_name = {
-        val: hashlib.md5(val).hexdigest()
+        val: "_" + hashlib.md5(val).hexdigest()[:8]
         for val in pheno_headers_list
     }
 
@@ -577,7 +577,7 @@ def prepare_phenotype_for_js_from_es(es):
     for record in pheno_df.to_records():
 
         pheno_table.append({
-            column_title_to_code_name[title]: fix_val(value)
+            str(column_title_to_code_name[title]): fix_val(value)
             for (title, value)
             in zip(pheno_headers_list, list(record)[1:])
         })

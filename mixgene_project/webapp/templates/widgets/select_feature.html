@@ -4,74 +4,119 @@
 
 {% block inner %}
 
-<!--<script src="{% static 'common/ng-grid/ng-grid-2.0.7.debug.js'%}"></script>-->
-<script type="text/javascript" src="http://angular-ui.github.com/ng-grid/lib/ng-grid.debug.js"></script>
-<!--<script src="http://cdnjs.cloudflare.com/ajax/libs/ng-grid/2.0.7/ng-grid.min.js"></script>-->
-<link href="{% static 'common/ng-grid/ng-grid.min.css' %}" rel="stylesheet">
-
 <script type="text/javascript" src="{% static 'common/spin.js/spin.js' %}"></script>
 <script type="text/javascript" src="{% static 'common/angular-spinner/angular-spinner.js' %}"></script>
 
 <script src="{% static 'js/feature_select/app.js'%}"></script>
 
 
-<div ng-app="PhenotypeEditor" ng-controller="PhenoCtrl" ng-init="init('{{ exp.pk }}', '{{ block_.uuid }}')">
-    {% verbatim %}
+<div ng-app="FeatureSelector" ng-controller="PhenoCtrl" ng-init="init('{{ exp.pk }}', '{{ block_.uuid }}')">
+
     <div class="row" ng-hide="init_done">
         <div class="col-xs-4 col-xs-offset-4">
             <!--<span us-spinner="{ speed: 1.7}"></span>-->
             <h1>Loading ... </h1>
         </div>
-
-
     </div>
-    <div class="row" ng-show="init_done">
-        <div class="col-xs-8 col-md-10">
-            <div  style="min-height: 600px" ng-grid="gridOptions"></div>
-        </div>
-        <div class="col-xs-4 col-md-2">
-            <div class="row">
-                <button class="btn btn-primary btn-block" ng-click="save_selection()">
+
+    <div ng-show="init_done">
+        <!--<div class="col-xs-8 col-md-10">-->
+            <!--<div  style="min-height: 600px" ng-grid="gridOptions"></div>-->
+        <!--</div>-->
+        <div class="col-lg-4 col-lg-push-8">
+            <div class="row text-center">
+                <button class="btn btn-primary " ng-click="save_selection()">
                     Save selection
                 </button>
-                <a href="/constructor/{{ phenoIO.exp_id}}/"
-                   class="btn btn-default btn-block">
+                <a href="/constructor/{$ phenoIO.exp_id $}/"
+                   class="btn btn-default">
                     Return to workflow construction
                 </a>
             </div>
-            <div class="row">
+
+            <div class="col-xs-10 col-xs-offset-1 ">
                 <h4> Select features to be used as target classes </h4>
-
-                <div class="col-xs-10 col-xs-offset-1 ">
-
-                    <div class="btn-toolbar pagination-centered">
-                        <div class="btn-group">
-                            <a ng-click="select_all(true)" class="btn btn-default">Select all</a>
-                            <a ng-click="select_all(false)" class="btn btn-default">Reset selection</a>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-            <br />
-            <div class="row">
-
-                <div class="col-xs-12 ">
-                    <div class="list-group" >
-                        <a class="list-group-item"
-                           ng-click="switch_selection(feature)"
-                           ng-repeat="feature in features"
-                           ng-class="{active: feature.active}"
-                                >
-                            {{ feature.name }}
-                        </a>
+                <div class="btn-toolbar pagination-centered">
+                    <div class="btn-group">
+                        <a ng-click="select_all(true)" class="btn btn-default">Select all</a>
+                        <a ng-click="select_all(false)" class="btn btn-default">Reset selection</a>
                     </div>
                 </div>
             </div>
 
+            <div class="col-xs-12 ">
+                <div class="list-group" >
+                    <a class="list-group-item"
+                       ng-click="switch_selection(feature)"
+                       ng-repeat="feature in features"
+                       ng-class="{active: feature.active}"
+                    >
+                        {$ feature.name $}
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8 col-lg-pull-4">
+            <form class="form form-inline">
+                <label>
+                    You can hide unused columns here:
+                </label>
+                <label class="checkbox" ng-repeat="column in table_config.columns">
+                    <input type="checkbox" ng-model="column.visible" /> {$ column.title $}
+                </label>
+            </form>
+
+            <table ng-table="table_config.tableParams" show-filter="true" class="table">
+                <thead>
+                <tr>
+                    <th ng-repeat="column in table_config.columns" ng-show="column.visible"
+                        class="header text-center sortable"
+                        ng-class="{
+                    'sort-asc': table_config.tableParams.isSortBy(column.field, 'asc'),
+                    'sort-desc': table_config.tableParams.isSortBy(column.field, 'desc')
+                }"
+                        ng-click="toggle_sorting(column)"
+                            >
+                        {$ column.title $}
+                    <span class="pull-right glyphicon"
+                        ng-class="{
+                            'glyphicon-sort':
+                                !table_config.tableParams.isSortBy(column.field, 'asc') &&
+                                !table_config.tableParams.isSortBy(column.field, 'desc'),
+                            'glyphicon-sort-by-attributes':
+                                table_config.tableParams.isSortBy(column.field, 'asc'),
+                            'glyphicon-sort-by-attributes-alt':
+                                table_config.tableParams.isSortBy(column.field, 'desc'),
+                        }">
+                    </span>
+                    </th>
+                </tr>
+                <tr>
+                    <th ng-repeat="column in table_config.columns"
+                        ng-show="column.visible"
+                        class="text-center sortable"
+                            >
+                        <input type="text" class="form-control"
+                               ng-model="table_config.filter_dict[column.field] "/>
+                    </th>
+                </tr>
+
+                </thead>
+                <tbody>
+                <tr ng-repeat="row in $data"
+                    ng-click="changeSelection(row, $data, $index, $event)"
+                    ng-class="{'active': row.$selected}"
+                        >
+                    <td ng-repeat="column in table_config.columns" ng-show="column.visible" sortable="column.field">
+                        {$ row[column.field] $}
+                    </td>
+                </tr>
+                </tbody>
+            </table>
         </div>
     </div>
-    {% endverbatim %}
+
 
 </div>
 
