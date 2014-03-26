@@ -70,10 +70,6 @@ urlpatterns = patterns('',
 
     url(r'^auth/create_user/$', 'webapp.views.create_user', {}),
 
-    url(r'^get_flot_2d_scatter/(?P<exp_id>\d+)/(?P<filename>.*)$', 'webapp.views.get_flot_2d_scatter', name='get_flot_2d_scatter'),
-
-    url(r'^get_gse_samples_info/(?P<exp_id>\d+)/(?P<block_uuid>.*)$', 'webapp.views.get_gse_samples_info',
-        name='get_gse_samples_info'),
     # Examples:
     # url(r'^$', 'mixgene.views.home', name='home'),
 
