@@ -107,7 +107,11 @@ def preprocess_soft(exp, block, source_file):
         pheno_index.append(factor.pop('Sample_geo_accession'))
 
     # TODO: add ordering to phenotype features
+
     pheno_df = DataFrame([Series(factor) for factor in factors], index=pheno_index)
+    if expression_set.pheno_metadata["user_class_title"] not in pheno_df.columns:
+        pheno_df[expression_set.pheno_metadata["user_class_title"]] = ""
+
     pheno_df.index.name = 'Sample_geo_accession'
     expression_set.store_pheno_data_frame(pheno_df)
 

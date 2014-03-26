@@ -1,15 +1,19 @@
 import gzip
 import cPickle as pickle
+import logging
 from uuid import uuid1
 import pandas as pd
 import rpy2.robjects as R
 from copy import deepcopy
+import hashlib
 
 import json
 
 from workflow.input import AbsInputVar
 from wrappers.scoring import metrics
 
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
 
 class PickleStorage(object):
     def __init__(self, filepath):
@@ -539,22 +543,40 @@ class FileInputVar(AbsInputVar):
         else:
             raise Exception("file type should be in [`user`, `ncbi_geo`, `gmt`], not %s" % type)
 
-import hashlib
-m = hashlib.md5()
-
 
 def fix_val(value):
     if not pd.notnull(value):
-        return None
+        # return None
+        return ""
     return str(value)
 
-def prepare_phenotype_for_js_from_es(es):
+
+def prepare_phenotype_for_js_from_es(es, headers_option=None):
     """
         @type es: ExpressionSet
+        @param headers_option: dict containing the following fields:
+            `custom_title_prefix_map`: [list of pairs ( , )] orig prefix, new prefix.
+                first matched prefix will be applied
+            `prefix_order`: [list] order of headers, all other header would be put in the tail
+            `prefix_hide`:  set() of headers which would be hidden by default
     """
-    pheno_df = es.get_pheno_data_frame()
+    if headers_option is None:
+        headers_option = {
+            "custom_title_prefix_map": {},
+            "prefix_order": [],
+            "prefix_hide": set(),
+        }
+    log.debug("headers options %s", headers_option)
 
-    pheno_headers_list = pheno_df.columns.tolist()
+    pheno_df = es.get_pheno_data_frame()
+    skip_index = 0
+    if pheno_df.index.name:
+        pheno_headers_list = [pheno_df.index.name, ] + pheno_df.columns.tolist()
+
+    else:
+        pheno_headers_list = pheno_df.columns.tolist()
+        skip_index = 1
+
 
     # ng-grid specific
     column_title_to_code_name = {
@@ -562,24 +584,51 @@ def prepare_phenotype_for_js_from_es(es):
         for val in pheno_headers_list
     }
 
+    # Here we reorder pheno columns according to `headers_option.order`
+    pheno_headers_fixed_list = []
+    for prefix_header in headers_option["prefix_order"]:
+        for header in pheno_headers_list:
+            if header.startswith(prefix_header):
+                pheno_headers_fixed_list.append(header)
+
+    pheno_headers_fixed_set = set(pheno_headers_fixed_list)
+    pheno_headers_fixed_list.extend([
+        header for header in pheno_headers_list
+        if header not in pheno_headers_fixed_set
+    ])
+
+    def prefix_rename(value):
+        prefix_map = headers_option["custom_title_prefix_map"]
+        for src_prefix, dst_prefix in prefix_map:
+            if value.startswith(src_prefix):
+                value = value.replace(src_prefix, dst_prefix, 1)
+                break
+
+        value = value.replace("_", " ")
+        return value
+
     pheno_headers = [
         {
             "field": column_title_to_code_name[val],
-            "displayName": val,
-            "minWidth": 150
+            # "displayName": headers_option["custom_title"].get(val, val),
+            "displayName": prefix_rename(val),
+            "minWidth": 150,
+            "visible": all([
+                not val.startswith(prefix) for prefix in
+                headers_option["prefix_hide"]
+            ])
         }
-        for val in pheno_headers_list
+        for val in pheno_headers_fixed_list
     ]
-
+    log.debug(pheno_headers_fixed_list)
     #pheno_table = json.loads(pheno_df.to_json(orient="records"))
     # again ng-grid specific
     pheno_table = []
     for record in pheno_df.to_records():
-
         pheno_table.append({
             str(column_title_to_code_name[title]): fix_val(value)
             for (title, value)
-            in zip(pheno_headers_list, list(record)[1:])
+            in zip(pheno_headers_list, list(record)[skip_index:])
         })
 
     return {

@@ -38,11 +38,14 @@
                         </span>
                     </h3>
                     <div class="list-group" >
+                        <!--ng-repeat="header in phenoIO.pheno.headers |filter:fnFilterUserClass"-->
                         <a class="list-group-item"
                            ng-click="clone_feature_as_target_class(header)"
-                           ng-repeat="header in phenoIO.pheno.headers |filter:fnFilterUserClass"
-                                >
-                            {$ header.displayName $}
+                           ng-repeat="header in table_config.columns"
+                           ng-if="header.visible && header.field !=
+                                phenoIO.pheno.headers_title_to_code_map[phenoIO.pheno.user_class_title]"
+                        >
+                            {$ header.title $}
                         </a>
                     </div>
                 </div>
@@ -84,21 +87,25 @@
             </div>
         </div>
 
-        <div class="col-lg-8 col-lg-pull-4">
+        <div class="col-lg-8 col-lg-pull-4"
+             style="overflow: auto"
+                >
             <form class="form form-inline">
                 <label>
-                    You can hide unused columns here:
+                    You can choose which columns to be shown:
                 </label>
                 <label class="checkbox" ng-repeat="column in table_config.columns">
                     <input type="checkbox" ng-model="column.visible" /> {$ column.title $}
                 </label>
             </form>
 
-            <table ng-table="table_config.tableParams" show-filter="true" class="table">
+            <table
+                    ng-table="table_config.tableParams" show-filter="true" class="table">
                 <thead>
                 <tr>
                     <th ng-repeat="column in table_config.columns" ng-show="column.visible"
                         class="header text-center sortable"
+                        style="min-width: 150px"
                         ng-class="{
                     'sort-asc': table_config.tableParams.isSortBy(column.field, 'asc'),
                     'sort-desc': table_config.tableParams.isSortBy(column.field, 'desc')

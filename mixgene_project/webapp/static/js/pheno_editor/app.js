@@ -88,13 +88,23 @@ PhenotypeEditor.controller('PhenoCtrl', function($scope, phenoIO, $filter, ngTab
     }, {
         total: $scope.table_config.data.length, // length of data
         getData: function($defer, params) {
+            var filteredData;
             if(!$scope.init_done){
                 var orderedData=[];
             } else {
+                if($scope.table_config.filter_dict){
+                    var fixed_filter_dict = {};
+                    _.each($scope.table_config.filter_dict, function(value, key){
+                        if(value != ""){
+                            fixed_filter_dict[key] = value;
+                        }
+                    });
+                    filteredData = $filter('filter')($scope.table_config.data, fixed_filter_dict);
+                } else {
+                    filteredData = $scope.table_config.data;
 
-                var filteredData = $scope.table_config.filter_dict ?
-                    $filter('filter')($scope.table_config.data, $scope.table_config.filter_dict) :
-                    $scope.table_config.data;
+                }
+
 
                 // use build-in angular filter
                 var orderedData = params.sorting() ?
@@ -103,6 +113,7 @@ PhenotypeEditor.controller('PhenoCtrl', function($scope, phenoIO, $filter, ngTab
             }
 
             params.total(orderedData.length); // set total for recalc pagination
+            console.log("OD: " +  orderedData);
             $defer.resolve(orderedData.slice((params.page() - 1) * params.count(), params.page() * params.count()));
             $scope.table_config.last_selected = 0;
         }
@@ -117,12 +128,14 @@ PhenotypeEditor.controller('PhenoCtrl', function($scope, phenoIO, $filter, ngTab
     };
 
     $scope.on_data_fetched_ng = function(){
+        console.log($scope.phenoIO.pheno.headers);
         _.each($scope.phenoIO.pheno.headers, function(header){
-            console.log(header.displayName);
             $scope.table_config.filter_dict[header.field]  = "";
-            $scope.table_config.columns.push(
-                {title: header.displayName, field: String(header.field), visible: true}
-            );
+            $scope.table_config.columns.push({
+                "title": header.displayName,
+                "field": String(header.field),
+                "visible": header.visible
+            });
         });
         $scope.table_config.data = $scope.phenoIO.pheno.table;
         $scope.update_available_classes()
@@ -153,7 +166,7 @@ PhenotypeEditor.controller('PhenoCtrl', function($scope, phenoIO, $filter, ngTab
         });
 
         $scope.available_classes = _.unique(classes);
-        console.log($scope.available_classes);
+//        console.log($scope.available_classes);
     };
 
     $scope.activate_class_for_assignment = function(class_title){
