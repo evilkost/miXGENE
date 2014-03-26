@@ -51,15 +51,29 @@ class GenericClassifier(GenericBlock):
             from block parameters.
         """
         pass
-        # options = {}
-        # svm_options = [
-        #     "C", "tol",  # TODO: add more parameters
-        # ]
-        # for p_name in svm_options:
-        #     val = getattr(self, p_name, None)
-        #     if val:
-        #         options[p_name] = val
-        # return options
+
+    def get_option_safe(self, name, target_type=None):
+        if hasattr(self, name):
+            raw = getattr(self, name)
+            if raw:
+                if target_type:
+                    try:
+                        return target_type(raw)
+                    except:
+                        pass
+                else:
+                    return raw
+        return None
+
+    def collect_option_safe(self, name, target_type=None, target_name=None):
+        value = self.get_option_safe(name, target_type)
+        # from celery.contrib import rdb; rdb.set_trace()
+        if value:
+            if target_name:
+                self.classifier_options[target_name] = value
+            else:
+                self.classifier_options[name] = value
+        return value
 
     def execute(self, exp,  *args, **kwargs):
         self.set_out_var("result", None)
@@ -104,6 +118,39 @@ class GaussianNb(GenericClassifier):
 
     def collect_options(self):
         pass
+
+
+class LinearSVM(GenericClassifier):
+    block_base_name = "LIN_SVM"
+    classifier_name = "linear_svm"
+
+    C = ParamField(name="C", title="Penalty", order_num=10,
+                   input_type=InputType.TEXT, field_type=FieldType.FLOAT, init_val=1.0)
+
+    tol = ParamField(name="tol", order_num=20,
+                 title="Tolerance for stopping criteria",
+                 input_type=InputType.TEXT, field_type=FieldType.FLOAT, init_val=0.0001)
+
+    loss = ParamField(
+        name="loss", order_num=30,
+        title="The loss function",
+        input_type=InputType.SELECT, field_type=FieldType.STR,
+        options={
+            "inline_select_provider": True,
+            "select_options": [
+                ["l1", "Hinge loss"],
+                ["l2", "Squared hinge loss"],
+            ]
+        }
+    )
+
+    def __init__(self, *args, **kwargs):
+        super(LinearSVM, self).__init__("Linear SVM Classifier", *args, **kwargs)
+
+    def collect_options(self):
+        self.collect_option_safe("C", float)
+        self.collect_option_safe("tol", float)
+        self.collect_option_safe("loss", str)
 
 
 class DecisionTree(GenericClassifier):
@@ -178,26 +225,17 @@ class DecisionTree(GenericClassifier):
         super(DecisionTree, self).__init__("Decision tree", *args, **kwargs)
 
     def collect_options(self):
-        if hasattr(self, "max_features_mode"):
-            mode = str(self.max_features_mode)
-            if mode in ["sqrt", "log2"]:
-                self.classifier_options["max_features"] = mode
-            else:
-                raw_value = getattr(self, "max_max_features_value", None)
-                if raw_value:
-                    if mode == "int":
-                        self.classifier_options["max_features"] = int(raw_value)
-                    if mode == "float":
-                        self.classifier_options["max_features"] = float(raw_value)
+        max_features_mode = self.get_option_safe("max_features_mode", str)
+        if max_features_mode in ["sqrt", "log2"]:
+            self.classifier_options["max_features"] = max_features_mode
+        elif max_features_mode == "int":
+            self.collect_option_safe("max_features_value", int, target_name="max_features")
+        elif max_features_mode == "float":
+            self.collect_option_safe("max_features_value", float, target_name="max_features")
 
-        if hasattr(self, "max_depth"):
-            self.classifier_options["max_depth"] = int(self.max_depth)
-
-        if hasattr(self, "min_samples_split"):
-            self.classifier_options["min_samples_split"] = int(self.min_samples_split)
-
-        if hasattr(self, "min_samples_leaf"):
-            self.classifier_options["min_samples_leaf"] = int(self.min_samples_leaf)
+        self.collect_option_safe("max_depth", int)
+        self.collect_option_safe("min_samples_split", int)
+        self.collect_option_safe("min_samples_leaf", int)
 
 
 class RandomForest(GenericClassifier):
@@ -281,30 +319,19 @@ class RandomForest(GenericClassifier):
         super(RandomForest, self).__init__("Random forest", *args, **kwargs)
 
     def collect_options(self):
-        if hasattr(self, "n_estimators"):
-            self.classifier_options["n_estimators"] = int(self.n_estimators)
+        self.collect_option_safe("n_n_estimators", int)
 
-        if hasattr(self, "max_features_mode"):
-            mode = str(self.max_features_mode)
-            if mode in ["sqrt", "log2"]:
-                self.classifier_options["max_features"] = mode
-            else:
-                raw_value = getattr(self, "max_max_features_value", None)
-                if raw_value:
-                    if mode == "int":
-                        self.classifier_options["max_features"] = int(raw_value)
-                    if mode == "float":
-                        self.classifier_options["max_features"] = float(raw_value)
+        max_features_mode = self.get_option_safe("max_features_mode", str)
+        if max_features_mode in ["sqrt", "log2"]:
+            self.classifier_options["max_features"] = max_features_mode
+        elif max_features_mode == "int":
+            self.collect_option_safe("max_features_value", int, target_name="max_features")
+        elif max_features_mode == "float":
+            self.collect_option_safe("max_features_value", float, target_name="max_features")
 
-        if hasattr(self, "max_depth"):
-            self.classifier_options["max_depth"] = int(self.max_depth)
-
-        if hasattr(self, "min_samples_split"):
-            self.classifier_options["min_samples_split"] = int(self.min_samples_split)
-
-        if hasattr(self, "min_samples_leaf"):
-            self.classifier_options["min_samples_leaf"] = int(self.min_samples_leaf)
-
+        self.collect_option_safe("max_depth", int)
+        self.collect_option_safe("min_samples_split", int)
+        self.collect_option_safe("min_samples_leaf", int)
 
 
 class KnnClassifier(GenericClassifier):
@@ -372,12 +399,7 @@ class KnnClassifier(GenericClassifier):
         super(KnnClassifier, self).__init__("Knn classifier", *args, **kwargs)
 
     def collect_options(self):
-        if hasattr(self, "n_n_neighbors") and self.n_neighbors:
-            self.classifier_options["n_neighbors"] = int(self.n_neighbors)
-        if hasattr(self, "algorithm") and self.algorithm:
-            self.classifier_options["algorithm"] = self.algorithm
-        if hasattr(self, "leaf_size") and self.leaf_size:
-            self.classifier_options["leaf_size"] = int(self.leaf_size)
-        if hasattr(self, "metric") and self.metric:
-            self.classifier_options["metric"] = self.metric
-
+        self.collect_option_safe("n_neighbors", int)
+        self.collect_option_safe("algorithm")
+        self.collect_option_safe("leaf_size", int)
+        self.collect_option_safe("metric")

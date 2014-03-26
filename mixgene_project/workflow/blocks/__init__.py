@@ -6,11 +6,11 @@ from fetch_bi_gs import GetBroadInstituteGeneSet
 from crossvalidation import CrossValidation
 from merge_gene_set_annotation import MergeGeneSetWithPlatformAnnotation
 # from pca_visualise import PCA_visualize
-from svm_classifier import SvmClassifier
+
 from globaltest import GlobalTest
 from user_upload import UserUpload, UserUploadComplex, UploadInteraction
 from expression_sets_merge import MergeExpressionSets
-from workflow.blocks.classifiers import GaussianNb, DecisionTree, RandomForest, KnnClassifier
+from workflow.blocks.classifiers import GaussianNb, DecisionTree, RandomForest, KnnClassifier, LinearSVM
 from workflow.blocks.custom_iterator import CustomIterator
 from workflow.blocks.mass_upload import MassUpload
 
@@ -56,7 +56,7 @@ register_block("mass_upload", "Mass upload", GroupType.META_PLUGIN, MassUpload)
 register_block("box_plot", "Box plot ML scores", GroupType.VISUALIZE, BoxPlot)
 register_block("rc_table", "Results container as table", GroupType.VISUALIZE, RenderTable)
 
-register_block("svm_classifier", "Linear SVM Classifier", GroupType.CLASSIFIER, SvmClassifier)
+register_block("linear_svm", "Linear SVM Classifier", GroupType.CLASSIFIER, LinearSVM)
 register_block("gaussian_nb", "Gaussian Naive Bayes", GroupType.CLASSIFIER, GaussianNb)
 register_block("dt_block", "Decision Tree", GroupType.CLASSIFIER, DecisionTree)
 register_block("rnd_forest", "Random Forest", GroupType.CLASSIFIER, RandomForest)
