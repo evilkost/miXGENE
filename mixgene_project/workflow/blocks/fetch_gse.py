@@ -180,3 +180,8 @@ class FetchGSE(GenericBlock):
 
         es.store_pheno_data_frame(pheno_df)
         exp.store_block(self)
+
+        self.do_action("assign_sample_classes", exp)
+
+    def assign_sample_classes(self, exp, *args, **kwargs):
+        pass
