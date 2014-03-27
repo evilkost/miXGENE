@@ -10,7 +10,8 @@ from merge_gene_set_annotation import MergeGeneSetWithPlatformAnnotation
 from globaltest import GlobalTest
 from user_upload import UserUpload, UserUploadComplex, UploadInteraction
 from expression_sets_merge import MergeExpressionSets
-from workflow.blocks.classifiers import GaussianNb, DecisionTree, RandomForest, KnnClassifier, LinearSVM
+from workflow.blocks.classifiers import GaussianNb, DecisionTree, RandomForest,\
+    KnnClassifier, LinearSVM, KernelSvm
 from workflow.blocks.custom_iterator import CustomIterator
 from workflow.blocks.mass_upload import MassUpload
 
@@ -57,6 +58,7 @@ register_block("box_plot", "Box plot ML scores", GroupType.VISUALIZE, BoxPlot)
 register_block("rc_table", "Results container as table", GroupType.VISUALIZE, RenderTable)
 
 register_block("linear_svm", "Linear SVM Classifier", GroupType.CLASSIFIER, LinearSVM)
+register_block("svm", "Kernel SVM Classifier", GroupType.CLASSIFIER, KernelSvm)
 register_block("gaussian_nb", "Gaussian Naive Bayes", GroupType.CLASSIFIER, GaussianNb)
 register_block("dt_block", "Decision Tree", GroupType.CLASSIFIER, DecisionTree)
 register_block("rnd_forest", "Random Forest", GroupType.CLASSIFIER, RandomForest)

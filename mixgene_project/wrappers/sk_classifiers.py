@@ -3,7 +3,7 @@
 import logging
 import traceback, sys
 
-from sklearn.svm import LinearSVC
+from sklearn.svm import LinearSVC, SVC
 from sklearn.naive_bayes import GaussianNB
 from sklearn import tree
 from sklearn import neighbors
@@ -22,6 +22,7 @@ log.setLevel(logging.DEBUG)
 classifiers_map = {
     # name -> ( fabric,  apply wrapper, if None use common_apply)
     "linear_svm": (LinearSVC, None),
+    "svm": (SVC, None),
     "gaussian_nb": (GaussianNB, None),
     "DT": (tree.DecisionTreeClassifier, None),
     "random_forest": (RandomForestClassifier, None),
@@ -64,6 +65,7 @@ def apply_classifier(
 
     # Classifier initialization
     fabric, apply_func = classifiers_map[classifier_name]
+    log.debug("Classifier options: %s", classifier_options)
     if apply_func is None:
         cl = fabric(**classifier_options)
         cl.fit(x_train, y_train_fixed, **fit_options)
