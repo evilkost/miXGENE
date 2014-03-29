@@ -38,7 +38,7 @@ def debian_whezzy_backports():
            "deb http://nginx.org/packages/debian/ wheezy nginx", use_sudo=True)
 
 
-def basic_apt_packages():
+def basic_packages():
     packages = [
         # name, optional version
         ('python', ''),
@@ -60,6 +60,9 @@ def basic_apt_packages():
         ('libatlas3-base', ''),
         ('libmysqlclient-dev', ''),
         ('supervisor', ''),
+        ('pkg-config', ''),
+        ('graphviz', ''),
+        ('libgraphviz-dev', ''),
     ]
 
     packs_def = []
@@ -71,6 +74,7 @@ def basic_apt_packages():
 
     cmd = "apt-get install -y %s" % " ".join(packs_def)
     sudo(cmd)
+    sudo("pip install virtualenvwrapper")
 
 
 def install_node_npm():
@@ -80,15 +84,11 @@ def install_node_npm():
 
 def initial_install():
     debian_whezzy_backports()
-    basic_apt_packages()
-
+    basic_packages()
     update_from_gh()
 
 
 def configure_supervisor():
-    # with cd(CONFIG["BASE_DIR"]):
-    #     sudo("cp run/supervisor/dev.conf /etc/supervisor/conf.d/mixgene.conf")
-
     put("run/supervisor/%s.conf" % CONFIG["PREFIX"],
         "/etc/supervisor/conf.d/mixgene.conf", use_sudo=True)
 
@@ -124,13 +124,20 @@ def run_status():
     sudo("supervisorctl status mixgene mixgene_notifier celery")
 
 
+def init_venv():
+    with prefix(". /usr/local/bin/virtualenvwrapper.sh"):
+        run("mkvirtualenv mixgene_venv")
+        # with cd(CONFIG["BASE_DIR"]):
+        #     run("pip install -r requirements.txt")
+
+
 def update_from_gh():
-    with settings(warn_only=True):
-        run("killall gunicorn")
-        run("tmux ls | awk '{print $1}' | sed 's/://g' | xargs -I{} tmux kill-session -t {}")
+    # with settings(warn_only=True):
+    #     run("killall gunicorn")
+    #     run("tmux ls | awk '{print $1}' | sed 's/://g' | xargs -I{} tmux kill-session -t {}")
 
     # TODO: copy R
-
+    halt_all()
     with cd(CONFIG["BASE_DIR"]):
         run("git pull")
         with cd("mixgene_project/webapp/static"):
@@ -139,4 +146,7 @@ def update_from_gh():
         run("python mixgene_project/manage.py collectstatic --noinput")
         #run("sh run_all.sh")
         # ssh and run run_all.sh manually
-        sudo("pip install -r requirements.txt")
+
+        with prefix(". /usr/local/bin/virtualenvwrapper.sh; workon mixgene_venv"):
+            run("pip install -r requirements.txt")
+    start_all()
