@@ -15,7 +15,8 @@ Constructor.factory("blockAccess", function($http, $log){
     access.available_data_types = [
         "ExpressionSet",
         "GeneSets",
-        "BinaryInteraction"
+        "BinaryInteraction",
+        "TableResult"
     ]
 
     var sockjs = new SockJS('/subscribe');

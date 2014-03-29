@@ -1,7 +1,7 @@
 'use strict';
 
 var PhenotypeEditor = angular.module("PhenotypeEditor",
-    ['ngCookies', 'ngTable', 'angularSpinner']
+    ['ngCookies', 'ngTable', 'angularSpinner', 'ui.bootstrap']
     ,function ($interpolateProvider) {
         $interpolateProvider.startSymbol("{$");
         $interpolateProvider.endSymbol("$}");
@@ -54,8 +54,19 @@ PhenotypeEditor.factory("phenoIO", function($http){
     return io;
 });
 
-PhenotypeEditor.controller('PhenoCtrl', function($scope, phenoIO, $filter, ngTableParams){
+var ModalInstanceColumnVisibilitySelect = function($scope, $modalInstance, columns) {
+    $scope.local_columns = columns;
 
+    $scope.ok = function () {
+        $modalInstance.close($scope.local_columns);
+    };
+
+    $scope.cancel = function () {
+        $modalInstance.dismiss('cancel');
+    };
+};
+
+PhenotypeEditor.controller('PhenoCtrl', function($scope, $modal, $log, phenoIO, $filter, ngTableParams){
     // JS magic to prevent text selection during SHIFT-CLICK
     window.onload = function() {
         document.onselectstart = function() {
@@ -85,7 +96,7 @@ PhenotypeEditor.controller('PhenoCtrl', function($scope, phenoIO, $filter, ngTab
         page: 1,            // show first page
         count: 25          // count per page
         //        ,debugMode: false
-    }, {
+        }, {
         total: $scope.table_config.data.length, // length of data
         getData: function($defer, params) {
             var filteredData;
@@ -118,7 +129,6 @@ PhenotypeEditor.controller('PhenoCtrl', function($scope, phenoIO, $filter, ngTab
             $scope.table_config.last_selected = 0;
         }
     });
-
     $scope.toggle_sorting = function(column){
         console.log(column);
         $scope.table_config.tableParams.sorting(
@@ -126,7 +136,6 @@ PhenotypeEditor.controller('PhenoCtrl', function($scope, phenoIO, $filter, ngTab
             $scope.table_config.tableParams.isSortBy(column.field, 'asc') ? 'desc' : 'asc'
         );
     };
-
     $scope.on_data_fetched_ng = function(){
         console.log($scope.phenoIO.pheno.headers);
         _.each($scope.phenoIO.pheno.headers, function(header){
@@ -140,21 +149,17 @@ PhenotypeEditor.controller('PhenoCtrl', function($scope, phenoIO, $filter, ngTab
         $scope.table_config.data = $scope.phenoIO.pheno.table;
         $scope.update_available_classes()
     };
-
     $scope.clean_row_selection = function(){
         _.each($scope.table_config.tableParams.data, function(row){
             row.$selected = false;
         });
         $scope.table_config.last_selected = 0;
     };
-
     $scope.$watch("table_config.filter_dict", function () {
         if($scope.init_done && $scope.table_config && $scope.table_config.tableParams){
             $scope.table_config.tableParams.reload();
         }
     }, true);
-
-
     $scope.update_available_classes = function(){
         var classes = [""];
         var title_field = $scope.phenoIO.pheno.headers_title_to_code_map[
@@ -168,12 +173,10 @@ PhenotypeEditor.controller('PhenoCtrl', function($scope, phenoIO, $filter, ngTab
         $scope.available_classes = _.unique(classes);
 //        console.log($scope.available_classes);
     };
-
     $scope.activate_class_for_assignment = function(class_title){
         console.log("activated: " + class_title);
         $scope.active_class = class_title;
     };
-
     $scope.add_new_class = function(){
         var new_class = $scope.new_class_label;
         if( new_class != null && new_class != undefined && new_class != ""){
@@ -184,7 +187,6 @@ PhenotypeEditor.controller('PhenoCtrl', function($scope, phenoIO, $filter, ngTab
         };
         $scope.new_class_label = null;
     };
-
     $scope.assign_class = function(){
         var dst_title_field = $scope.phenoIO.pheno.headers_title_to_code_map[
             $scope.phenoIO.pheno.user_class_title];
@@ -200,19 +202,16 @@ PhenotypeEditor.controller('PhenoCtrl', function($scope, phenoIO, $filter, ngTab
         });
         $scope.clean_row_selection();
     };
-
     $scope.on_data_fetched = function(){
         $scope.update_available_classes();
         $scope.on_data_fetched_ng();
         $scope.init_done = true;
     };
-
     $scope.init = function(exp_id, block_uuid){
         console.log("Initiated phenoIO with exp_id=" + exp_id + " block_uuid=" + block_uuid);
         $scope.phenoIO.init_source(exp_id, block_uuid);
         $scope.phenoIO.fetch_data($scope.on_data_fetched);
     };
-
     $scope.clone_feature_as_target_class = function(header){
         document._header = header;
         var src_title_field = header.field;
@@ -226,7 +225,6 @@ PhenotypeEditor.controller('PhenoCtrl', function($scope, phenoIO, $filter, ngTab
         $scope.update_available_classes();
         $scope.clean_row_selection();
     };
-
     $scope.save_assignment = function(){
         var classes = []
         var src_title_field = $scope.phenoIO.pheno.headers_title_to_code_map[
@@ -241,8 +239,6 @@ PhenotypeEditor.controller('PhenoCtrl', function($scope, phenoIO, $filter, ngTab
 
         $scope.phenoIO.send_classes(to_send);
     };
-
-
     $scope.changeSelection = function(row, data, idx, event) {
         if( event.shiftKey){
             document.getSelection().removeAllRanges();
@@ -261,4 +257,25 @@ PhenotypeEditor.controller('PhenoCtrl', function($scope, phenoIO, $filter, ngTab
         $scope.table_config.last_selected = idx;
     };
 
+    $scope.open_modal = function () {
+        console.log("Open ");
+        var modalInstance = $modal.open({
+            templateUrl: '/static/js/pheno_editor/partials/visible_columns_modal.html',
+            controller: ModalInstanceColumnVisibilitySelect,
+            resolve: {
+                columns: function () {
+                    return $scope.table_config["columns"];
+//                    return $scope.table_config.tableParams.columns;
+                }
+            }
+        });
+
+        modalInstance.result.then(function (foo) {
+//            $log.info('1Modal dismissed at: ' + new Date() +' foo ' + foo);
+        }, function () {
+//            $log.info('2Modal dismissed at: ' + new Date());
+        });
+    };
 });
+
+

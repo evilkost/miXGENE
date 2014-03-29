@@ -1,0 +1,23 @@
+<div class="modal-header">
+    <h3>
+        You can choose which columns to be shown:
+        <br />
+        <small>click on row to toggle</small>
+    </h3>
+</div>
+<div class="modal-body">
+    {$ local_columns $}
+    <div class="list-group">
+        <div class="list-group-item"
+             ng-repeat="col in local_columns"
+             ng-class="{active: col.visible}"
+             ng-click="col.visible=!col.visible"
+        >
+             {$ col.title $}
+        </div>
+    </div>
+</div>
+<div class="modal-footer">
+    <button class="btn btn-primary" ng-click="ok()">OK</button>
+    <!--<button class="btn btn-warning" ng-click="cancel()">Cancel</button>-->
+</div>

@@ -90,14 +90,11 @@
         <div class="col-lg-8 col-lg-pull-4"
              style="overflow: auto"
                 >
-            <form class="form form-inline">
-                <label>
-                    You can choose which columns to be shown:
-                </label>
-                <label class="checkbox" ng-repeat="column in table_config.columns">
-                    <input type="checkbox" ng-model="column.visible" /> {$ column.title $}
-                </label>
-            </form>
+            <h5 class="text-center">
+                <button class="btn btn-default" ng-click="open_modal()">
+                    Configure columns visibility
+                </button>
+            </h5>
 
             <table
                     ng-table="table_config.tableParams" show-filter="true" class="table">
