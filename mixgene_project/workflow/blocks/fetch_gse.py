@@ -84,7 +84,7 @@ class FetchGSE(GenericBlock):
                 "Sample_contact",
                 "Sample_characteristics",
             ],
-            "prefix_hide": set([
+            "prefix_hide": {
                 "Sample_contact",
                 "Sample_channel",
                 "Sample_data_row_count",
@@ -105,7 +105,7 @@ class FetchGSE(GenericBlock):
                 "Sample_taxid",
                 "Sample_type",
                 "Sample_submission",
-            ])
+            }
         }
         return prepare_phenotype_for_js_from_es(
             self.get_out_var("expression_set"), headers_options)

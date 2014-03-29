@@ -98,13 +98,49 @@ def preprocess_soft(exp, block, source_file):
     expression_set = ExpressionSet(exp.get_data_folder(), "%s_es" % block.uuid)
     expression_set.store_assay_data_frame(assay_df)
 
-    factors = [soft[i].entity_attributes
+    raw_factors = [soft[i].entity_attributes
                for i in range(3, len(soft))]
     pheno_index = []
-    for factor in factors:
-        factor.pop('sample_table_begin')
-        factor.pop('sample_table_end')
-        pheno_index.append(factor.pop('Sample_geo_accession'))
+
+    # Here we trying to guess sub columns
+    one_factor_row = raw_factors[0]
+    pheno_complex_columns_def = {}
+    for col_name, col in one_factor_row.iteritems():
+        if type(col) in [str, unicode]:
+            continue
+        else:
+            if all([":" in sub_col for sub_col in col]):
+                mb_sub_col_names_sets = [
+                    tuple(map(lambda x: x.split(":")[0], row[col_name]))
+                    for row in raw_factors
+                ]
+                if len(set(mb_sub_col_names_sets)) == 1:
+                    pheno_complex_columns_def[col_name] = "dict"
+                else:
+                    pheno_complex_columns_def[col_name] = "list"
+            else:
+                pheno_complex_columns_def[col_name] = "list"
+
+    factors = []
+    for idx, factor in enumerate(raw_factors):
+        pheno_index.append(factor.pop('Sample_geo_accession', idx))
+        factor.pop('sample_table_begin', None)
+        factor.pop('sample_table_end', None)
+        fixed_factor = {}
+        for col_name, col in factor.iteritems():
+            # Special treat for sub columns
+            if col_name in pheno_complex_columns_def:
+                if pheno_complex_columns_def[col_name] == "list":
+                    for sub_idx, sub_col in enumerate(col):
+                        fixed_factor["%s_%s" % (col_name, sub_idx + 1)] = sub_col
+                elif pheno_complex_columns_def[col_name] == "dict":
+                    for sub_col in col:
+                        sub_name, sub_value = sub_col.split(":", 1)
+                        fixed_factor["%s_%s" % (col_name, sub_name)] = sub_value
+
+            else:
+                fixed_factor[col_name] = col
+        factors.append(fixed_factor)
 
     # TODO: add ordering to phenotype features
 
