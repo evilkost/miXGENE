@@ -5,7 +5,8 @@ from fabric.contrib.files import append
 
 
 CONFIG = {
-    "BASE_DIR": None,
+    "ROOT_DIR": None,
+    "RES_DIR": None,
     "PREFIX": None,
 }
 
@@ -13,14 +14,17 @@ CONFIG = {
 def prod():
     env.user = "kost"  # create mixgene user
     env.hosts = ["mixgene.felk.cvut.cz"]
-    CONFIG["BASE_DIR"] = "/home/kost/miXGENE"
+    CONFIG["ROOT_DIR"] = "/home/kost"
+    CONFIG["RES_DIR"] = "/home/kost/res"
     CONFIG["PREFIX"] = "production"
 
 
 def local():
     env.hosts = ["127.0.0.1"]
-    CONFIG["BASE_DIR"] = os.getcwd()
+    CONFIG["ROOT_DIR"] = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
+    CONFIG["RES_DIR"] = "/home/kost/res/mixgene_mixgene_workdir"
     CONFIG["PREFIX"] = "development"
+    print CONFIG
 
 
 def debian_whezzy_backports():
@@ -82,10 +86,8 @@ def install_node_npm():
     sudo("npm install bower")
 
 
-def initial_install():
-    debian_whezzy_backports()
-    basic_packages()
-    update_from_gh()
+def install_r_packages():
+    raise NotImplementedError("Install R packages should be here")
 
 
 def configure_supervisor():
@@ -96,9 +98,65 @@ def configure_supervisor():
     sudo("supervisorctl update")
 
 
-def reload_nginx():
+def put_nginx_conf():
+    put("nginx/mixgene.%s" % CONFIG["PREFIX"],
+        "/etc/nginx/conf.d/mixgene.conf", use_sudo=True)
+
     sudo("/etc/init.d/nginx reload")
 
+
+def init_venv():
+    with prefix(". /usr/local/bin/virtualenvwrapper.sh"):
+        run("mkvirtualenv mixgene_venv")
+
+
+def git_clone():
+    with cd(CONFIG["ROOT_DIR"]):
+        run("git clone https://github.com/evilkost/miXGENE.git")
+
+
+def mk_dirs():
+    with cd(CONFIG["RES_DIR"]):
+        for dir_spec in [
+            "logs",
+            "media",
+            "media/data",
+            "media/data/R",
+            "media/data/cache",
+            "media/data/broad_institute",
+        ]:
+            try:
+                os.makedirs(dir_spec)
+            except OSError:
+                pass
+
+
+def update_from_gh():
+    # TODO: copy R
+    halt_all()
+    with cd(CONFIG["ROOT_DIR"] + "/miXGENE"):
+        run("git pull")
+        with prefix(". /usr/local/bin/virtualenvwrapper.sh; workon mixgene_venv"):
+            run("pip install -r requirements.txt")
+
+        with cd("mixgene_project/webapp/static"):
+            run("bower install")
+
+        with cd("mixgene_project/"):
+            run("python manage.py collectstatic --noinput")
+            run("python manage.py syncdb")
+            run("python manage.py migrate")
+
+        with cd("notify_server"):
+            run("node install")
+
+        sudo("chmod +x run/*")
+    start_all()
+
+### Control methods
+
+def reload_nginx():
+    sudo("/etc/init.d/nginx reload")
 
 def stop_nginx():
     sudo("/etc/init.d/nginx stop")
@@ -124,29 +182,19 @@ def run_status():
     sudo("supervisorctl status mixgene mixgene_notifier celery")
 
 
-def init_venv():
-    with prefix(". /usr/local/bin/virtualenvwrapper.sh"):
-        run("mkvirtualenv mixgene_venv")
-        # with cd(CONFIG["BASE_DIR"]):
-        #     run("pip install -r requirements.txt")
+###
 
+def initial_install():
+    debian_whezzy_backports()
+    basic_packages()
+    install_node_npm()
+    install_r_packages()
 
-def update_from_gh():
-    # with settings(warn_only=True):
-    #     run("killall gunicorn")
-    #     run("tmux ls | awk '{print $1}' | sed 's/://g' | xargs -I{} tmux kill-session -t {}")
+    configure_supervisor()
+    put_nginx_conf()
 
-    # TODO: copy R
-    halt_all()
-    with cd(CONFIG["BASE_DIR"]):
-        run("git pull")
-        with cd("mixgene_project/webapp/static"):
-            run("bower install")
+    git_clone()
+    mk_dirs()
+    update_from_gh()
 
-        run("python mixgene_project/manage.py collectstatic --noinput")
-        #run("sh run_all.sh")
-        # ssh and run run_all.sh manually
-
-        with prefix(". /usr/local/bin/virtualenvwrapper.sh; workon mixgene_venv"):
-            run("pip install -r requirements.txt")
     start_all()
