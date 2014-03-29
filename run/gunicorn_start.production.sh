@@ -17,7 +17,7 @@ echo "Starting $NAME as `whoami`"
 # Activate the virtual environment
 cd $DJANGODIR
 #source ../bin/activate
-bash /usr/local/bin/virtualenvwrapper.sh
+. /usr/local/bin/virtualenvwrapper.sh
 workon mixgene_venv
 export DJANGO_SETTINGS_MODULE=$DJANGO_SETTINGS_MODULE
 export PYTHONPATH=$DJANGODIR:$PYTHONPATH
