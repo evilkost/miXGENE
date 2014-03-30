@@ -1,4 +1,4 @@
-fabric=1.8.3
+fabric==1.8.3
 Django==1.6.2
 Markdown==2.4
 South==0.8.4

@@ -131,26 +131,33 @@ def mk_dirs():
                 pass
 
 
+def do_updates():
+    with cd(CONFIG["ROOT_DIR"] + "/miXGENE"):
+        with prefix(". /usr/local/bin/virtualenvwrapper.sh; workon mixgene_venv"):
+            run("pip install -r requirements.txt")
+
+            with cd("mixgene_project/webapp/static"):
+                run("bower install")
+
+            with cd("mixgene_project/"):
+                run("python manage.py collectstatic --noinput")
+                run("python manage.py syncdb")
+                run("python manage.py migrate")
+
+            with cd("notify_server"):
+                run("npm install")
+
+        sudo("chmod +x run/*")
+
+
 def update_from_gh():
     # TODO: copy R
     halt_all()
     with cd(CONFIG["ROOT_DIR"] + "/miXGENE"):
         run("git pull")
-        with prefix(". /usr/local/bin/virtualenvwrapper.sh; workon mixgene_venv"):
-            run("pip install -r requirements.txt")
 
-        with cd("mixgene_project/webapp/static"):
-            run("bower install")
+    do_updates()
 
-        with cd("mixgene_project/"):
-            run("python manage.py collectstatic --noinput")
-            run("python manage.py syncdb")
-            run("python manage.py migrate")
-
-        with cd("notify_server"):
-            run("node install")
-
-        sudo("chmod +x run/*")
     start_all()
 
 ### Control methods
@@ -177,6 +184,9 @@ def halt_all():
     sudo("supervisorctl stop mixgene_notifier")
     sudo("supervisorctl stop celery")
 
+def restart_all():
+    halt_all()
+    start_all()
 
 def run_status():
     sudo("supervisorctl status mixgene mixgene_notifier celery")
