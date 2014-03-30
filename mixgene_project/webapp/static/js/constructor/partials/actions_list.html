@@ -1,10 +1,33 @@
-<div class="btn-group-vertical center-block"
+<div class="btn-group"
      ng-hide="access.mode.ro"
-        >
+>
+
     <button type="button" class="btn btn-default"
-            ng-repeat="action in block.actions"
+            ng-if="block.actions"
+            ng-init="action=block.actions[0]"
             ng-click="access.send_action(block, action.code)"
-            >
+    >
         {$ action.title $}
     </button>
+
+    <button
+        ng-if="block.actions[1]"
+        type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+        <span class="caret"></span>
+        <span class="sr-only">Toggle Dropdown</span>
+    </button>
+
+    <ul class="dropdown-menu">
+
+        <li>
+            <a type="button"
+                ng-repeat="action in block.actions"
+                ng-click="access.send_action(block, action.code)"
+            >
+                {$ action.title $}
+            </a>
+        </li>
+
+    </ul>
+
 </div>

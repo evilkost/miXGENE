@@ -199,6 +199,7 @@ class BlockSerializer(object):
 
 class OutManager(object):
     def __init__(self):
+        self.vars_list = []
         self.data_type_by_name = {}
         self.fields_by_data_type = defaultdict(list)
 
@@ -212,18 +213,21 @@ class OutManager(object):
         if name in self.data_type_by_name.keys():
             raise KeyError("Field with name %s already exists" % name)
 
+        self.vars_list.append((name, data_type))
         self.data_type_by_name[name] = data_type
         self.fields_by_data_type[data_type].append(name)
 
     def get_fields_by_data_type(self, data_type):
         return self.fields_by_data_type[data_type]
 
-    def to_dict(self, block):
-        result = {}
-        for fname, _ in self.data_type_by_name.iteritems():
-            var = block.get_out_var(fname)
-            if var and hasattr(var, "to_dict"):
-                result[fname] = var.to_dict()
+    def to_dict(self, *args, **kwargs):
+        result = [
+            {
+                "data_type": data_type,
+                "name": fname,
+            }
+            for fname, data_type in self.vars_list
+        ]
 
         return result
 

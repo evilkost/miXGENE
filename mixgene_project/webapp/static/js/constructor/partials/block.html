@@ -27,16 +27,23 @@
                 <i>State: {$ block.state $} </i>
 
                 <div class="pull-right">
-                    <a class="block-reload glyphicon glyphicon-repeat"
-                       style="text-decoration: none"
-                       ng-click="access.reload_block(block)"></a>
-                    &nbsp;&nbsp;&nbsp;&nbsp;
-                    <a class="block-move-down glyphicon "
-                       style="text-decoration: none"
-                       ng-class="{'glyphicon-resize-small': !block.ui_folded,
-                                  'glyphicon-resize-full': block.ui_folded}"
-                       ng-click='toggleBodyVisibility()'>
-                    </a>
+                    <div class="pull-left header_button_fix"
+                            ng-include="'/static/js/constructor/partials/actions_list.html'"
+                    />
+
+                    <span class="pull-right">
+                        &nbsp;&nbsp;
+                        <a class="block-reload glyphicon glyphicon-repeat"
+                           style="text-decoration: none"
+                           ng-click="access.reload_block(block)"></a>
+                        &nbsp;&nbsp;&nbsp;&nbsp;
+                        <a class="block-move-down glyphicon "
+                           style="text-decoration: none"
+                           ng-class="{'glyphicon-resize-small': !block.ui_folded,
+                                      'glyphicon-resize-full': block.ui_folded}"
+                           ng-click='toggleBodyVisibility()'>
+                        </a>
+                    </span>
                     <!--<a class="block-move-down hidden glyphicon glyphicon-resize-full"></a>-->
                     <!--&nbsp;&nbsp;&nbsp;&nbsp;-->
                     <!--<a class="block-move-down glyphicon glyphicon-arrow-down"></a>-->
@@ -63,9 +70,9 @@
                     </div>
                 </div>
 
-                <div class="row" ng-if="!block.has_custom_layout">
+                <div class="col-xs-12" ng-if="!block.has_custom_layout">
 
-                    <div class="col-md-8 col-lg-3">
+                    <div class="col-md-6 col-lg-4">
                         <!--<h4 style="text-align: center"> <span class="label label-default"> Input variables </span> </h4>-->
                         <div class="row">
                             <fieldset ng-disabled="access.mode.ro">
@@ -76,7 +83,7 @@
 
                     </div>
 
-                    <div class="col-md-8 col-md-6">
+                    <div class="col-md-6 col-lg-8">
                         <!--<h4 style="text-align: center"> <span class="label label-default"> Parameters </span> </h4>-->
                         <div class="row">
                             <fieldset ng-disabled="access.mode.ro">
@@ -90,28 +97,6 @@
 
                                 </div>
                             </fieldset>
-                        </div>
-                    </div>
-
-                    <div class="col-xs-2">
-                        <!--<h4 style="text-align: center"> <span class="label label-default"> Available actions </span> </h4>-->
-
-                        <div ng-include="'/static/js/constructor/partials/actions_list.html'" />
-
-
-                        <!-- TODO: remove hardcoded link
-                           use angular routing and ng-view
-                        -->
-                        <!--<h4 style="text-align: center"> <span class="label label-default"> Sub pages </span> </h4>-->
-                        <div ng-if="block.is_sub_pages_visible"
-                             class="list-group">
-                            <a class="list-group-item"
-                               ng-repeat="(res, page) in block.pages"
-                               href="/block_sub_page/{$ exp_id $}/{$ block.uuid$}/{$ page.resource$}"
-                                    >
-                                {$ page.title $}
-
-                            </a>
                         </div>
                     </div>
                 </div>
@@ -128,14 +113,19 @@
                 <div class="panel panel-primary" ng-if="block.create_new_scope">
                     <div class="panel-heading">
                         <span  style="color: black"
-                            class="glyphicon glyphicon-chevron-up"
-                            ng-click="fold_internal()"
+                            class="glyphicon "
+                            ng-class="{
+                                'glyphicon-chevron-up': !ui_internal_folded,
+                                'glyphicon-chevron-down': ui_internal_folded,
+                            }"
+                            ng-click="toggle_internal()"
                         >
                         </span>
+                        &nbsp;
                         <span style="text-align: center"> Internal steps of <b> {$ block.base_name $}</b> </span>
 
                     </div>
-                    <div class="panel-body">
+                    <div class="panel-body" ng-hide="ui_internal_folded">
                         <div pallet
                              block_name="block.base_name"
                              scope_name="block.sub_scope_name"
@@ -153,13 +143,18 @@
                     </div>
 
 
-                    <div class="panel-footer">
-                        <span  style="color: black"
-                               class="glyphicon glyphicon-chevron-up"
-                               ng-click="fold_internal()"
-                                >
+                    <div class="panel-footer panel-primary">
+                        <span
+                            style="color: black"
+                            class="glyphicon"
+                            ng-class="{
+                               'glyphicon-chevron-up': !ui_internal_folded,
+                               'glyphicon-chevron-down': ui_internal_folded,
+                            }"
+                            ng-click="toggle_internal()"
+                        >
                         </span>
-                        &nbsp; &nbsp; &nbsp;
+                        &nbsp;
                         <a ng-hide="show_collector_editor" ng-click="show_collector_editor=true">
                             Show outputs collector configuration
                         </a>
@@ -168,7 +163,31 @@
                         </a>
                     </div>
                 </div>
+            </div>
 
+
+            <div class="panel-footer">
+                &nbsp;
+                <div class="pull-left" ng-if="block.out">
+                    Block <b>{$ block.base_name $}</b> provides:
+                    <span ng-repeat="out_var in block.out">
+                        {$ out_var.name $}[{$ out_var.data_type $}]
+                    </span>
+                    <!--<< list of variables with modal window for details >>-->
+                </div>
+
+                <div class="pull-right">
+                    <div ng-if="block.is_sub_pages_visible && block.pages">
+                        Sub pages:
+                        <a
+                           ng-repeat="(res, page) in block.pages"
+                           href="/block_sub_page/{$ exp_id $}/{$ block.uuid$}/{$ page.resource$}"
+                                >
+                            {$ page.title $}
+
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

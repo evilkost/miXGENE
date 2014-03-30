@@ -43,6 +43,10 @@ Constructor.controller('BlockCtrl', function BlockCtrl($scope, blockAccess){
         $scope.edit_base_name =!$scope.edit_base_name;
 
     };
+    $scope.toggle_internal = function(){
+        $scope.ui_internal_folded =!$scope.ui_internal_folded;
+
+    };
     $scope.changeBaseName = function(){
         $scope.access.send_action($scope.block, "change_base_name", true);
         $scope.edit_base_name = false;
