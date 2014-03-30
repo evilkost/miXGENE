@@ -30,8 +30,13 @@
         </table>
         <div ng-if="block.table">
             <a href="{$ block.export_table_url $}">
-                Export as .csv
+                Export table as .csv
             </a>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <a href="{$ block.export_raw_results_url $}">
+                Export raw results as .json
+            </a>
+
         </div>
     </div>
     <div class="col-lg-6 col-md-8">

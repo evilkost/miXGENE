@@ -288,3 +288,29 @@ class ResultsContainer(GenericStoreStructure):
             "shape": self.ar.shape,
             "axis_list": self.axis_list
         }
+
+    def export_to_json_dict(self, *args, **kwargs):
+        self.load()
+
+        meta = self.to_dict()
+        log.debug("Meta: %s", meta)
+        records = []
+        index_labels = [self.labels_dict[axis] for axis in self.axis_list]
+        for row_def in product(*index_labels):
+            spec_def = {axis: val for val, axis in zip(row_def, self.axis_list)}
+            key = tuple(np.array(self.build_axis_mask(spec_def)))
+            val = self.ar[key]
+            log.debug("%s -> %s", (key, val))
+
+            cell = {
+                "key": key,
+                "key_names": spec_def,
+                "y_true": list(val.y_true),
+                "y_predicted": list(val.y_predicted),
+
+            }
+            records.append(cell)
+        return {
+            "meta": meta,
+            "records": records,
+        }
