@@ -69,6 +69,7 @@ class GenericBlock(BaseBlock):
     state = BlockField("state", FieldType.STR, "created")
 
     ui_folded = BlockField("ui_folded", FieldType.BOOLEAN, init_val=False)
+    show_collector_editor = BlockField("show_collector_editor", FieldType.BOOLEAN, init_val=False)
 
     _has_custom_layout = BlockField("has_custom_layout", FieldType.BOOLEAN, init_val=False)
     custom_layout_name = BlockField("custom_layout_name", FieldType.STR, init_val="")

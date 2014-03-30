@@ -5,6 +5,9 @@
         <button type="button" class="btn btn-lg btn-block btn-default" ng-click="toggle_pallet()"
                 ng-hide="show_pallet">
             Click here to add block
+            <span ng-if="blockName">
+                to sub scope of <b> {$ blockName $} </b>
+            </span>
             <!--<span class="label label-info">Scope: {$ bscope $} </span>-->
         </button>
     </div>

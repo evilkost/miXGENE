@@ -2,7 +2,8 @@ Constructor.directive("pallet", function () {
     return {
         restrict: 'AE',
         scope: {
-            scopeName: "="
+            scopeName: "=",
+            blockName: "="
         },
         templateUrl: "/static/js/constructor/partials/pallet.html"
     }
