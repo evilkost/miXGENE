@@ -221,15 +221,18 @@ class OutManager(object):
         return self.fields_by_data_type[data_type]
 
     def to_dict(self, *args, **kwargs):
-        result = [
-            {
-                "data_type": data_type,
-                "name": fname,
-            }
-            for fname, data_type in self.vars_list
-        ]
+        if hasattr(self, "vars_list"):
+            result = [
+                {
+                    "data_type": data_type,
+                    "name": fname,
+                }
+                for fname, data_type in self.vars_list
+            ]
 
-        return result
+            return result
+        else:
+            return []
 
 
 class InputManager(object):
