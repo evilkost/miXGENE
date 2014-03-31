@@ -73,7 +73,23 @@ class BoxPlot(RcVisualizer):
             bps = boxplot_stats(np.array(df.T, dtype=float))
 
             if bps:
-                self.chart_series = [{}]
+                self.chart_series = [{
+                    "data": [],
+                }, {
+                    "name": "Outliers",
+                    "data": [],
+                    "type": "scatter",
+                    "marker": {
+                        "fillColor": "white",
+                        "lineWidth": 1,
+                        "lineColor": "blue"
+                    },
+                    "tooltip": {
+                        "pointFormat": '%s: {point.y} ' % self.metric
+                    }
+
+
+                }]
                 self.chart_series[0]["data"] = [
                     [
                         rec["whislo"],
@@ -84,6 +100,10 @@ class BoxPlot(RcVisualizer):
                     ]
                     for rec in bps
                 ]
+                for cat_idx, rec in enumerate(bps):
+                    for outlier in rec['fliers']:
+                        self.chart_series[1]["data"].append([cat_idx, outlier])
+
                 self.chart_categories = categories
                 exp.store_block(self)
 
