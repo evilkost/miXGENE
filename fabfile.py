@@ -120,6 +120,7 @@ def mk_dirs():
         for dir_spec in [
             "logs",
             "media",
+            "media/uploads",
             "media/data",
             "media/data/R",
             "media/data/cache",

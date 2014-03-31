@@ -485,3 +485,12 @@ class BroadInstituteGeneSet(models.Model):
                 "str": str(record),
             })
         return res
+
+
+class ArbitraryUpload(models.Model):
+    dt_updated = models.DateTimeField(auto_now=True)
+    data = models.FileField(upload_to=MEDIA_ROOT + "/uploads")
+
+    @property
+    def url(self):
+        return "/media" + self.data.path.replace(MEDIA_ROOT, '')
