@@ -21,7 +21,7 @@
     "angular-sanitize": "~1.2.14",
     "angular-slider": "~0.1.6",
     "angular-bootstrap": "~0.10.0",
-    "angular": "~1.2.13",
+    "angular": "1.2.15",
     "bootstrap": "~3.0.3",
     "datatables": "~1.9.4",
     "flot": "~0.8.2",
@@ -38,6 +38,6 @@
   },
   "resolutions": {
     "jquery": ">= 1.9.0",
-    "angular": "~1.2.13"
+    "angular": "1.2.15"
   }
 }

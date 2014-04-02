@@ -137,8 +137,9 @@ def do_updates():
         with prefix(". /usr/local/bin/virtualenvwrapper.sh; workon mixgene_venv"):
             run("pip install -r requirements.txt")
 
-            with cd("mixgene_project/webapp/static"):
+            with cd("mixgene_project/static"):
                 run("bower install")
+                run("bower update")
 
             with cd("mixgene_project/"):
                 run("python manage.py collectstatic --noinput")

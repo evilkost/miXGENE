@@ -43,9 +43,6 @@ Constructor.controller('BlockCtrl', function BlockCtrl($scope, blockAccess){
         $scope.edit_base_name =!$scope.edit_base_name;
 
     };
-    $scope.toggle_internal = function(){
-        $scope.block.ui_internal_folded =!$scope.block.ui_internal_folded;
-    };
 
     // TODO: legacy
     if( $scope.block.show_collector_editor == undefined ){
@@ -54,8 +51,11 @@ Constructor.controller('BlockCtrl', function BlockCtrl($scope, blockAccess){
     if( $scope.block.ui_internal_folded == undefined){
         $scope.block.ui_internal_folded = false;
     }
-
     // END legacy
+
+    $scope.toggle_internal = function(){
+        $scope.block.ui_internal_folded =!$scope.block.ui_internal_folded;
+    };
 
     $scope.toggle_collector_editor = function(){
         $scope.block.show_collector_editor =!$scope.block.show_collector_editor;
