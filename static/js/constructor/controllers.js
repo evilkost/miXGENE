@@ -44,8 +44,15 @@ Constructor.controller('BlockCtrl', function BlockCtrl($scope, blockAccess){
 
     };
     $scope.toggle_internal = function(){
-        $scope.ui_internal_folded =!$scope.ui_internal_folded;
+        $scope.block.ui_internal_folded =!$scope.block.ui_internal_folded;
+    };
 
+    if( $scope.block.show_collector_editor == undefined ){
+        // TODO: legacy
+        $scope.block.show_collector_editor = false;
+    }
+    $scope.toggle_collector_editor = function(){
+        $scope.block.show_collector_editor =!$scope.block.show_collector_editor;
     };
     $scope.changeBaseName = function(){
         $scope.access.send_action($scope.block, "change_base_name", true);

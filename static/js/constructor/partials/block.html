@@ -115,8 +115,8 @@
                         <span  style="color: black"
                             class="glyphicon "
                             ng-class="{
-                                'glyphicon-chevron-up': !ui_internal_folded,
-                                'glyphicon-chevron-down': ui_internal_folded,
+                                'glyphicon-chevron-up': !block.ui_internal_folded,
+                                'glyphicon-chevron-down': block.ui_internal_folded,
                             }"
                             ng-click="toggle_internal()"
                         >
@@ -125,7 +125,7 @@
                         <span style="text-align: center"> Internal steps of <b> {$ block.base_name $}</b> </span>
 
                     </div>
-                    <div class="panel-body" ng-hide="ui_internal_folded">
+                    <div class="panel-body" ng-hide="block.ui_internal_folded">
                         <div pallet
                              block_name="block.base_name"
                              scope_name="block.sub_scope_name"
@@ -138,7 +138,7 @@
                         </div>
                     </div>
 
-                    <div  ng-show="show_collector_editor"
+                    <div  ng-show="block.show_collector_editor"
                         ng-include="'/static/js/constructor/partials/collector.html'" >
                     </div>
 
@@ -148,17 +148,17 @@
                             style="color: black"
                             class="glyphicon"
                             ng-class="{
-                               'glyphicon-chevron-up': !ui_internal_folded,
-                               'glyphicon-chevron-down': ui_internal_folded,
+                               'glyphicon-chevron-up': !block.ui_internal_folded,
+                               'glyphicon-chevron-down': block.ui_internal_folded,
                             }"
                             ng-click="toggle_internal()"
                         >
                         </span>
                         &nbsp;
-                        <a ng-hide="show_collector_editor" ng-click="show_collector_editor=true">
+                        <a ng-hide="block.show_collector_editor" ng-click="toggle_collector_editor()">
                             Show outputs collector configuration
                         </a>
-                        <a ng-show="show_collector_editor" ng-click="show_collector_editor=false">
+                        <a ng-show="block.show_collector_editor" ng-click="toggle_collector_editor()">
                             Hide outputs collector configuration
                         </a>
                     </div>
