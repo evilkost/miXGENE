@@ -72,11 +72,11 @@ class GenericBlock(BaseBlock):
     ui_internal_folded = BlockField("ui_internal_folded", FieldType.BOOLEAN, init_val=False)
     show_collector_editor = BlockField("show_collector_editor", FieldType.BOOLEAN, init_val=False)
 
-    _has_custom_layout = BlockField("has_custom_layout", FieldType.BOOLEAN, init_val=False)
-    custom_layout_name = BlockField("custom_layout_name", FieldType.STR, init_val="")
+    _has_custom_layout = BlockField("has_custom_layout", FieldType.BOOLEAN)
+    custom_layout_name = BlockField("custom_layout_name", FieldType.STR)
 
     create_new_scope = False
-    _create_new_scope = BlockField("create_new_scope", FieldType.BOOLEAN, False)
+    _create_new_scope = BlockField("create_new_scope", FieldType.BOOLEAN)
 
     is_block_supports_auto_execution = False
 
@@ -92,7 +92,7 @@ class GenericBlock(BaseBlock):
         self._block_serializer = BlockSerializer.clone(self.__class__._block_serializer)
 
         self.state = "created"
-        self.uuid = uuid1().hex[:8]
+        self.uuid = "B" + uuid1().hex[:8]
         self.name = name
         self.exp_id = exp_id
         self.scope_name = scope_name
@@ -136,20 +136,15 @@ class GenericBlock(BaseBlock):
             log.debug("Registering normal outputs: %s", f_name)
             self.register_provided_objects(scope, ScopeVar(self.uuid, f_name, f.provided_data_type))
             # TODO: User factories for init values
-            # if f.init_val is not None:
-            #     setattr(self, f.name, f.init_val)
+            #if f.init_val is not None:
+            #    setattr(self, f.name, f.init_val)
+
         scope.store()
 
-        # if hasattr(self, "create_new_scope") and self.create_new_scope:
-        #     log.debug("Trying to add inner outputs for block %s in exp: %s",
-        #               self.name, self.exp_id)
-        #     scope = self.get_sub_scope()
-        #     scope.load()
-        #     for f_name, f in self._block_serializer.inner_outputs.iteritems():
-        #         log.debug("Registering inner outputs: %s in block: %s, exp: %s",
-        #                   f_name, self.name, self.exp_id)
-        #         scope.register_variable(ScopeVar(self.uuid, f_name, f.provided_data_type))
-        #     scope.store()
+        for f_name, f in self._block_serializer.fields.items():
+            if f.init_val is not None:
+                #setattr(self, f.name, f.init_val)
+                pass
 
         for f_name, f in self._block_serializer.inputs.iteritems():
             self.input_manager.register(f)

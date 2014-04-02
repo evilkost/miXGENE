@@ -23,8 +23,7 @@ class BoxPlot(RcVisualizer):
                               field_type=FieldType.RAW)
 
     plot_inputs = BlockField(name="plot_inputs", field_type=FieldType.RAW, init_val=[])
-    chart_series = BlockField(name="chart_series", field_type=FieldType.RAW,
-                              init_val=[{"data": [], "name": "ML scores"}])
+    chart_series = BlockField(name="chart_series", field_type=FieldType.RAW, init_val=[])
     chart_categories = BlockField(name="chart_categories", field_type=FieldType.SIMPLE_LIST,
                                   init_val=[])
 
