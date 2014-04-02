@@ -434,6 +434,9 @@ class UploadedFileWrapper(object):
 
     @property
     def ud(self):
+        """
+            @rtype: UploadedData
+        """
         return UploadedData.objects.get(pk=self.uploaded_pk)
 
     def get_file(self):

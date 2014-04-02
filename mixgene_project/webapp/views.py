@@ -11,7 +11,7 @@ from django.shortcuts import redirect
 
 from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.cache import never_cache
-from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.csrf import csrf_protect, csrf_exempt
 
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
@@ -252,6 +252,27 @@ def block_sub_page(request, exp_id, block_uuid, sub_page):
     }
     context = RequestContext(request, context)
     return HttpResponse(template.render(context))
+
+
+def block_method(request, exp_id, block_uuid, method):
+    if request.method == "POST":
+        exp = Experiment.objects.get(pk=exp_id)
+        block = exp.get_block(str(block_uuid))
+        if not hasattr(block, method) :
+            raise Exception("Block %s doesn't have method `%s`" % (block.base_name, method))
+        else:
+            bound_func = getattr(block, method)
+            if not callable(bound_func):
+                raise Exception("Block %s attribute `%s` isn't callable" % (block.base_name, method))
+            else:
+                res = bound_func(exp, request.body)
+                content_type = "application/json"
+                resp = HttpResponse(content_type=content_type)
+                json.dump(res, resp)
+                return resp
+
+    return HttpResponseNotAllowed(["POST"])
+
 
 @csrf_protect
 @never_cache

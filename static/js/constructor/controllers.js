@@ -293,9 +293,6 @@ Constructor.controller('UploadFieldCtrl', function($scope, $upload){
             }).success(function(data, status, headers, config) {
                 // file is uploaded successfully
                 // console.log(data);
-
-
-
                 add_tick();
             }).error(function(){
                 toastr.error("Failed to upload file: " + file.name + " for parameter: " + $scope.field.name);
@@ -303,7 +300,14 @@ Constructor.controller('UploadFieldCtrl', function($scope, $upload){
             });
             //.then(success, error, progress);
         }
-    }
+    };
+
+    $scope.clean_stored = function(){
+        $scope.access.send_method(
+            $scope.block, "erase_file_input",
+            {field_name: $scope.field.name}
+        )
+    };
 });
 
 Constructor.controller('RcTableCtrl', function($scope, $sce){

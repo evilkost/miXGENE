@@ -4,6 +4,7 @@ import collections
 import itertools
 from collections import defaultdict
 from uuid import uuid1
+import json
 
 import redis_lock
 
@@ -14,7 +15,7 @@ from webapp.notification import BlockUpdated
 from webapp.scope import Scope, ScopeVar
 from webapp.tasks import auto_exec_task, halt_execution_task
 from workflow.blocks.fields import FieldType, BlockField, InputBlockField, \
-    ActionRecord, ActionsList
+    ActionRecord, ActionsList, MultiUploadField
 from workflow.blocks.managers import TransSystem, BlockSerializer, OutManager, InputManager
 
 
@@ -352,8 +353,23 @@ class GenericBlock(BaseBlock):
                 exp.store_block(block)
                 log.debug("Exit lock, file: %s", orig_name)
 
-    def erase_file_input(self, exp, field_name, multiple=False):
-        # TODO:
+    def erase_file_input(self, exp, data):
+        field_name = json.loads(data)["field_name"]
+        field = self._block_serializer.params.get(field_name)
+
+        if not field.options.get("multiple", False):
+            #  single stored value
+            ufw = getattr(self, field_name)
+            ud = ufw.ud
+            ud.delete()
+            setattr(self, field_name, None)
+        else:
+            # multiple
+            ufw_dict = getattr(self, field_name)
+            for name, ufw in ufw_dict.items():
+                ufw.ud.delete()
+            setattr(self, field_name, MultiUploadField())
+
         exp.store_block(self)
 
     def add_dyn_input_hook(self, exp, dyn_port, new_port):

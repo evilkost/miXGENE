@@ -47,8 +47,8 @@
             </span>
         </div>
 
-        <div class="col-md-2" ng-if="stored">
-            <button class="btn btn-danger">Clean</button>
+        <div class="col-md-2" ng-if="stored" ng-hide="0==stored.count">
+            <button class="btn btn-danger" ng-click="clean_stored()">Clean</button>
         </div>
 
     </div>

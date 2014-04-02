@@ -2,7 +2,12 @@ from django.contrib import admin
 from webapp.models import *
 
 admin.site.register(Experiment)
-admin.site.register(UploadedData)
+
+
+class UploadedDataAdmin(admin.ModelAdmin):
+    list_display = ("exp", "var_name", "block_uuid", "data")
+
+admin.site.register(UploadedData, UploadedDataAdmin)
 admin.site.register(CachedFile)
 
 

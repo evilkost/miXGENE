@@ -141,7 +141,7 @@ Constructor.factory("blockAccess", function($http, $log){
                 on_success();
             }
         })
-    }
+    };
 
     access.block_method = function(block, action_code, on_success){
         $http({
@@ -155,7 +155,21 @@ Constructor.factory("blockAccess", function($http, $log){
                 on_success(data);
             }
         })
-    }
+    };
+
+    access.send_method = function(block, method, data, on_success){
+        $http({
+            method: 'POST',
+            url: '/experiments/' + access.exp_id +
+                '/blocks/' + block.uuid + "/invoke/" + method,
+            data: angular.toJson(data)
+        }).success(function(data, status, headers, config){
+            if(typeof(on_success) != 'undefined'){
+                on_success(data);
+            };
+            access.reload_block(block);
+        })
+    };
 
     access.fnFilterVarsByType = function(data_type_list){
         return function(scope_var){
