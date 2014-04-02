@@ -69,6 +69,12 @@ class Article(models.Model):
     preview = models.TextField()
     content = models.TextField()
 
+    type_choice = (
+        ("cs", u"Case study"),
+        ("t", u"Tutorial")
+    )
+    article_type = models.CharField(max_length=31, choices=type_choice)
+
     dt_created = models.DateTimeField(auto_now_add=True)
     dt_updated = models.DateTimeField(auto_now=True)
 

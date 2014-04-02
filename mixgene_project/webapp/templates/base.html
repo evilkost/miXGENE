@@ -11,14 +11,20 @@
         <ul class="nav navbar-nav">
             {% if  user.is_authenticated %}
                 <li {% if exp_page_active %} class="active" {% endif %}>
-                    <a href="{% url 'webapp.views.experiments' %}">Experiments</a>
+                    <a href="{% url 'webapp.views.experiments' %}">My cases</a>
                 </li>
                 <li {% if exp_add_page_active %} class="active" {% endif %}>
                     <a href="{% url 'webapp.views.add_experiment' %}">New</a>
                 </li>
             {% endif %}
             <li {% if articles_page_active %} class="active" {% endif %}>
-                <a href="{% url 'articles' %}">Case studies</a>
+
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown"> Explore <b class="caret"></b></a>
+                <ul class="dropdown-menu">
+                    <li><a href="{% url 'articles' 'cs' %}">Case studies</a></li>
+                    <li><a href="{% url 'articles' 't' %}">Tutorial</a></li>
+                </ul>
+
             </li>
 
             <li><a href="{% url 'webapp.views.about' %}">About</a></li>

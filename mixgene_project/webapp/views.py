@@ -52,12 +52,17 @@ def contact(request):
     return HttpResponse(template.render(context))
 
 
-def articles(request):
+def articles(request, article_type=None):
+    log.info("Article type: %s", article_type)
+    if article_type not in ["cs", "t"]:
+        article_type = "cs"
     template = loader.get_template('articles/list.html')
     context = RequestContext(request, {
         "next": "/",
-        "articles": Article.objects.all(),
+        "articles": Article.objects.filter(article_type=article_type),
         "articles_page_active": True,
+        "article_type": article_type,
+        "article_type_title": dict(Article.type_choice)[article_type],
     })
     return HttpResponse(template.render(context))
 

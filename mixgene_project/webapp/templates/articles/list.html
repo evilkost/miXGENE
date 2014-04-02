@@ -2,13 +2,12 @@
 
 {% block inner %}
 <div class="container">
-
+    <h1> {{ article_type_title }} section</h1>
     {% for article in articles %}
         <div class="row">
             <h1><a href="{% url 'article' article.pk %}">{{ article.title }}</a></h1>
             <blockquote>
                 <p>{{ article.preview }}</p>
-
                 <footer><small>
                     by  <b>{{article.author_title }}</b> at {{ article.dt_created }}
                 </small></footer>

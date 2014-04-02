@@ -13,7 +13,7 @@ urlpatterns = patterns('',
     url(r'^contact$', 'webapp.views.contact', name='contact'),
 
     url(r'^articles/(?P<article_id>\d+)$', 'webapp.views.article', name='article'),
-    url(r'^articles/$', 'webapp.views.articles', name='articles'),
+    url(r'^articles/type=(?P<article_type>[\w|\d]+)$', 'webapp.views.articles', name='articles'),
 
     url(r'^constructor/(?P<exp_id>\d+)', 'webapp.views.constructor', name='constructor'),
     url(r'^experiments/ro/(?P<exp_id>\d+)', 'webapp.views.exp_ro', name='exp_ro'),
