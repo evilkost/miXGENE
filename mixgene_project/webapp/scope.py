@@ -270,6 +270,16 @@ class Scope(object):
             for scope_var in self.scope_vars:
                 scope_var.scope_name = self.name
 
+    def remove_vars_from_block(self, block):
+        r = get_redis_instance()
+        self.load(r)
+
+        for sv in list(self.scope_vars):
+            if sv.block_uuid == block.uuid:
+                self.scope_vars.remove(sv)
+
+        self.store(r)
+
     def to_dict(self):
         return {
             "name": self.name,

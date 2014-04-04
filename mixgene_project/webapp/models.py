@@ -19,6 +19,7 @@ from mixgene.util import get_redis_instance, log_timing
 from mixgene.redis_helper import ExpKeys
 
 from environment.structures import GmtStorage, GeneSets
+from webapp.scope import Scope
 from webapp.tasks import auto_exec_task
 
 log = logging.getLogger(__name__)
@@ -183,10 +184,6 @@ class Experiment(models.Model):
             pipe.sadd(ExpKeys.get_all_exp_keys_key(self.pk), block_key)
             pipe.hset(ExpKeys.get_blocks_uuid_by_alias(self.pk), block.base_name, block.uuid)
 
-            # # TODO: refactor to scope.py
-            # for var_name, data_type in block.provided_output.iteritems():
-            #     self.register_variable(block.scope, block.uuid, var_name, data_type, pipe)
-
             if block.create_new_scope:
                 pipe.hset(ExpKeys.get_scope_creating_block_uuid_keys(self.pk),
                           block.sub_scope_name, block.uuid)
@@ -221,6 +218,42 @@ class Experiment(models.Model):
         pipe.execute()
         block.base_name = new_base_name
         self.store_block(block, redis_instance=r)
+
+    def remove_block(self, block):
+        r = get_redis_instance()
+        block_key = ExpKeys.get_block_key(block.uuid)
+        pipe = r.pipeline(transaction=True)
+        if block.create_new_scope:
+            sub_blocks = r.hgetall(ExpKeys.get_scope_creating_block_uuid_keys(self.pk),
+                      block.sub_scope_name)
+            for sub_block in sub_blocks:
+                self.remove_block(sub_block)
+
+            pipe.hdel(ExpKeys.get_scope_creating_block_uuid_keys(self.pk), block.sub_scope_name)
+
+        block.on_remove(exp=self)
+
+        # find all bound variables, that provided by this block
+        for other_uuid, other_block in self.get_blocks(self.get_all_block_uuids()):
+            if other_uuid == block.uuid:
+                continue
+
+            for f_name, bound_var in other_block.bound_inputs.items():
+                if bound_var.block_uuid == block.uuid:
+                    other_block.bound_inputs.pop(f_name)
+
+            self.store_block(other_block)
+
+        # Remove information related to block from redis
+        pipe.lrem(ExpKeys.get_exp_blocks_list_key(self.pk), 0, block.uuid)
+        pipe.srem(ExpKeys.get_all_exp_keys_key(self.pk), block_key)
+        pipe.hdel(ExpKeys.get_blocks_uuid_by_alias(self.pk), block.base_name)
+
+        scope = Scope(self, block.scope_name)
+        scope.remove_vars_from_block(block)
+
+        pipe.execute()
+
 
     @staticmethod
     def get_exp_from_request(request):

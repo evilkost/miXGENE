@@ -43,13 +43,18 @@
                                       'glyphicon-resize-full': block.ui_folded}"
                            ng-click='toggleBodyVisibility()'>
                         </a>
+                        &nbsp;&nbsp;&nbsp;&nbsp;
+                        <a class="block-remove text-danger glyphicon glyphicon-trash"
+                           ng-click="access.remove_block(block)">
+
+                        </a>
                     </span>
                     <!--<a class="block-move-down hidden glyphicon glyphicon-resize-full"></a>-->
                     <!--&nbsp;&nbsp;&nbsp;&nbsp;-->
                     <!--<a class="block-move-down glyphicon glyphicon-arrow-down"></a>-->
                     <!--<a class="block-move-up glyphicon glyphicon-arrow-up"></a>-->
-                    <!--&nbsp;&nbsp;&nbsp;&nbsp;-->
-                    <!--<a class="block-remove text-danger glyphicon glyphicon-trash"></a>-->
+
+
                 </div>
             </div>
             <div class="panel-body" ng-show="block.is_block_updating">

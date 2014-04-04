@@ -196,6 +196,11 @@ def block_resource(request, exp_id, block_uuid, action_code=None):
 
     # import time; time.sleep( 0.05)
     action_result = None
+
+    if request.method == "DELETE":
+        exp.remove_block(block)
+        return HttpResponse(status=204)
+
     if request.method == "POST":
         try:
             received_block = json.loads(request.body)
@@ -204,7 +209,7 @@ def block_resource(request, exp_id, block_uuid, action_code=None):
             received_block = {}
         action_result = block.apply_action_from_js(action_code, exp=exp, request=request, received_block=received_block)
 
-    if request.method == "GET" or request.method == "POST":
+    if request.method in ["GET", "POST"]:
         # TODO: split into two views
         resp = HttpResponse(content_type="application/json")
         if action_result is None:
@@ -214,7 +219,7 @@ def block_resource(request, exp_id, block_uuid, action_code=None):
             json.dump(action_result, resp)
         return resp
 
-    return HttpResponseNotAllowed(["POST", "GET"])
+    return HttpResponseNotAllowed(["POST", "GET", "DELETE"])
 
 
 #@csrf_protect

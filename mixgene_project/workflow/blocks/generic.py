@@ -150,6 +150,14 @@ class GenericBlock(BaseBlock):
         for f_name, f in self._block_serializer.inputs.iteritems():
             self.input_manager.register(f)
 
+    def on_remove(self, *args, **kwargs):
+        """
+            Cleanup all created files
+            TODO: github:#61
+        """
+        pass
+
+
     def get_exec_status(self):
         if self.state in self.auto_exec_status_done:
             return "done"

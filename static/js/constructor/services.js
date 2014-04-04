@@ -143,6 +143,15 @@ Constructor.factory("blockAccess", function($http, $log){
         })
     };
 
+    access.remove_block = function(block){
+        $http({
+            method: 'DELETE',
+            url: '/experiments/' + access.exp_id + '/blocks/' + block.uuid
+        }).success(function(){
+            access.fetch_blocks();
+        })
+    }
+
     access.block_method = function(block, action_code, on_success){
         $http({
             method: 'POST',
