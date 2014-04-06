@@ -37,9 +37,9 @@ PhenotypeEditor.factory("phenoIO", function($http){
             document._io = io;
             cb()
         })
-    }
+    };
 
-    io.send_classes = function(to_send){
+    io.send_classes = function(to_send, on_success){
         console.log("SENDING: " + angular.toJson(to_send));
         $http({
             method: "POST",
@@ -47,7 +47,9 @@ PhenotypeEditor.factory("phenoIO", function($http){
                 io.block_uuid +"/actions/update_user_classes_assignment",
             data: angular.toJson(to_send)
         }).success(function(){
-            toastr.info("Class assignment was stored ")
+            if( on_success != undefined){
+                on_success();
+            }
         })
     }
 
@@ -82,6 +84,30 @@ PhenotypeEditor.controller('PhenoCtrl', function($scope, $modal, $log, phenoIO, 
     $scope.new_class_label = null;
     $scope.fnFilterUserClass = function(header){
         return header.field !== $scope.phenoIO.pheno.user_class_title;
+    };
+
+    $scope.new_column_name = "";
+    $scope.show_add_column_form = false;
+    $scope.toggle_add_column_form = function(){
+        $scope.show_add_column_form = !$scope.show_add_column_form;
+    };
+    $scope.add_column = function(){
+        $log.debug("adding new column: " + $scope.new_column_name);
+        var dummy_classes = [];
+        _.forEach($scope.phenoIO.pheno.table, function(value, key){
+            dummy_classes.push(null);
+        });
+        if($scope.new_column_name == ""){
+            toastr.warn("Can't add new target class column with an empty title")
+        } else {
+            var to_send = {
+                "user_class_title": $scope.new_column_name,
+                "classes": dummy_classes
+            };
+            $scope.phenoIO.send_classes(to_send, function(){
+                window.location.reload();
+            });
+        }
     };
 
     var table_config = {};
@@ -124,7 +150,6 @@ PhenotypeEditor.controller('PhenoCtrl', function($scope, $modal, $log, phenoIO, 
             }
 
             params.total(orderedData.length); // set total for recalc pagination
-            console.log("OD: " +  orderedData);
             $defer.resolve(orderedData.slice((params.page() - 1) * params.count(), params.page() * params.count()));
             $scope.table_config.last_selected = 0;
         }
@@ -237,7 +262,9 @@ PhenotypeEditor.controller('PhenoCtrl', function($scope, $modal, $log, phenoIO, 
             "classes": classes
         };
 
-        $scope.phenoIO.send_classes(to_send);
+        $scope.phenoIO.send_classes(to_send, function(){
+            toastr.info("Class assignment was stored ");
+        });
     };
     $scope.changeSelection = function(row, data, idx, event) {
         if( event.shiftKey){

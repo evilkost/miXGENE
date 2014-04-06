@@ -88,13 +88,33 @@
         </div>
 
         <div class="col-lg-8 col-lg-pull-4"
-             style="overflow: auto"
-                >
-            <h5 class="text-center">
-                <button class="btn btn-default" ng-click="open_modal()">
-                    Configure columns visibility
-                </button>
-            </h5>
+             style="overflow: auto">
+
+            <div class="row text-center">
+                <div class="col-md-6">
+                    <button class="btn btn-default" ng-click="open_modal()">
+                        Configure columns visibility
+                    </button>
+                </div>
+
+                <div class="col-md-6">
+                    <a class="dotted" ng-hide="show_add_column_form"
+                            ng-click="toggle_add_column_form()">
+                        Create new target class column
+                    </a>
+
+                    <div class="input-group" ng-show="show_add_column_form">
+                        <input class="form-control" type="text" ng-model="new_column_name" />
+
+                        <span class="input-group-btn">
+                            <button class="btn btn-primary"
+                                    ng-click="toggle_add_column_form(); add_column();">
+                                Create
+                            </button>
+                        </span>
+                   </div>
+                </div>
+            </div>
 
             <table
                     ng-table="table_config.tableParams" show-filter="true" class="table">

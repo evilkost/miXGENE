@@ -106,7 +106,6 @@ class UserUpload(GenericBlock):
         if self.working_unit:
             es.working_unit = self.working_unit
 
-
         self.set_out_var("expression_set", es)
 
         exp.store_block(self)
