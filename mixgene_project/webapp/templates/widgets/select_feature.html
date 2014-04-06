@@ -20,9 +20,6 @@
     </div>
 
     <div ng-show="init_done">
-        <!--<div class="col-xs-8 col-md-10">-->
-            <!--<div  style="min-height: 600px" ng-grid="gridOptions"></div>-->
-        <!--</div>-->
         <div class="col-lg-4 col-lg-push-8">
             <div class="row text-center">
                 <button class="btn btn-primary " ng-click="save_selection()">
@@ -57,15 +54,14 @@
             </div>
         </div>
 
-        <div class="col-lg-8 col-lg-pull-4">
-            <form class="form form-inline">
-                <label>
-                    You can hide unused columns here:
-                </label>
-                <label class="checkbox" ng-repeat="column in table_config.columns">
-                    <input type="checkbox" ng-model="column.visible" /> {$ column.title $}
-                </label>
-            </form>
+        <div class="col-lg-8 col-lg-pull-4"
+             style="overflow: auto">
+
+            <div class="col-md-6">
+                <button class="btn btn-default" ng-click="open_modal()">
+                    Configure columns visibility
+                </button>
+            </div>
 
             <table ng-table="table_config.tableParams" show-filter="true" class="table">
                 <thead>

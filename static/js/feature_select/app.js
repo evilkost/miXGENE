@@ -1,7 +1,7 @@
 'use strict';
 
 var FeatureSelector = angular.module("FeatureSelector",
-    ['ngCookies', 'ngTable', 'angularSpinner']
+    ['ngCookies', 'ngTable', 'angularSpinner', 'ui.bootstrap']
     ,function ($interpolateProvider) {
         $interpolateProvider.startSymbol("{$");
         $interpolateProvider.endSymbol("$}");
@@ -54,7 +54,19 @@ FeatureSelector.factory("phenoIO", function($http){
     return io;
 });
 
-FeatureSelector.controller('PhenoCtrl', function($scope, phenoIO, $filter, ngTableParams){
+var ModalInstanceColumnVisibilitySelect = function($scope, $modalInstance, columns) {
+    $scope.local_columns = columns;
+
+    $scope.ok = function () {
+        $modalInstance.close($scope.local_columns);
+    };
+
+    $scope.cancel = function () {
+        $modalInstance.dismiss('cancel');
+    };
+};
+
+FeatureSelector.controller('PhenoCtrl', function($scope, phenoIO, $modal, $filter, ngTableParams){
     $scope.init_done = false;
     $scope.phenoIO = phenoIO;
     $scope.features = [];
@@ -110,12 +122,12 @@ FeatureSelector.controller('PhenoCtrl', function($scope, phenoIO, $filter, ngTab
 
     $scope.on_data_fetched = function(){
         _.each($scope.phenoIO.pheno.headers, function(header){
-            if(header.displayName != $scope.phenoIO.pheno.user_class_title) {
-                $scope.features.push({
-                    name: header.displayName,
-                    active: _.contains($scope.phenoIO.pheno.features, header.displayName)
-                })
-            };
+
+            $scope.features.push({
+                name: header.displayName,
+                active: _.contains($scope.phenoIO.pheno.features, header.displayName)
+            })
+
         });
         $scope.init_done = true;
         $scope.on_data_fetched_ng();
@@ -155,6 +167,26 @@ FeatureSelector.controller('PhenoCtrl', function($scope, phenoIO, $filter, ngTab
             toastr.info("Feature selection was stored ")
         });
     }
+
+    $scope.open_modal = function () {
+        console.log("Open ");
+        var modalInstance = $modal.open({
+            templateUrl: '/static/js/pheno_editor/partials/visible_columns_modal.html',
+            controller: ModalInstanceColumnVisibilitySelect,
+            resolve: {
+                columns: function () {
+                    return $scope.table_config["columns"];
+//                    return $scope.table_config.tableParams.columns;
+                }
+            }
+        });
+
+        modalInstance.result.then(function (foo) {
+//            $log.info('1Modal dismissed at: ' + new Date() +' foo ' + foo);
+        }, function () {
+//            $log.info('2Modal dismissed at: ' + new Date());
+        });
+    };
 
 
 
