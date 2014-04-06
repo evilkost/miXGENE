@@ -231,12 +231,13 @@ class UserUploadComplex(GenericBlock):
                 self.set_out_var("mi_rna_es", mi_rna_es)
 
             if self.methyl_matrix is not None:
+
                 methyl_assay_df = self.methyl_matrix.get_as_data_frame()
 
                 methyl_es = ExpressionSet(base_dir=exp.get_data_folder(),
                                           base_filename="%s_methyl_es" % self.uuid)
-                mi_rna_es.store_assay_data_frame(methyl_assay_df)
-                mi_rna_es.store_pheno_data_frame(pheno_df)
+                methyl_es.store_assay_data_frame(methyl_assay_df)
+                methyl_es.store_pheno_data_frame(pheno_df)
 
                 self.set_out_var("methyl_es", methyl_es)
 
