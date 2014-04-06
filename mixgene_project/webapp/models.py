@@ -475,13 +475,16 @@ class UploadedFileWrapper(object):
     def get_file(self):
         return self.ud.data
 
-    def get_as_data_frame(self):
+    def get_as_data_frame(self, sep=None):
+        if not sep:
+            sep = " "
+
         path = self.ud.data.path
         if self.orig_name[-2:] == "gz":
             with gzip.open(path) as inp:
-                res = pd.DataFrame.from_csv(inp)
+                res = pd.DataFrame.from_csv(inp.read(), sep=sep)
         else:
-            res = pd.DataFrame.from_csv(path)
+            res = pd.DataFrame.from_csv(path, sep=sep)
 
         return res
 
