@@ -2,6 +2,7 @@ import logging
 import shutil
 import gzip
 
+import pandas as pd
 from pandas import Series, DataFrame
 from sklearn import cross_validation
 from Bio.Geo import parse as parse_geo
@@ -175,11 +176,14 @@ def generate_cv_folds(
     pheno_df = es_0.get_pheno_data_frame()
 
     folds_num = int(folds_num)
-
-    if es_0.pheno_metadata["user_class_title"] not in pheno_df.columns:
+    user_class_title = es_0.pheno_metadata["user_class_title"]
+    if user_class_title not in pheno_df.columns:
         raise RuntimeError("Phenotype doesn't have user assigned classes")
 
-    classes_vector = pheno_df[es_0.pheno_metadata["user_class_title"]].values
+    mask = pd.notnull(pheno_df[user_class_title])
+
+    masked_pheno_df = pheno_df.loc[mask]
+    classes_vector = masked_pheno_df[user_class_title].values
     i = 0
     for train_idx, test_idx in chain(*repeat(cross_validation.StratifiedKFold(
         classes_vector,
@@ -190,17 +194,19 @@ def generate_cv_folds(
             es_train_name, es_test_name = output_names
             es = es_dict[input_name]
             assay_df = es.get_assay_data_frame()
+            assay_df = assay_df[assay_df.columns[mask]]
 
             train_es = es.clone("%s_%s_train_%s" % (es_0.base_filename, input_name, i))
             train_es.store_assay_data_frame(assay_df[train_idx])
-            train_es.store_pheno_data_frame(pheno_df.iloc[train_idx])
+            train_es.store_pheno_data_frame(masked_pheno_df.iloc[train_idx])
 
             test_es = es.clone("%s_%s_test_%s" % (es_0.base_filename, input_name, i))
             test_es.store_assay_data_frame(assay_df[test_idx])
-            test_es.store_pheno_data_frame(pheno_df.iloc[test_idx])
+            test_es.store_pheno_data_frame(masked_pheno_df.iloc[test_idx])
 
             cell[es_train_name] = train_es
             cell[es_test_name] = test_es
+
 
         sequence.append(cell)
         i += 1
