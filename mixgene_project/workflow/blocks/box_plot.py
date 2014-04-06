@@ -15,6 +15,15 @@ log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
 
+def fix_nan(val):
+    if val is None:
+        return None
+    if np.isnan(val):
+        return None
+    else:
+        return float(val)
+
+
 class BoxPlot(RcVisualizer):
     block_base_name = "BOX_PLOT"
 
@@ -91,11 +100,11 @@ class BoxPlot(RcVisualizer):
                 }]
                 self.chart_series[0]["data"] = [
                     [
-                        rec["whislo"],
-                        rec["q1"],
-                        rec["med"],
-                        rec["q3"],
-                        rec["whishi"]
+                        fix_nan(rec["whislo"]),
+                        fix_nan(rec["q1"]),
+                        fix_nan(rec["med"]),
+                        fix_nan(rec["q3"]),
+                        fix_nan(rec["whishi"])
                     ]
                     for rec in bps
                 ]
