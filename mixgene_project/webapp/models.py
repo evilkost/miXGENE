@@ -224,9 +224,8 @@ class Experiment(models.Model):
         block_key = ExpKeys.get_block_key(block.uuid)
         pipe = r.pipeline(transaction=True)
         if block.create_new_scope:
-            sub_blocks = r.hgetall(ExpKeys.get_scope_creating_block_uuid_keys(self.pk),
-                      block.sub_scope_name)
-            for sub_block in sub_blocks:
+            for sub_block_uuid in block.children_blocks:
+                sub_block = self.get_block(sub_block_uuid)
                 self.remove_block(sub_block)
 
             pipe.hdel(ExpKeys.get_scope_creating_block_uuid_keys(self.pk), block.sub_scope_name)
