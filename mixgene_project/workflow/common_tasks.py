@@ -194,6 +194,10 @@ def generate_cv_folds(
             es_train_name, es_test_name = output_names
             es = es_dict[input_name]
             assay_df = es.get_assay_data_frame()
+
+            # Reorder columns to be compatible to phenotype
+            assay_df = assay_df[pheno_df.index]
+            # Removing unused samples
             assay_df = assay_df[assay_df.columns[mask]]
 
             train_es = es.clone("%s_%s_train_%s" % (es_0.base_filename, input_name, i))
