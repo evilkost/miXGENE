@@ -187,6 +187,7 @@ def halt_all():
     sudo("supervisorctl stop mixgene")
     sudo("supervisorctl stop mixgene_notifier")
     sudo("supervisorctl stop celery")
+    sudo("killall -9 celery")
 
 def restart_all():
     halt_all()
