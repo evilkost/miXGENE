@@ -254,9 +254,10 @@ class FeatureSelectionByCut(GenericBlock):
     cut_property = ParamField(
         name="cut_property",
         title="Ranking property to use",
-        input_type=InputType.SELECT,
+        #input_type=InputType.SELECT,
+        input_type=InputType.TEXT,
         field_type=FieldType.STR,
-        select_provider="cut_property_options",
+        #select_provider="cut_property_options",
         order_num=10,
     )
     threshold = ParamField(
