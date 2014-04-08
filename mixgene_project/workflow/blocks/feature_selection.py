@@ -47,6 +47,7 @@ def apply_ranking(
     x = com.convert_to_r_matrix(assay_df)
     y = es.get_pheno_column_as_r_obj(pheno_class_column)
 
+    log.debug("Computing ranking: `%s` options: `%s`", ranking_name, options)
     with stopwatch(name="Computing ranking: `%s` options: `%s`" % (ranking_name, options),
                    threshold=0.01):
         ranking_list = list(func(R.r['t'](x), y, **options))
