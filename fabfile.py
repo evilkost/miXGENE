@@ -67,6 +67,8 @@ def basic_packages():
         ('pkg-config', ''),
         ('graphviz', ''),
         ('libgraphviz-dev', ''),
+        ('gfortran', ''),
+        ('nodejs-legacy', '')
     ]
 
     packs_def = []
