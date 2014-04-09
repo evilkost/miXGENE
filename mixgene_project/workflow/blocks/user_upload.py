@@ -282,12 +282,12 @@ class UserUploadComplex(GenericBlock):
         pheno_df = es.get_pheno_data_frame()
 
         received = json.loads(request.body)
-        es.pheno_metadata["user_class_title"] = received["user_class_title"]
+
         pheno_df[received["user_class_title"]] = received["classes"]
 
-        # es.store_pheno_data_frame(pheno_df)
         for work_es in [m_rna_es, mi_rna_es, methyl_es]:
             if work_es is not None:
+                work_es.pheno_metadata["user_class_title"] = received["user_class_title"]
                 work_es.store_pheno_data_frame(pheno_df)
 
         # import ipdb; ipdb.set_trace()
