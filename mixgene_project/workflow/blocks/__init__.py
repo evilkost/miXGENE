@@ -13,6 +13,7 @@ from expression_sets_merge import MergeExpressionSets
 from workflow.blocks.classifiers import GaussianNb, DecisionTree, RandomForest,\
     KnnClassifier, LinearSVM, KernelSvm
 from workflow.blocks.custom_iterator import CustomIterator
+from workflow.blocks.filter_by_bi import FilterByInteraction
 from workflow.blocks.mass_upload import MassUpload
 
 from workflow.blocks.multi_features import MultiFeature
@@ -70,6 +71,7 @@ register_block("globaltest", "Global test", GroupType.PROCESSING, GlobalTest)
 register_block("svd_agg", "Svd aggregation", GroupType.PROCESSING, SvdAggregation)
 register_block("sub_agg", "Subtractive aggregation", GroupType.PROCESSING, SubAggregation)
 register_block("merge_two_es", "Merge expression sets", GroupType.PROCESSING, MergeExpressionSets)
+register_block("filter_by_bi", "Filter ES by interaction", GroupType.PROCESSING, FilterByInteraction)
 
 register_block("svmrfe", "SVMRFE Ranking", GroupType.PROCESSING, SvmrfeRanking)
 register_block("res_svmrfe", "Restricted SVMRFE", GroupType.PROCESSING, SvmrfeRestrictedRanking)
