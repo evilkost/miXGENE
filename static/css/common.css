@@ -42,3 +42,7 @@ body {
     cursor: inherit;
     display: block;
 }
+
+.table>tbody>.active>td {
+    background-color: #f5ad66;
+}

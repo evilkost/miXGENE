@@ -89,6 +89,12 @@ mkdir -p $BASE_DIR/media/data/R/
 # instal R modules
 cp R/ranking.Methods.r $BASE_DIR/media/data/R/
 
+# install.packages("e1071")
+# source("http://bioconductor.org/biocLite.R")
+# biocLite()
+# biocLite("limma")
+
+
 # run server
 sh run_all.sh
 
