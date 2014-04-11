@@ -8,7 +8,7 @@ from merge_gene_set_annotation import MergeGeneSetWithPlatformAnnotation
 # from pca_visualise import PCA_visualize
 
 from globaltest import GlobalTest
-from user_upload import UserUpload, UserUploadComplex, UploadInteraction
+from user_upload import UserUpload, UserUploadComplex, UploadInteraction, UploadGeneSets
 from expression_sets_merge import MergeExpressionSets
 from workflow.blocks.classifiers import GaussianNb, DecisionTree, RandomForest,\
     KnnClassifier, LinearSVM, KernelSvm
@@ -47,6 +47,7 @@ register_block("fetch_ncbi_gse", "Fetch from NCBI GEO", GroupType.INPUT_DATA, Fe
 
 register_block("user_upload_complex", "Upload mRna/miRna/methyl dataset ", GroupType.INPUT_DATA, UserUploadComplex)
 register_block("upload_interaction", "Upload gene interaction", GroupType.INPUT_DATA, UploadInteraction)
+register_block("upload_gs", "Upload gene sets", GroupType.INPUT_DATA, UploadGeneSets)
 register_block("get_bi_gene_set", "Get MSigDB gene set", GroupType.INPUT_DATA, GetBroadInstituteGeneSet)
 
 register_block("cross_validation", "Cross validation K-fold", GroupType.META_PLUGIN, CrossValidation)

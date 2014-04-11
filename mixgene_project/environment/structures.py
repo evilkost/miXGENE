@@ -277,26 +277,30 @@ class GmtStorage(object):
         else:
             self.sep = "\t"
 
+    @staticmethod
+    def read_inp(inp, sep):
+        gene_sets = GS(dict(), dict())
+        for line in inp:
+            split = line.strip().split(sep)
+            if len(split) < 3:
+                continue
+            key = split[0]
+            gene_sets.description[key] = split[1]
+            gene_sets.genes[key] = split[2:]
+        return gene_sets
+
     def load(self):
         """
             @rtype  : GS
         """
-        gene_sets = GS(dict(), dict())
 
-        def read_inp(inp):
-            for line in inp:
-                split = line.strip().split(self.sep)
-                if len(split) < 3:
-                    continue
-                key = split[0]
-                gene_sets.description[key] = split[1]
-                gene_sets.genes[key] = split[2:]
         if self.compression == "gzip":
             with gzip.open(self.filepath) as inp:
-                read_inp(inp)
+                return GmtStorage.read_inp(inp, self.sep)
         else:
             with open(self.filepath) as inp:
-                read_inp(inp)
+                return GmtStorage.read_inp(inp, self.sep)
+
 
         return gene_sets
 
