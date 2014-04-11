@@ -43,7 +43,7 @@ def get_block_class_by_name(name):
         raise KeyError("No such plugin: %s" % name)
 
 register_block("fetch_ncbi_gse", "Fetch from NCBI GEO", GroupType.INPUT_DATA, FetchGSE)
-register_block("user_upload", "Upload dataset", GroupType.INPUT_DATA, UserUpload)
+#register_block("user_upload", "Upload dataset", GroupType.INPUT_DATA, UserUpload)
 
 register_block("user_upload_complex", "Upload mRna/miRna/methyl dataset ", GroupType.INPUT_DATA, UserUploadComplex)
 register_block("upload_interaction", "Upload gene interaction", GroupType.INPUT_DATA, UploadInteraction)

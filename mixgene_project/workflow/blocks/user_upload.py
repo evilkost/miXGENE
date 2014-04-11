@@ -147,31 +147,32 @@ class UserUploadComplex(GenericBlock):
     pheno_matrix = ParamField("pheno_matrix", title="Phenotype matrix", order_num=40,
                               input_type=InputType.FILE_INPUT, field_type=FieldType.CUSTOM, required=False)
 
-    # TODO: add sub page field
-    # pages = BlockField("pages", FieldType.RAW, init_val={
-    #     "assign_sample_classes": {
-    #         "title": "Assign sample classes",
-    #         "resource": "assign_sample_classes",
-    #         "widget": "widgets/fetch_gse/assign_sample_classes.html"
-    #     },
-    # })
-    _is_sub_pages_visible = BlockField("is_sub_pages_visible", FieldType.RAW, is_a_property=True)
+    csv_sep = ParamField(
+        "csv_sep", title="CSV separator symbol", order_num=50,
+        input_type=InputType.SELECT, field_type=FieldType.STR, init_val=",",
+        options={
+            "inline_select_provider": True,
+            "select_options": [
+                [" ", "space ( )"],
+                [",", "comma  (,)"],
+                ["\t", "tab (\\t)"],
+                [";", "semicolon (;)"],
+                [":", "colon (:)"],
+            ]
+        }
+    )
 
+    _is_sub_pages_visible = BlockField("is_sub_pages_visible", FieldType.RAW, is_a_property=True)
 
     _m_rna_es = OutputBlockField(name="m_rna_es", field_type=FieldType.HIDDEN,
         provided_data_type="ExpressionSet")
-
     _m_rna_annotation = OutputBlockField(name="m_rna_annotation", field_type=FieldType.HIDDEN,
         provided_data_type="PlatformAnnotation")
-
     _mi_rna_es = OutputBlockField(name="mi_rna_es", field_type=FieldType.HIDDEN,
                                 provided_data_type="ExpressionSet")
-
     _methyl_es = OutputBlockField(name="methyl_es", field_type=FieldType.HIDDEN,
                                  provided_data_type="ExpressionSet")
 
-
-    # TODO: COPY PASTE from fetch_gse block
     pages = BlockField("pages", FieldType.RAW, init_val={
         "assign_phenotype_classes": {
             "title": "Assign phenotype classes",
@@ -195,19 +196,21 @@ class UserUploadComplex(GenericBlock):
         """
         # TODO: move to celery
         self.clean_errors()
+        sep = getattr(self, "csv_sep", " ")
+
         try:
             if not self.pheno_matrix:
                 self.warnings.append(Exception("Phenotype is undefined"))
                 pheno_df = None
             else:
-                pheno_df = self.pheno_matrix.get_as_data_frame()
+                pheno_df = self.pheno_matrix.get_as_data_frame(sep)
                 pheno_df.set_index(pheno_df.columns[0])
 
                 # TODO: solve somehow better: Here we add empty column with user class assignment
                 pheno_df[ExpressionSet(None, None).pheno_metadata["user_class_title"]] = ""
 
             if self.m_rna_matrix is not None:
-                m_rna_assay_df = self.m_rna_matrix.get_as_data_frame()
+                m_rna_assay_df = self.m_rna_matrix.get_as_data_frame(sep)
 
                 m_rna_es = ExpressionSet(base_dir=exp.get_data_folder(),
                                         base_filename="%s_m_rna_es" % self.uuid)
@@ -220,7 +223,7 @@ class UserUploadComplex(GenericBlock):
                 # TODO: fetch GPL annotation if GPL id was provided
 
             if self.mi_rna_matrix is not None:
-                mi_rna_assay_df = self.mi_rna_matrix.get_as_data_frame()
+                mi_rna_assay_df = self.mi_rna_matrix.get_as_data_frame(sep)
 
                 mi_rna_es = ExpressionSet(base_dir=exp.get_data_folder(),
                                         base_filename="%s_mi_rna_es" % self.uuid)
@@ -231,7 +234,7 @@ class UserUploadComplex(GenericBlock):
 
             if self.methyl_matrix is not None:
 
-                methyl_assay_df = self.methyl_matrix.get_as_data_frame()
+                methyl_assay_df = self.methyl_matrix.get_as_data_frame(sep)
 
                 methyl_es = ExpressionSet(base_dir=exp.get_data_folder(),
                                           base_filename="%s_methyl_es" % self.uuid)
