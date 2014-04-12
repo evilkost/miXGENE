@@ -10,6 +10,7 @@ from merge_gene_set_annotation import MergeGeneSetWithPlatformAnnotation
 from globaltest import GlobalTest
 from user_upload import UserUpload, UserUploadComplex, UploadInteraction, UploadGeneSets
 from expression_sets_merge import MergeExpressionSets
+from workflow.blocks.aggregation import SubAggregation, SvdAggregation
 from workflow.blocks.classifiers import GaussianNb, DecisionTree, RandomForest,\
     KnnClassifier, LinearSVM, KernelSvm
 from workflow.blocks.custom_iterator import CustomIterator
@@ -17,8 +18,6 @@ from workflow.blocks.filter_by_bi import FilterByInteraction
 from workflow.blocks.mass_upload import MassUpload
 
 from workflow.blocks.multi_features import MultiFeature
-from workflow.blocks.sub_agg import SubAggregation
-from workflow.blocks.svd_agg import SvdAggregation
 from workflow.blocks.box_plot import BoxPlot
 from workflow.blocks.rc_table import RenderTable
 from workflow.blocks.feature_selection import SvmrfeRanking, \
