@@ -11,6 +11,7 @@ from globaltest import GlobalTest
 from user_upload import UserUpload, UserUploadComplex, UploadInteraction, UploadGeneSets
 from expression_sets_merge import MergeExpressionSets
 from workflow.blocks.aggregation import SubAggregation, SvdAggregation
+from workflow.blocks.aggregation import GeneSetAgg
 from workflow.blocks.classifiers import GaussianNb, DecisionTree, RandomForest,\
     KnnClassifier, LinearSVM, KernelSvm
 from workflow.blocks.custom_iterator import CustomIterator
@@ -68,6 +69,7 @@ register_block("knn", "Knn Classifier", GroupType.CLASSIFIER, KnnClassifier)
 register_block("merge_gs_platform_annotation", "Merge Gene Set with platform",
                GroupType.PROCESSING, MergeGeneSetWithPlatformAnnotation)
 register_block("globaltest", "Global test", GroupType.PROCESSING, GlobalTest)
+register_block("gene_sets_agg", "Gene sets aggregation", GroupType.PROCESSING, GeneSetAgg)
 register_block("svd_agg", "Svd aggregation", GroupType.PROCESSING, SvdAggregation)
 register_block("sub_agg", "Subtractive aggregation", GroupType.PROCESSING, SubAggregation)
 register_block("merge_two_es", "Merge expression sets", GroupType.PROCESSING, MergeExpressionSets)
