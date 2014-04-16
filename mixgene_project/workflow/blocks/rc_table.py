@@ -102,7 +102,12 @@ class RenderTable(RcVisualizer):
     def export_table(self, exp, *args, **kwargs):
         table = self.table
         out = StringIO.StringIO()
-        table.df.to_csv(out, float_format=pd_float_format_func)
+        # Float format in fact doesn't work in pandas
+        # table.df.to_csv(out, float_format=pd_float_format_func)
+        #
+        tmp_df = table.df.applymap(pd_float_format_func)
+        tmp_df.to_csv(out, float_format=pd_float_format_func)
+
         out.seek(0)
         return out.read()
 
