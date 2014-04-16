@@ -12,6 +12,8 @@ log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
 
+pd_float_format_func = lambda x: "%1.4f" % x
+
 class TableObj(object):
     def __init__(self):
         self.html = ""
@@ -65,7 +67,7 @@ class RenderTable(RcVisualizer):
                 df = rc.get_pandas_slice(header_axis, index_axis_list,
                                          metric_name=self.metric)
                 # log.debug(df)
-                to.html = df.to_html()
+                to.html = df.to_html(float_format=pd_float_format_func)
                 to.df = df
             else:
                 log.debug("Can't build table slice, header axis `%s`, index axis_list `%s`",
@@ -97,11 +99,10 @@ class RenderTable(RcVisualizer):
     def export_rc(self, exp, *args, **kwargs):
         return self.rc.export_to_json_dict()
 
-
     def export_table(self, exp, *args, **kwargs):
         table = self.table
         out = StringIO.StringIO()
-        table.df.to_csv(out)
+        table.df.to_csv(out, float_format=pd_float_format_func)
         out.seek(0)
         return out.read()
 
