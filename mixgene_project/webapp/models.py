@@ -72,7 +72,8 @@ class Article(models.Model):
 
     type_choice = (
         ("cs", u"Case study"),
-        ("t", u"Tutorial")
+        ("t", u"Tutorial"),
+        ("draft", u"Unpublished"),
     )
     article_type = models.CharField(max_length=31, choices=type_choice)
 

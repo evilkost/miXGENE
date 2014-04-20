@@ -12,7 +12,7 @@ admin.site.register(CachedFile)
 
 
 class ArticleAdmin(admin.ModelAdmin):
-    list_display = ('dt_created', 'author_user', 'author_title', 'title', 'preview')
+    list_display = ('dt_created', 'article_type', 'author_user', 'author_title', 'title', 'preview')
 
 admin.site.register(Article, ArticleAdmin)
 
