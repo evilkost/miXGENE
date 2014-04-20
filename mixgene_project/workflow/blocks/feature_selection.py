@@ -53,7 +53,10 @@ def apply_ranking(
         ranking_list = list(func(R.r['t'](x), y, **options))
 
     ranking_fixed = map(lambda a: int(a - 1), ranking_list)
-    df = pd.DataFrame(index=assay_df.index, data=[len(assay_df)]* len(assay_df),columns=["rank"])
+    df = pd.DataFrame(
+        index=assay_df.index,
+        data=[len(assay_df)] * len(assay_df), columns=["rank"]
+    )
     for rank, row_num in enumerate(ranking_fixed):
         df.ix[row_num, "rank"] = rank
 

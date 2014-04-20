@@ -38,12 +38,9 @@ def prepare_folds(exp, block, features, es_dict, inner_output_es_names_map):
         @param inner_output_es_names_map: input field name -> inner output name
     """
     seq = []
-
     pheno_df = es_dict.values()[0].get_pheno_data_frame()
-
     for num, feature in enumerate(features):
         mask = pd.notnull(pheno_df[feature])
-
         cell = {}
         for input_name, output_name in inner_output_es_names_map.iteritems():
             es = es_dict[input_name]
