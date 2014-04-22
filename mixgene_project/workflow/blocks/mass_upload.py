@@ -42,6 +42,21 @@ class MassUpload(UniformMetaBlock):
         options={"multiple": True},
     )
 
+    csv_sep = ParamField(
+        "csv_sep", title="CSV separator symbol", order_num=50,
+        input_type=InputType.SELECT, field_type=FieldType.STR, init_val=",",
+        options={
+            "inline_select_provider": True,
+            "select_options": [
+                [" ", "space ( )"],
+                [",", "comma  (,)"],
+                ["\t", "tab (\\t)"],
+                [";", "semicolon (;)"],
+                [":", "colon (:)"],
+            ]
+        }
+    )
+
     def __init__(self, *args, **kwargs):
         super(MassUpload, self).__init__("User upload", *args, **kwargs)
         self.es_matrices = MultiUploadField()
@@ -78,7 +93,7 @@ class MassUpload(UniformMetaBlock):
         # TODO: move to celery
         self.clean_errors()
         seq = []
-
+        sep = getattr(self, "csv_sep", " ")
         try:
             if len(self.pheno_matrices) != len(self.es_matrices):
                 raise RuntimeError("Different number of phenotypes and expression sets")
@@ -92,10 +107,10 @@ class MassUpload(UniformMetaBlock):
             }
             for es_name, pheno_name in self.pheno_by_es_names.iteritems():
                 es_ufw = self.es_matrices[es_name]
-                es_df = es_ufw.get_as_data_frame()
+                es_df = es_ufw.get_as_data_frame(sep)
 
                 pheno_ufw = self.pheno_matrices[pheno_name]
-                pheno_df = pheno_ufw.get_as_data_frame()
+                pheno_df = pheno_ufw.get_as_data_frame(sep)
 
                 es_sample_names = sorted(es_df.columns.tolist())
                 pheno_sample_names = sorted(pheno_df.index.tolist())
@@ -118,6 +133,7 @@ class MassUpload(UniformMetaBlock):
             self.do_action("processing_done", exp, seq)
         except Exception as e:
             log.exception(e)
+            self.errors.append(e)
             self.do_action("error_on_processing", exp, e)
             # self.celery_task_fetch.apply_async()
 
