@@ -9,6 +9,11 @@
             <div class="panel panel-info">
                 <div class="panel-heading">
                     <b>{$ cell.label $} </b>
+                    <a class="btn btn-xs btn-danger pull-right"
+                       ng-click="access.send_method(block,'remove_cell', cell)">
+
+                        Remove cell
+                    </a>
                 </div>
                 <div class="panel-body">
                     <!--<fieldset ng-disabled="access.mode.ro">-->
@@ -50,7 +55,6 @@
 
             </form>
             </div>
-            <div ng-include="'/static/js/constructor/partials/actions_list.html'" />
 
         </div>
 

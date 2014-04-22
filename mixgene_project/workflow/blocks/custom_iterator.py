@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import json
 from workflow.blocks.fields import FieldType, BlockField, InnerOutputField, InputBlockField, ActionRecord, ActionsList
 from workflow.blocks.meta_block import UniformMetaBlock
 
@@ -42,10 +43,24 @@ class CellInfo(object):
             "inputs_list": self.inputs_list
         }
 
+    def __hash__(self):
+        return hash(self.label)
+
+    def __eq__(self, other):
+        if not isinstance(other, CellInfo):
+            return False
+        if other.label == self.label:
+            return True
+
+        return False
+
 
 class CellInfoList(object):
     def __init__(self):
         self.cells = []
+
+    def remove_by_label(self, label):
+        self.cells.remove(CellInfo(label))
 
     def to_dict(self, *args, **kwargs):
         return {
@@ -114,6 +129,15 @@ class CustomIterator(UniformMetaBlock):
 
             self.cells.cells.append(cell)
             exp.store_block(self)
+
+    def remove_cell(self, exp, cell_json, *args, **kwargs):
+        try:
+            cell = json.loads(cell_json)
+            self.cells.remove_by_label(cell["label"])
+
+            exp.store_block(self)
+        except:
+            pass
 
     def become_ready(self, *args, **kwargs):
         pass
