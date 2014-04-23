@@ -124,7 +124,7 @@ class SvdSubAgg(GenericBlock):
     mode = ""
 
     def __init__(self, *args, **kwargs):
-        super(SubAggregation, self).__init__(*args, **kwargs)
+        super(SvdSubAgg, self).__init__(*args, **kwargs)
         self.celery_task = None
 
     def execute(self, exp, *args, **kwargs):
