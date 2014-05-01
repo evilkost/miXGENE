@@ -15,16 +15,12 @@ def auto_exec_task(exp, scope_name, is_init=False):
     r = get_redis_instance()
 
     lock_key = ExpKeys.get_auto_exec_task_lock_key(exp.pk, scope_name)
-    lock = r.setnx(lock_key, str(int(time()) + LOCK_TIME))
-    if lock:
+    with redis_lock.Lock(r, lock_key):
         try:
             sr = ScopeRunner(exp, scope_name)
             sr.execute(is_init)
         except Exception, e:
             log.exception(e)
-        finally:
-            r.delete(lock_key)
-
 
 @task(name="webapp.tasks.halt_execution")
 def halt_execution_task(exp, scope_name):
@@ -33,8 +29,7 @@ def halt_execution_task(exp, scope_name):
     r = get_redis_instance()
 
     lock_key = ExpKeys.get_auto_exec_task_lock_key(exp.pk, scope_name)
-    lock = r.setnx(lock_key, str(int(time()) + LOCK_TIME))
-    if lock:
+    with redis_lock.Lock(r, lock_key):
         try:
             if scope_name == "root":
                 AllUpdated(
@@ -48,8 +43,6 @@ def halt_execution_task(exp, scope_name):
                 block.do_action("error", exp)
         except Exception, e:
             log.exception(e)
-        finally:
-            r.delete(lock_key)
 
 
 @task(name="webapp.tasks.wrapper_task")
