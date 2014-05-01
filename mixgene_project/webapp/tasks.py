@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
+import redis_lock
 from time import time
 from celery.task import task
 from mixgene.redis_helper import ExpKeys
