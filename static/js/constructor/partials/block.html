@@ -138,7 +138,9 @@
                         </div>
                         <div class="row">
                             <div ng-repeat="uuid in access.blocks_by_bscope[block.sub_scope_name]">
-                                <div block-dir block="access.block_bodies[uuid]"> </div>
+                                <div ng-if="access.block_bodies[uuid]">
+                                    <div block-dir block="access.block_bodies[uuid]"> </div>
+                                </div>
                             </div>
                         </div>
                     </div>

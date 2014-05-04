@@ -483,7 +483,7 @@ execute_block_actions_list = ActionsList([
 
 class GroupType(object):
     INPUT_DATA = "Input data"
-    META_PLUGIN = "Meta plugins"
+    META_PLUGIN = "Meta block"
     VISUALIZE = "Visualize"
     CLASSIFIER = "Classifier"
     PROCESSING = "Data processing"

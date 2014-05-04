@@ -25,7 +25,9 @@
             <div class="row">
                 <div class="col-md-12">
                     <div class="row" ng-repeat="uuid in access.blocks_by_bscope.root">
-                        <div block-dir block="access.block_bodies[uuid]"> </div>
+                        <div ng-if="access.block_bodies[uuid]">
+                            <div block-dir block="access.block_bodies[uuid]"> </div>
+                        </div>
                     </div>
                 </div>
             </div>

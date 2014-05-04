@@ -1,7 +1,7 @@
 Constructor.factory("blockAccess", function($http, $log){
     var access = {}
 
-
+    access.blocks_uuids = [];
     access.blocks_by_bscope = {};
     access.block_bodies = {};
     access.scopes = {};
@@ -53,14 +53,14 @@ Constructor.factory("blockAccess", function($http, $log){
     }
     access.sockjs = sockjs;
 
-    access.exp_sub_resource = function(sub_resource, on_success){
+    access.exp_sub_resource = function(sub_resource, on_success) {
         $http({
             method: 'GET',
             url: '/experiments/' + access.exp_id + '/sub/' + sub_resource
-        }).success(function(data){
+        }).success(function (data) {
             on_success(data);
         });
-    }
+    };
 
 
     access.fetch_blocks = function(){
@@ -68,7 +68,8 @@ Constructor.factory("blockAccess", function($http, $log){
             method: 'GET',
             url: '/experiments/' + access.exp_id + '/blocks/'
         }).success(function(data, status, headers, config){
-            access.block_bodies = data.block_bodies;
+            access.blocks_uuids = data.blocks_uuids;
+
             access.blocks_by_bscope = data.blocks_by_bscope;
 
             access.blocks_by_group = data.blocks_by_group;
@@ -78,6 +79,10 @@ Constructor.factory("blockAccess", function($http, $log){
             access.vars_by_key = data.vars_by_key;
 
             document.access = access;
+
+            _.each(access.blocks_uuids, function(uuid){
+                access.load_block_by_uuid(uuid);
+            });
         })
     }
 
@@ -93,7 +98,6 @@ Constructor.factory("blockAccess", function($http, $log){
             url: '/experiments/' + access.exp_id + '/blocks/',
             data: request_body
         }).success(function(data, status, headers, config){
-            access.block_bodies = data.block_bodies;
             access.blocks_by_bscope = data.blocks_by_bscope;
             access.scopes = data.scopes;
 
@@ -101,8 +105,10 @@ Constructor.factory("blockAccess", function($http, $log){
             access.vars_by_key = data.vars_by_key;
 
             document.access = access;
+
+            access.load_block_by_uuid(data.new_block_uuid);
         })
-    }
+    };
 
     access.reload_block = function(block){
 //        $log.debug(block)
@@ -115,7 +121,22 @@ Constructor.factory("blockAccess", function($http, $log){
             access.block_bodies[data.uuid] = data;
             $log.debug(data);
         })
-    }
+    };
+
+    access.load_block_by_uuid = function(uuid, on_success){
+//        $log.debug(block)
+        // block.is_block_updating = true;
+        $http({
+            method: 'GET',
+            url: '/experiments/' + access.exp_id + '/blocks/' + uuid
+        }).success(function(data, status, headers, config){
+            access.block_bodies[data.uuid] = data;
+            if(typeof(on_success) != 'undefined'){
+                on_success(data);
+            };
+            //$log.debug(data);
+        })
+    };
 
     access.send_action = function(block, action_code, do_reload_all, on_success){
         if(typeof(do_reload_all)==='undefined'){ do_reload_all = false };

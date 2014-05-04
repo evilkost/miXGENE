@@ -134,30 +134,23 @@ def blocks_resource(request, exp_id):
     exp = Experiment.objects.get(pk=exp_id)
     r = get_redis_instance()
 
+    new_block = None
     if request.method == "POST":
         try:
             received_block = json.loads(request.body)
         except Exception, e:
             return HttpResponseBadRequest()
-        add_block_to_exp_from_dict(exp, received_block)
-
+        new_block = add_block_to_exp_from_dict(exp, received_block)
 
     # TODO: Move to model logic
     blocks_uuids = exp.get_all_block_uuids(redis_instance=r)
     blocks = exp.get_blocks(blocks_uuids, redis_instance=r)
 
-    block_bodies = {
-        block.uuid: block.to_dict()
-        for uuid, block in blocks
-    }
     blocks_by_bscope = defaultdict(list)
     for uuid, block in blocks:
         blocks_by_bscope[block.scope_name].append(uuid)
 
     aliases_map = exp.get_block_aliases_map(redis_instance=r)
-
-    root_blocks = [block.to_dict() for
-                uuid, block in blocks if block.scope_name == "root"]
 
     variables = []
     for scope_name, _ in exp.get_all_scopes_with_block_uuids(redis_instance=r).iteritems():
@@ -168,16 +161,17 @@ def blocks_resource(request, exp_id):
         variables.extend(scope.scope_vars)
 
     result = {
-        "blocks": root_blocks,
+        "blocks_uuids": blocks_uuids,
 
         "blocks_by_bscope": blocks_by_bscope,
-        "block_bodies": block_bodies,
-
         "blocks_by_group": blocks_by_group,
 
         "vars": [var.to_dict() for var in variables],
-        "vars_by_key": {var.pk: var.to_dict() for var in variables}
+        "vars_by_key": {var.pk: var.to_dict() for var in variables},
+
+        "new_block_uuid": new_block.uuid if new_block else "",
     }
+
     resp = HttpResponse(content_type="application/json")
     json.dump(result, resp)
     return resp
