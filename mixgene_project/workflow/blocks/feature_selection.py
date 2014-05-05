@@ -104,7 +104,7 @@ class GenericRankingBlock(GenericBlock):
         self.set_out_var("result", self.result)
 
     def collect_options(self):
-        pass
+        self.ranking_options = {}
 
     def execute(self, exp, *args, **kwargs):
         self.clean_errors()
@@ -146,6 +146,7 @@ class SvmrfeRestrictedRanking(GenericRankingBlock):
         self.result.headers = ["rank"]
 
     def collect_options(self):
+        super(SvmrfeRestrictedRanking, self).collect_options()
         if hasattr(self, "best"):
             try:
                 best = int(self.best)
@@ -164,6 +165,7 @@ class TTestRanking(GenericRankingBlock):
         self.result.headers = ["rank"]
 
     def collect_options(self):
+        super(TTestRanking, self).collect_options()
         if hasattr(self, "best"):
             try:
                 best = int(self.best)
@@ -182,6 +184,7 @@ class RandomRanking(GenericRankingBlock):
         self.result.headers = ["rank"]
 
     def collect_options(self):
+        super(RandomRanking, self).collect_options()
         if hasattr(self, "best"):
             try:
                 best = int(self.best)
