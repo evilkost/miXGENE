@@ -89,7 +89,19 @@ def install_node_npm():
 
 
 def install_r_packages():
-    raise NotImplementedError("Install R packages should be here")
+    r_packages = [
+        "e1071",
+    ]
+    repo = "http://mirrors.nic.cz/R/"
+    for package in r_packages:
+        sudo("Rscript -e \"install.packages('%s', repos='%s') \" " % (package, repo))
+
+    sudo("Rscript -e \"source('http://bioconductor.org/biocLite.R'); biocLite() \" ")
+    bioc_packages = [
+        "globaltest"
+    ]
+    for pkg in bioc_packages:
+        sudo("Rscript -e \"source('http://bioconductor.org/biocLite.R'); biocLite('%s') \" " % pkg)
 
 
 def configure_supervisor():
@@ -196,8 +208,6 @@ def restart_all():
 def run_status():
     sudo("supervisorctl status mixgene mixgene_notifier celery")
 
-
-###
 
 def initial_install():
     debian_whezzy_backports()
