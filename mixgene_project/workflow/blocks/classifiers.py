@@ -222,7 +222,7 @@ class DecisionTree(GenericClassifier):
 
     max_features_mode = ParamField(
         name="max_features_mode",
-        title="The number of features to consider when looking for the best split",
+        title="Max features for split, mode",
         input_type=InputType.SELECT,
         field_type=FieldType.STR,
         options={
@@ -232,14 +232,14 @@ class DecisionTree(GenericClassifier):
                 ["float", "Ratio of the features number [0.0 .. 1.0]"],
                 ["sqrt", "sqrt(number of features)"],
                 ["log2", "log2(number of features)"],
-                ]
+            ]
         },
         order_num=20,
     )
 
     max_features_value = ParamField(
         name="max_features_value",
-        title="Value for the chosen mode",
+        title="Value for the chosen max feature mode",
         input_type=InputType.TEXT,
         field_type=FieldType.STR,
         order_num=30,

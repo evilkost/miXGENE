@@ -2,4 +2,4 @@
 
 . /usr/local/bin/virtualenvwrapper.sh
 workon mixgene_venv
-celery worker --app=mixgene.celery --loglevel=DEBUG
+CELERY_RDBSIG=1 celery worker --app=mixgene.celery --loglevel=DEBUG
