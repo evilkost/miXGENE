@@ -13,7 +13,12 @@
     <br />
     <div class="well well-lg"
             style="font-size: 140%">
-        {{ article.content|my_markdown }}
+        {% if article.text_format == "md" %}
+            {{ article.content|my_markdown }}
+        {% endif %}
+        {% if article.text_format == "html" %}
+            {{ article.content|safe }}
+        {% endif %}
     </div>
 
 

@@ -77,6 +77,13 @@ class Article(models.Model):
     )
     article_type = models.CharField(max_length=31, choices=type_choice)
 
+    text_format_choice = (
+        ("html", u"HTML"),
+        ("md", u"Markdown"),
+    )
+
+    text_format = models.CharField(max_length=31, choices=text_format_choice, default="md")
+
     dt_created = models.DateTimeField(auto_now_add=True)
     dt_updated = models.DateTimeField(auto_now=True)
 
