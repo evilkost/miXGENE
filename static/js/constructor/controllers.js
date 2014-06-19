@@ -413,3 +413,56 @@ Constructor.controller('BoxPlotCtrl', function($scope, $log){
     }
 
 });
+
+
+
+Constructor.controller('PcaViewCtrl', function($scope, $log){
+    $scope.redraw_plot = function(){
+        $scope.access.send_action($scope.block, "save_params", false,
+            function(){
+                console.log("block should be updated");
+                console.log($scope.block.chart_series);
+                console.log($scope.access.block_bodies[$scope.block.uuid].chart_series);
+
+                $scope.plotConfig.series = $scope.access.block_bodies[$scope.block.uuid].chart_series;
+            }
+        );
+    };
+
+
+    $scope.plotConfig = {
+        options: {
+            chart: {
+                type: 'scatter'
+            },
+            legend: {
+                layout: 'vertical',
+                align: 'right',
+                verticalAlign: 'middle',
+                borderWidth: 0
+            }
+        },
+
+        series: $scope.block.chart_series,
+
+        yAxis: {
+            title: {
+                text: 'X1'
+            }
+        },
+        xAxis: {
+            title: {
+                text: 'X0'
+            },
+            gridLineWidth: 1
+        },
+        title: {
+            text: 'PCA'
+        },
+        credits: {
+            enabled: false
+        },
+        loading: false
+    }
+
+});
