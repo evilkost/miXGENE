@@ -2,6 +2,7 @@
 
 var Constructor = angular.module("Constructor", [
         'ngCookies',
+        'ngTable',
         'ngSanitize',
         'angularFileUpload',
         'highcharts-ng',

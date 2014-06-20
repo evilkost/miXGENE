@@ -466,3 +466,69 @@ Constructor.controller('PcaViewCtrl', function($scope, $log){
     }
 
 });
+
+Constructor.controller('TableResultViewCtrl', function($scope, $log, ngTableParams, $filter){
+    $scope.reset_table = function() {
+        $scope.table_config = {};
+        $scope.table_config["filter_dict"] = {};
+        $scope.table_config["data"] = [];
+        $scope.table_config["columns"] = [];
+    };
+    $scope.reset_table();
+
+    $scope.$watch('block.table_js', function(newVal) {
+        if ($scope.block.table_js) {
+            $scope.render_table($scope.block.table_js);
+            $scope.init_table();
+        }
+    });
+
+    $scope.render_table = function(table){
+       $scope.reset_table();
+
+       $scope.table_config.columns = table.columns;
+       $scope.table_config.data = table.rows;
+
+    };
+
+    $scope.toggle_sorting = function(column){
+        $log.debug("Sort by: " + column);
+        $scope.table_config.tableParams.sorting(
+            column.field,
+            $scope.table_config.tableParams.isSortBy(column.field, 'asc') ? 'desc' : 'asc'
+        );
+    };
+
+    $scope.init_table = function() {
+        $scope.table_config.tableParams = new ngTableParams({
+            page: 1,            // show first page
+            count: 10          // count per page
+            //        ,debugMode: false
+        }, {
+            total: $scope.table_config.data.length, // length of data
+            getData: function ($defer, params) {
+                var filteredData = $scope.table_config.data;
+                if($scope.table_config.filter_dict){
+                    var fixed_filter_dict = {};
+                    _.each($scope.table_config.filter_dict, function(value, key){
+                        if(value != ""){
+                            fixed_filter_dict[key] = value;
+                        }
+                    });
+                    filteredData = $filter('filter')($scope.table_config.data, fixed_filter_dict);
+                }
+
+                // use build-in angular filter
+                var orderedData = params.sorting() ?
+                    $filter('orderBy')(filteredData, params.orderBy()) :
+                    filteredData;
+
+                params.total(orderedData.length); // set total for recalc pagination
+                $defer.resolve(orderedData.slice(
+                        (params.page() - 1) * params.count(), params.page() * params.count()
+                ));
+            }
+        });
+    }
+
+});

@@ -24,6 +24,7 @@ from workflow.blocks.pca_visualize import PcaVisualize
 from workflow.blocks.rc_table import RenderTable
 from workflow.blocks.feature_selection import SvmrfeRanking, \
     SvmrfeRestrictedRanking, TTestRanking, RandomRanking, FeatureSelectionByCut
+from workflow.blocks.table_result_view import TableResultView
 
 block_classes_by_name = {}
 blocks_by_group = defaultdict(list)
@@ -60,6 +61,7 @@ register_block("mass_upload", "Mass upload", GroupType.META_PLUGIN, MassUpload)
 register_block("box_plot", "Box plot ML scores", GroupType.VISUALIZE, BoxPlot)
 register_block("rc_table", "Results container as table", GroupType.VISUALIZE, RenderTable)
 register_block("pca", "PCA visualization", GroupType.VISUALIZE, PcaVisualize)
+register_block("tr_view", "TableResult view", GroupType.VISUALIZE, TableResultView)
 
 register_block("linear_svm", "Linear SVM Classifier", GroupType.CLASSIFIER, LinearSVM)
 register_block("svm", "Kernel SVM Classifier", GroupType.CLASSIFIER, KernelSvm)

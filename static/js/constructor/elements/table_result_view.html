@@ -1,0 +1,50 @@
+<div ng-controller="TableResultViewCtrl">
+
+    <table ng-table="table_config.tableParams" show-filter="true" class="table">
+        <thead>
+        <tr>
+            <th ng-repeat="column in table_config.columns" ng-show="column.visible"
+                class="header text-center sortable"
+                ng-class="{
+                    'sort-asc': table_config.tableParams.isSortBy(column.field, 'asc'),
+                    'sort-desc': table_config.tableParams.isSortBy(column.field, 'desc')
+                }"
+                ng-click="toggle_sorting(column)"
+                    >
+                {$ column.title $}
+                    <span class="pull-right glyphicon"
+                          ng-class="{
+                            'glyphicon-sort':
+                                !table_config.tableParams.isSortBy(column.field, 'asc') &&
+                                !table_config.tableParams.isSortBy(column.field, 'desc'),
+                            'glyphicon-sort-by-attributes':
+                                table_config.tableParams.isSortBy(column.field, 'asc'),
+                            'glyphicon-sort-by-attributes-alt':
+                                table_config.tableParams.isSortBy(column.field, 'desc'),
+                        }">
+                    </span>
+            </th>
+        </tr>
+        <tr>
+            <th ng-repeat="column in table_config.columns"
+                ng-show="column.visible"
+                class="text-center sortable" >
+                <input type="text" class="form-control"
+                       ng-model="table_config.filter_dict[column.field] "/>
+            </th>
+        </tr>
+
+        </thead>
+        <tbody>
+        <tr ng-repeat="row in $data"
+            ng-click="changeSelection(row, $data, $index, $event)"
+            ng-class="{'active': row.$selected}"
+                >
+            <td ng-repeat="column in table_config.columns" ng-show="column.visible" sortable="column.field">
+                {$ row[column.field] $}
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+</div>
