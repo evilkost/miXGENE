@@ -19,7 +19,7 @@ log.setLevel(logging.DEBUG)
 
 
 class TableResultView(GenericBlock):
-    block_base_name = "TableResultView"
+    block_base_name = "TR_VIEW"
     is_block_supports_auto_execution = False
 
     _block_actions = ActionsList([
@@ -52,7 +52,7 @@ class TableResultView(GenericBlock):
     ])
 
     def __init__(self, *args, **kwargs):
-        super(TableResultView, self).__init__("PCA visualise", *args, **kwargs)
+        super(TableResultView, self).__init__("Table Result view", *args, **kwargs)
 
     @property
     def table_js(self):
