@@ -1,6 +1,7 @@
 from environment.structures import TableResult
 from webapp.models import Experiment
 from webapp.tasks import wrapper_task
+from workflow.blocks.blocks_pallet import GroupType
 from workflow.blocks.fields import FieldType, BlockField, OutputBlockField, InputBlockField, InputType, ParamField, \
     ActionRecord, ActionsList
 from workflow.blocks.generic import GenericBlock, save_params_actions_list, execute_block_actions_list
@@ -10,6 +11,8 @@ from wrappers.gt import global_test_task
 
 class GlobalTest(GenericBlock):
     block_base_name = "GLOBAL_TEST"
+    name = "Goeman global test"
+    block_group = GroupType.PROCESSING
     is_block_supports_auto_execution = True
 
     _block_actions = ActionsList([
@@ -33,7 +36,7 @@ class GlobalTest(GenericBlock):
     ])
 
     def __init__(self, *args, **kwargs):
-        super(GlobalTest, self).__init__("Global test", *args, **kwargs)
+        super(GlobalTest, self).__init__(*args, **kwargs)
         self.celery_task = None
 
         exp = Experiment.get_exp_by_id(self.exp_id)

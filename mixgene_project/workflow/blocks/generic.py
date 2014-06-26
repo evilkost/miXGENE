@@ -7,7 +7,6 @@ from uuid import uuid1
 import json
 
 import redis_lock
-
 from mixgene.redis_helper import ExpKeys
 from mixgene.util import log_timing, get_redis_instance
 from webapp.models import Experiment, UploadedData, UploadedFileWrapper
@@ -17,10 +16,18 @@ from webapp.tasks import auto_exec_task, halt_execution_task
 from workflow.blocks.fields import FieldType, BlockField, InputBlockField, \
     ActionRecord, ActionsList, MultiUploadField
 from workflow.blocks.managers import TransSystem, BlockSerializer, OutManager, InputManager
+from workflow.blocks.blocks_pallet import register_block, GroupType
 
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
+
+taboo_attrs = [
+    "__metaclass__",
+    "is_abstract",
+    "_trans",
+    "_block_serializer"
+]
 
 
 class BlockMeta(abc.ABCMeta):
@@ -33,8 +40,20 @@ class BlockMeta(abc.ABCMeta):
             setattr(new_class, "_block_serializer", BlockSerializer.clone(bases[0]._block_serializer))
             setattr(new_class, "_trans", TransSystem.clone(bases[0]._trans))
 
-        for obj_name, obj in attrs.items():
-            new_class.add_to_class(obj_name, obj)
+        _attrs = {}
+        for base in bases:
+            for attr_name, attr_val in getattr(base, "_attrs", {}).iteritems():
+                if attr_name not in taboo_attrs:
+                    _attrs[attr_name] = attr_val
+
+        _attrs.update(attrs)
+        setattr(new_class, "_attrs", _attrs)
+
+        for attr_name, attr_val in itertools.chain(attrs.iteritems(), _attrs.iteritems()):
+            new_class.add_to_class(attr_name, attr_val)
+
+        if not attrs.get("is_abstract", False):
+            register_block(name, _attrs.get("name"), _attrs.get("block_group"), new_class)
 
         return new_class
 
@@ -48,6 +67,8 @@ class BlockMeta(abc.ABCMeta):
 class BaseBlock(object):
     _block_serializer = BlockSerializer()
     _trans = TransSystem()
+    __attrs_collect = dict()
+    is_abstract = True
 
     """
         WARNING: For blocks always inherit other *Block class at first position
@@ -57,35 +78,46 @@ class BaseBlock(object):
 
 class GenericBlock(BaseBlock):
     # block fields
-    uuid = BlockField("uuid", FieldType.STR, None, is_immutable=True)
-    name = BlockField("name", FieldType.STR, None)
-    base_name = BlockField("base_name", FieldType.STR, "", is_immutable=True)
-    exp_id = BlockField("exp_id", FieldType.STR, None, is_immutable=True)
+    is_abstract = True
 
-    scope_name = BlockField("scope_name", FieldType.STR, "root", is_immutable=True)
+    _uuid = BlockField("uuid", FieldType.STR, None, is_immutable=True)
+    _name = BlockField("name", FieldType.STR, None)
+    name = "Generic block"
+
+    _base_name = BlockField("base_name", FieldType.STR, "", is_immutable=True)
+
+    _block_group = BlockField("block_group", FieldType.STR, "", is_immutable=True)
+    block_group = None
+
+    _exp_id = BlockField("exp_id", FieldType.STR, None, is_immutable=True)
+
+    _scope_name = BlockField("scope_name", FieldType.STR, "root", is_immutable=True)
     _sub_scope_name = BlockField("sub_scope_name", FieldType.STR, None, is_immutable=True)
     _visible_scopes_list = BlockField("visible_scopes_list",
                                       FieldType.SIMPLE_LIST, is_immutable=True)
 
-    state = BlockField("state", FieldType.STR, "created")
+    _state = BlockField("state", FieldType.STR, "created")
 
-    ui_folded = BlockField("ui_folded", FieldType.BOOLEAN, init_val=False)
-    ui_internal_folded = BlockField("ui_internal_folded", FieldType.BOOLEAN, init_val=False)
-    show_collector_editor = BlockField("show_collector_editor", FieldType.BOOLEAN, init_val=False)
+    _ui_folded = BlockField("ui_folded", FieldType.BOOLEAN, init_val=False)
+    _ui_internal_folded = BlockField("ui_internal_folded", FieldType.BOOLEAN, init_val=False)
+    _show_collector_editor = BlockField("show_collector_editor", FieldType.BOOLEAN, init_val=False)
 
     _has_custom_layout = BlockField("has_custom_layout", FieldType.BOOLEAN)
-    custom_layout_name = BlockField("custom_layout_name", FieldType.STR)
+    _custom_layout_name = BlockField("custom_layout_name", FieldType.STR)
 
-    create_new_scope = False
     _create_new_scope = BlockField("create_new_scope", FieldType.BOOLEAN)
+    create_new_scope = False
+
 
     is_block_supports_auto_execution = False
 
-    errors = BlockField("errors", FieldType.SIMPLE_LIST, list())
-    warnings = BlockField("warnings", FieldType.SIMPLE_LIST, list())
-    bound_inputs = BlockField("bound_inputs", FieldType.SIMPLE_DICT, defaultdict())
 
-    def __init__(self, name, exp_id, scope_name):
+
+    _errors = BlockField("errors", FieldType.SIMPLE_LIST, list())
+    _warnings = BlockField("warnings", FieldType.SIMPLE_LIST, list())
+    _bound_inputs = BlockField("bound_inputs", FieldType.SIMPLE_DICT, defaultdict())
+
+    def __init__(self, name=None, exp_id=None, scope_name=None):
         """
             Building block for workflow
         """
@@ -94,7 +126,11 @@ class GenericBlock(BaseBlock):
 
         self.state = "created"
         self.uuid = "B" + uuid1().hex[:8]
-        self.name = name
+
+        # TODO: remove
+        if name is not None:
+            self.name = name
+
         self.exp_id = exp_id
         self.scope_name = scope_name
         self.base_name = ""
@@ -136,7 +172,7 @@ class GenericBlock(BaseBlock):
         for f_name, f in self._block_serializer.outputs.iteritems():
             log.debug("Registering normal outputs: %s", f_name)
             self.register_provided_objects(scope, ScopeVar(self.uuid, f_name, f.provided_data_type))
-            # TODO: User factories for init values
+            # TODO: Use factories for init values
             #if f.init_val is not None:
             #    setattr(self, f.name, f.init_val)
 
@@ -479,13 +515,5 @@ execute_block_actions_list = ActionsList([
     ActionRecord("reset_execution", ["*", "done", "execution_error", "ready", "working"], "ready",
                  user_title="Reset execution")
 ])
-
-
-class GroupType(object):
-    INPUT_DATA = "Input data"
-    META_PLUGIN = "Meta block"
-    VISUALIZE = "Visualize"
-    CLASSIFIER = "Classifier"
-    PROCESSING = "Data processing"
 
 

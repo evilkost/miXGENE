@@ -9,6 +9,7 @@ from sklearn import decomposition
 
 from mixgene.util import log_timing
 from webapp.tasks import wrapper_task
+from workflow.blocks.blocks_pallet import GroupType
 from workflow.blocks.fields import FieldType, BlockField, InputType, ParamField, ActionsList, ActionRecord, \
     InputBlockField
 from workflow.blocks.generic import GenericBlock
@@ -20,6 +21,9 @@ log.setLevel(logging.DEBUG)
 
 class TableResultView(GenericBlock):
     block_base_name = "TR_VIEW"
+    block_group = GroupType.VISUALIZE
+    name = "Table Result view"
+
     is_block_supports_auto_execution = False
 
     _block_actions = ActionsList([
@@ -50,9 +54,6 @@ class TableResultView(GenericBlock):
     elements = BlockField(name="elements", field_type=FieldType.SIMPLE_LIST, init_val=[
         "table_result_view.html"
     ])
-
-    def __init__(self, *args, **kwargs):
-        super(TableResultView, self).__init__("Table Result view", *args, **kwargs)
 
     @property
     def table_js(self):

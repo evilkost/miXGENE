@@ -6,6 +6,7 @@ from webapp.models import Experiment
 from environment.structures import SequenceContainer
 from webapp.scope import ScopeRunner, ScopeVar
 from webapp.tasks import wrapper_task
+from workflow.blocks.blocks_pallet import GroupType
 from workflow.blocks.fields import FieldType, BlockField, OutputBlockField, InnerOutputField, InputBlockField, InputType, \
     ParamField, ActionRecord, ActionsList
 from workflow.blocks.managers import IteratedInnerFieldManager
@@ -26,6 +27,7 @@ log.setLevel(logging.DEBUG)
 
 class CrossValidation(UniformMetaBlock):
     block_base_name = "CROSS_VALID"
+    name = "Cross validation K-fold"
 
     _cv_actions = ActionsList([
         ActionRecord("become_ready", ["valid_params"], "ready")
@@ -44,9 +46,6 @@ class CrossValidation(UniformMetaBlock):
                            input_type=InputType.TEXT, field_type=FieldType.INT, init_val=5)
     repeats_num = ParamField(name="repeats_num", title="Repeats number", order_num=20,
                              input_type=InputType.TEXT, field_type=FieldType.INT, init_val=1)
-
-    def __init__(self, *args, **kwargs):
-        super(CrossValidation, self).__init__("Cross Validation", *args, **kwargs)
 
     def get_fold_labels(self):
         return ["fold_%s" % (num + 1, ) for num in range(self.folds_num * self.repeats_num)]

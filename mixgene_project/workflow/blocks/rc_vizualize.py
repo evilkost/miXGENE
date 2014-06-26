@@ -6,6 +6,7 @@ import json
 from environment.structures import TableResult
 from mixgene.util import log_timing
 from webapp.tasks import wrapper_task
+from workflow.blocks.blocks_pallet import GroupType
 from workflow.blocks.fields import FieldType, BlockField, OutputBlockField, InputBlockField, InputType, ParamField, \
     ActionRecord, ActionsList
 from workflow.blocks.generic import GenericBlock, save_params_actions_list, execute_block_actions_list
@@ -19,6 +20,9 @@ log.setLevel(logging.DEBUG)
 class RcVisualizer(GenericBlock):
     block_base_name = "RC_VIZUALIZER"
     is_block_supports_auto_execution = False
+    block_group = GroupType.VISUALIZE
+    is_abstract = True
+
 
     _block_actions = ActionsList([
         ActionRecord("save_params", ["created", "valid_params", "done", "ready", "input_bound"], "validating_params",

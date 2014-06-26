@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
+from workflow.blocks.blocks_pallet import GroupType
 from workflow.blocks.fields import FieldType, BlockField, InnerOutputField, InputBlockField, ActionRecord, ActionsList
 from workflow.blocks.meta_block import UniformMetaBlock
 
@@ -71,6 +72,7 @@ class CellInfoList(object):
 
 class CustomIterator(UniformMetaBlock):
     block_base_name = "CUSTOM_ITERATOR"
+    name = "Custom iterator"
     has_custom_layout = True
 
     _ci_block_actions = ActionsList([
@@ -88,7 +90,7 @@ class CustomIterator(UniformMetaBlock):
     ])
 
     def __init__(self, *args, **kwargs):
-        super(CustomIterator, self).__init__("Custom iterator", *args, **kwargs)
+        super(CustomIterator, self).__init__(*args, **kwargs)
         self.cells_prototype = CellsPrototype()
         self.cells = CellInfoList()
 

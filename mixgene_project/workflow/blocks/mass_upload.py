@@ -8,6 +8,7 @@ import sys
 import pandas as pd
 
 from environment.structures import ExpressionSet, BinaryInteraction, prepare_phenotype_for_js_from_es
+from workflow.blocks.blocks_pallet import GroupType
 from workflow.blocks.fields import MultiUploadField, FieldType, BlockField, OutputBlockField, InnerOutputField, \
     InputType, ParamField, ActionRecord, ActionsList
 from workflow.blocks.generic import GenericBlock
@@ -16,8 +17,11 @@ from workflow.blocks.meta_block import UniformMetaBlock
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
+
 class MassUpload(UniformMetaBlock):
     block_base_name = "BunchUpload"
+    name = "Mass upload expression sets"
+
     _bu_block_actions = ActionsList([
 
         ActionRecord("process_upload", ["valid_params", "processing_upload"],
@@ -58,7 +62,7 @@ class MassUpload(UniformMetaBlock):
     )
 
     def __init__(self, *args, **kwargs):
-        super(MassUpload, self).__init__("User upload", *args, **kwargs)
+        super(MassUpload, self).__init__(*args, **kwargs)
         self.es_matrices = MultiUploadField()
         self.pheno_matrices = MultiUploadField()
 

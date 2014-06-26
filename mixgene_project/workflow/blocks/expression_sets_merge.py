@@ -2,6 +2,7 @@
 
 import pandas as pd
 from webapp.tasks import wrapper_task
+from workflow.blocks.blocks_pallet import GroupType
 from workflow.blocks.fields import FieldType, BlockField, OutputBlockField, InputBlockField, InputType, ParamField, \
     ActionRecord, ActionsList
 
@@ -31,6 +32,9 @@ def merge_two_es(exp, block,
 
 class MergeExpressionSets(GenericBlock):
     block_base_name = "MergeES"
+    name = "Merge ES by concatenation"
+    block_group = GroupType.PROCESSING
+
     is_block_supports_auto_execution = True
 
     _block_actions = ActionsList([
@@ -49,8 +53,7 @@ class MergeExpressionSets(GenericBlock):
     merged_es = OutputBlockField(name="merged_es", provided_data_type="ExpressionSet")
 
     def __init__(self, *args, **kwargs):
-        super(MergeExpressionSets, self).__init__(
-            "Merge two expression by samples", *args, **kwargs)
+        super(MergeExpressionSets, self).__init__(*args, **kwargs)
         self.celery_task = None
 
     def execute(self, exp, *args, **kwargs):

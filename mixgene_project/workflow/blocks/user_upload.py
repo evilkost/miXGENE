@@ -8,6 +8,7 @@ import pandas as pd
 
 from environment.structures import ExpressionSet, BinaryInteraction, prepare_phenotype_for_js_from_es
 from environment.structures import GmtStorage, GeneSets
+from workflow.blocks.blocks_pallet import GroupType
 
 from workflow.blocks.fields import FieldType, BlockField, OutputBlockField, InputType, ParamField, ActionRecord, \
     ActionsList
@@ -19,6 +20,9 @@ log.setLevel(logging.DEBUG)
 
 class UserUpload(GenericBlock):
     block_base_name = "UPLOAD"
+    block_group = GroupType.INPUT_DATA
+    is_abstract = True
+
     _block_actions = ActionsList([
         ActionRecord("save_params", ["created", "valid_params", "done", "ready"], "validating_params",
                      user_title="Save parameters"),
@@ -125,6 +129,9 @@ class UserUpload(GenericBlock):
 
 class UserUploadComplex(GenericBlock):
     block_base_name = "UPLOAD_CMPLX"
+    block_group = GroupType.INPUT_DATA
+    name = "Upload mRna/miRna/methyl dataset"
+
     _block_actions = ActionsList([
         ActionRecord("save_params", ["created", "valid_params", "done", "ready"], "validating_params",
                      user_title="Save parameters"),
@@ -186,9 +193,6 @@ class UserUploadComplex(GenericBlock):
             "widget": "widgets/assign_phenotype_classes.html"
         },
     })
-
-    def __init__(self, *args, **kwargs):
-        super(UserUploadComplex, self).__init__("User upload", *args, **kwargs)
 
     @property
     def is_sub_pages_visible(self):
@@ -308,6 +312,9 @@ class UserUploadComplex(GenericBlock):
 
 class UploadInteraction(GenericBlock):
     block_base_name = "GENE_INTERACTION"
+    block_group = GroupType.INPUT_DATA
+    name = "Upload gene interaction"
+
     _block_actions = ActionsList([
         ActionRecord("save_params", ["created", "valid_params", "done", "ready"], "validating_params",
                      user_title="Save parameters"),
@@ -323,9 +330,6 @@ class UploadInteraction(GenericBlock):
                            order_num=12, input_type=InputType.TEXT, field_type=FieldType.STR, required=False)
 
     _interaction = OutputBlockField(name="interaction", provided_data_type="BinaryInteraction")
-
-    def __init__(self, *args, **kwargs):
-        super(UploadInteraction, self).__init__("Upload gene interaction matrix", *args, **kwargs)
 
     def on_params_is_valid(self, exp, *args, **kwargs):
         # Convert to  BinaryInteraction
@@ -343,6 +347,9 @@ class UploadInteraction(GenericBlock):
 
 class UploadGeneSets(GenericBlock):
     block_base_name = "GENE_SETS_UPLOAD"
+    block_group = GroupType.INPUT_DATA
+    name = "Upload gene sets"
+
     _block_actions = ActionsList([
         ActionRecord("save_params", ["created", "valid_params", "done", "ready"], "validating_params",
                      user_title="Save parameters"),
@@ -361,9 +368,6 @@ class UploadGeneSets(GenericBlock):
                            order_num=12, input_type=InputType.TEXT, field_type=FieldType.STR, required=False)
 
     _gene_sets = OutputBlockField(name="gene_sets", provided_data_type="GeneSets")
-
-    def __init__(self, *args, **kwargs):
-        super(UploadGeneSets, self).__init__("Upload gene sets", *args, **kwargs)
 
     def on_params_is_valid(self, exp, *args, **kwargs):
         try:

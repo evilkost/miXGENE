@@ -13,6 +13,7 @@ from environment.structures import TableResult
 from webapp.models import Experiment
 
 from webapp.tasks import wrapper_task
+from workflow.blocks.blocks_pallet import GroupType
 from workflow.blocks.fields import FieldType, BlockField, OutputBlockField, InputBlockField, InputType, ParamField, \
     ActionRecord, ActionsList
 
@@ -66,6 +67,9 @@ def apply_ranking(
 
 class GenericRankingBlock(GenericBlock):
     block_base_name = ""
+    block_group = GroupType.PROCESSING
+    is_abstract = True
+
     is_block_supports_auto_execution = True
 
     _block_actions = ActionsList([
@@ -81,6 +85,7 @@ class GenericRankingBlock(GenericBlock):
         required_data_type="ExpressionSet", required=True
     )
 
+    ## TODO: remove from generic ranking
     best = ParamField(
         name="best", title="Consider only best",
         input_type=InputType.TEXT,
@@ -130,18 +135,20 @@ class GenericRankingBlock(GenericBlock):
 
 class SvmrfeRanking(GenericRankingBlock):
     block_base_name = "SVMRFE_RANK"
+    name = "SVMRFE ranking"
 
     def __init__(self, *args, **kwargs):
-        super(SvmrfeRanking, self).__init__("SVMRFE ranking", *args, **kwargs)
+        super(SvmrfeRanking, self).__init__(*args, **kwargs)
         self.ranking_name = "SVMRFE"
         self.result.headers = ["rank"]
 
 
 class SvmrfeRestrictedRanking(GenericRankingBlock):
     block_base_name = "RESTR_SVMRFE_RANK"
+    name = "Restricted SVMRFE ranking"
 
     def __init__(self, *args, **kwargs):
-        super(SvmrfeRestrictedRanking, self).__init__("Restricted SVMRFE ranking", *args, **kwargs)
+        super(SvmrfeRestrictedRanking, self).__init__(*args, **kwargs)
         self.ranking_name = "RestrictedSVMRFE"
         self.result.headers = ["rank"]
 
@@ -158,9 +165,10 @@ class SvmrfeRestrictedRanking(GenericRankingBlock):
 
 class TTestRanking(GenericRankingBlock):
     block_base_name = "TTEST_RANK"
+    name = "TTest ranking"
 
     def __init__(self, *args, **kwargs):
-        super(TTestRanking, self).__init__("TTest ranking", *args, **kwargs)
+        super(TTestRanking, self).__init__(*args, **kwargs)
         self.ranking_name = "TTestRanking"
         self.result.headers = ["rank"]
 
@@ -177,9 +185,10 @@ class TTestRanking(GenericRankingBlock):
 
 class RandomRanking(GenericRankingBlock):
     block_base_name = "RANDOM_RANK"
+    name = "Random ranking"
 
     def __init__(self, *args, **kwargs):
-        super(RandomRanking, self).__init__("Random ranking", *args, **kwargs)
+        super(RandomRanking, self).__init__(*args, **kwargs)
         self.ranking_name = "RandomRanking"
         self.result.headers = ["rank"]
 
@@ -235,6 +244,8 @@ def feature_selection_by_cut(
 
 class FeatureSelectionByCut(GenericBlock):
     block_base_name = "FS_BY_CUT"
+    block_group = GroupType.PROCESSING
+    name = "Feature selection by ranking cut"
 
     is_block_supports_auto_execution = True
 
@@ -296,7 +307,7 @@ class FeatureSelectionByCut(GenericBlock):
     es = OutputBlockField(name="es", provided_data_type="ExpressionSet")
 
     def __init__(self, *args, **kwargs):
-        super(FeatureSelectionByCut, self).__init__("Feature selection by ranking cut", *args, **kwargs)
+        super(FeatureSelectionByCut, self).__init__(*args, **kwargs)
         self.celery_task = None
 
     @property

@@ -1,5 +1,6 @@
 #from django import forms
 from webapp.models import BroadInstituteGeneSet
+from workflow.blocks.blocks_pallet import GroupType
 from workflow.blocks.fields import FieldType, BlockField, OutputBlockField, InputBlockField, InputType, ParamField, \
     ActionRecord, ActionsList
 
@@ -17,6 +18,9 @@ from workflow.blocks.generic import GenericBlock, save_params_actions_list, exec
 
 class GetBroadInstituteGeneSet(GenericBlock):
     block_base_name = "BI_GENE_SET"
+    block_group = GroupType.INPUT_DATA
+    name = "Get MSigDB gene set"
+
     _block_actions = ActionsList([
         ActionRecord("save_params", ["created", "valid_params", "done"], "validating_params",
                      user_title="Save parameters"),
@@ -38,12 +42,6 @@ class GetBroadInstituteGeneSet(GenericBlock):
     @property
     def all_gene_sets(self):
         return BroadInstituteGeneSet.get_all_meta()
-
-    def __init__(self, *args, **kwargs):
-        super(GetBroadInstituteGeneSet, self).__init__("Get MSigDB gene set", *args, **kwargs)
-        # self.gene_sets = None
-        # self.errors = []
-        # self.selected_gs_id = None
 
     def on_params_is_valid(self, exp):
         gs = BroadInstituteGeneSet.objects.get(pk=self.msigdb_id).get_gene_sets()

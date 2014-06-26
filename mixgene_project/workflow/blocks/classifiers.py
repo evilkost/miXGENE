@@ -4,6 +4,7 @@ import logging
 
 from environment.structures import TableResult
 from webapp.tasks import wrapper_task
+from workflow.blocks.blocks_pallet import GroupType
 from workflow.blocks.fields import FieldType, BlockField, OutputBlockField, InputBlockField, InputType, ParamField, \
     ActionRecord, ActionsList
 from workflow.blocks.generic import GenericBlock, save_params_actions_list, execute_block_actions_list
@@ -15,6 +16,9 @@ log.setLevel(logging.DEBUG)
 
 
 class GenericClassifier(GenericBlock):
+    block_group = GroupType.CLASSIFIER
+    is_abstract = True
+
     is_block_supports_auto_execution = True
     classifier_name = ""
     # Block behavior
@@ -109,10 +113,9 @@ class GenericClassifier(GenericBlock):
 
 class GaussianNb(GenericClassifier):
     block_base_name = "GAUSSIAN_NB"
-    classifier_name = "gaussian_nb"
+    name = "Gaussian Naive Bayes"
 
-    def __init__(self, *args, **kwargs):
-        super(GaussianNb, self).__init__("Gaussian Naive Bayes", *args, **kwargs)
+    classifier_name = "gaussian_nb"
 
     def collect_options(self):
         pass
@@ -120,6 +123,8 @@ class GaussianNb(GenericClassifier):
 
 class LinearSVM(GenericClassifier):
     block_base_name = "LIN_SVM"
+    name = "Linear SVM Classifier"
+
     classifier_name = "linear_svm"
 
     C = ParamField(name="C", title="Penalty", order_num=10,
@@ -142,9 +147,6 @@ class LinearSVM(GenericClassifier):
         }
     )
 
-    def __init__(self, *args, **kwargs):
-        super(LinearSVM, self).__init__("Linear SVM Classifier", *args, **kwargs)
-
     def collect_options(self):
         self.collect_option_safe("C", float)
         self.collect_option_safe("tol", float)
@@ -153,6 +155,8 @@ class LinearSVM(GenericClassifier):
 
 class KernelSvm(GenericClassifier):
     block_base_name = "KERNEL_SVM"
+    name = "Kernel SVM Classifier"
+
     classifier_name = "svm"
 
     C = ParamField(name="C", title="Penalty", order_num=10,
@@ -189,10 +193,6 @@ class KernelSvm(GenericClassifier):
                      title="Tolerance for stopping criteria",
                      input_type=InputType.TEXT, field_type=FieldType.FLOAT, init_val=0.001)
 
-
-    def __init__(self, *args, **kwargs):
-        super(KernelSvm, self).__init__("Kernel SVM Classifier", *args, **kwargs)
-
     def collect_options(self):
         self.collect_option_safe("C", float)
         self.collect_option_safe("kernel", str)
@@ -203,6 +203,8 @@ class KernelSvm(GenericClassifier):
 
 class DecisionTree(GenericClassifier):
     block_base_name = "DT"
+    name = "Decision tree"
+
     classifier_name = "DT"
 
     criterion = ParamField(
@@ -269,9 +271,6 @@ class DecisionTree(GenericClassifier):
         order_num=60,
     )
 
-    def __init__(self, *args, **kwargs):
-        super(DecisionTree, self).__init__("Decision tree", *args, **kwargs)
-
     def collect_options(self):
         max_features_mode = self.get_option_safe("max_features_mode", str)
         if max_features_mode in ["sqrt", "log2"]:
@@ -288,6 +287,8 @@ class DecisionTree(GenericClassifier):
 
 class RandomForest(GenericClassifier):
     block_base_name = "RND_FOREST"
+    name = "Random forest"
+
     classifier_name = "random_forest"
 
     n_estimators = ParamField(
@@ -363,9 +364,6 @@ class RandomForest(GenericClassifier):
         order_num=60,
     )
 
-    def __init__(self, *args, **kwargs):
-        super(RandomForest, self).__init__("Random forest", *args, **kwargs)
-
     def collect_options(self):
         self.collect_option_safe("n_n_estimators", int)
 
@@ -384,6 +382,8 @@ class RandomForest(GenericClassifier):
 
 class KnnClassifier(GenericClassifier):
     block_base_name = "KNN"
+    name = "Knn classifier"
+
     classifier_name = "knn"
 
     n_neighbors = ParamField(
@@ -442,9 +442,6 @@ class KnnClassifier(GenericClassifier):
             ]
         }
     )
-
-    def __init__(self, *args, **kwargs):
-        super(KnnClassifier, self).__init__("Knn classifier", *args, **kwargs)
 
     def collect_options(self):
         self.collect_option_safe("n_neighbors", int)

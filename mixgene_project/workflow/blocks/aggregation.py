@@ -1,6 +1,7 @@
 import pandas as pd
 
 from webapp.tasks import wrapper_task
+from workflow.blocks.blocks_pallet import GroupType
 from workflow.blocks.fields import ActionsList, ActionRecord, InputBlockField, ParamField, InputType, FieldType, \
     OutputBlockField
 from workflow.blocks.generic import GenericBlock, execute_block_actions_list
@@ -42,6 +43,9 @@ def do_gs_agg(
 
 class GeneSetAgg(GenericBlock):
     block_base_name = "GENE_SET_AGG"
+    name = "Gene sets aggregation"
+    block_group = GroupType.PROCESSING
+
     is_block_supports_auto_execution = True
 
     _block_actions = ActionsList([
@@ -49,13 +53,14 @@ class GeneSetAgg(GenericBlock):
                      user_title="Save parameters"),
         ActionRecord("on_params_is_valid", ["validating_params"], "ready"),
         ActionRecord("on_params_not_valid", ["validating_params"], "created"),
-        ])
+    ])
+
     _block_actions.extend(execute_block_actions_list)
 
     _es = InputBlockField(name="es", order_num=10,
-                                required_data_type="ExpressionSet", required=True)
+        required_data_type="ExpressionSet", required=True)
     _gs = InputBlockField(name="gs", order_num=20,
-                                required_data_type="GeneSets", required=True)
+        required_data_type="GeneSets", required=True)
 
     agg_method = ParamField(
         "agg_method", title="Aggregate method", order_num=50,
@@ -73,7 +78,7 @@ class GeneSetAgg(GenericBlock):
     agg_es = OutputBlockField(name="agg_es", provided_data_type="ExpressionSet")
 
     def __init__(self, *args, **kwargs):
-        super(GeneSetAgg, self).__init__("Gene sets level aggregation", *args, **kwargs)
+        super(GeneSetAgg, self).__init__(*args, **kwargs)
         self.celery_task = None
 
     def execute(self, exp, *args, **kwargs):
@@ -99,6 +104,9 @@ class GeneSetAgg(GenericBlock):
 
 
 class SvdSubAgg(GenericBlock):
+    is_abstract = True
+    block_group = GroupType.PROCESSING
+
     is_block_supports_auto_execution = True
 
     _block_actions = ActionsList([
@@ -153,16 +161,11 @@ class SvdSubAgg(GenericBlock):
 
 class SubAggregation(SvdSubAgg):
     block_base_name = "SUB_AGG"
+    name = "Subtractive aggregation"
     mode = "SUB"
-
-    def __init__(self, *args, **kwargs):
-        super(SubAggregation, self).__init__("Sub aggregation", *args, **kwargs)
 
 
 class SvdAggregation(SvdSubAgg):
     block_base_name = "SVD_AGG"
+    name = "Svd aggregation"
     mode = "SVD"
-
-    def __init__(self, *args, **kwargs):
-        super(SvdAggregation, self).__init__("Svd aggregation", *args, **kwargs)
-

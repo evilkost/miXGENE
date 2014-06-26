@@ -14,6 +14,7 @@ from environment.structures import SequenceContainer
 from environment.result_container import ResultsContainer
 
 from webapp.scope import ScopeRunner, ScopeVar
+from workflow.blocks.blocks_pallet import GroupType
 
 from workflow.blocks.errors import PortError
 from workflow.blocks.fields import FieldType, BlockField, OutputBlockField, InnerOutputField, InputBlockField, InputType, \
@@ -50,6 +51,8 @@ class CollectorSpecification(object):
 
 
 class UniformMetaBlock(GenericBlock):
+    is_abstract = True
+    block_group = GroupType.META_PLUGIN
     create_new_scope = True
     is_block_supports_auto_execution = True
 

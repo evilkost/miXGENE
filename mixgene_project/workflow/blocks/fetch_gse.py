@@ -5,6 +5,7 @@ import pandas as pd
 from environment.structures import prepare_phenotype_for_js_from_es
 from webapp.notification import BlockUpdated
 from webapp.tasks import wrapper_task
+from workflow.blocks.blocks_pallet import GroupType
 from workflow.blocks.fields import FieldType, BlockField, OutputBlockField, InputType, ParamField, ActionRecord, \
     ActionsList
 from workflow.common_tasks import fetch_geo_gse, preprocess_soft
@@ -16,6 +17,9 @@ log.setLevel(logging.DEBUG)
 
 class FetchGSE(GenericBlock):
     block_base_name = "FETCH_GEO"
+    name = "Fetch from NCBI GEO"
+    block_group = GroupType.INPUT_DATA
+
     _block_actions = ActionsList([
         ActionRecord("save_params", ["created", "valid_params", "done", "ready"], "validating_params",
                      user_title="Save parameters"),

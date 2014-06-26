@@ -14,6 +14,7 @@ from webapp.models import Experiment
 from environment.structures import SequenceContainer
 from webapp.scope import ScopeRunner, ScopeVar
 from webapp.tasks import wrapper_task
+from workflow.blocks.blocks_pallet import GroupType
 from workflow.blocks.fields import FieldType, BlockField, OutputBlockField, InnerOutputField, InputBlockField, InputType, \
     ParamField, ActionRecord, ActionsList
 from workflow.blocks.managers import IteratedInnerFieldManager
@@ -68,6 +69,7 @@ def prepare_folds(exp, block, features, es_dict, inner_output_es_names_map):
 
 class MultiFeature(UniformMetaBlock):
     block_base_name = "MULTI_FEATURE"
+    name = "Multi feature validation"
 
     _mf_block_actions = ActionsList([
         ActionRecord("on_feature_selection_updated", ["valid_params", "ready", "done"], "ready"),
@@ -93,7 +95,7 @@ class MultiFeature(UniformMetaBlock):
     })
 
     def __init__(self, *args, **kwargs):
-        super(MultiFeature, self).__init__("Multi feature block", *args, **kwargs)
+        super(MultiFeature, self).__init__(*args, **kwargs)
         self.features = []
 
     @property

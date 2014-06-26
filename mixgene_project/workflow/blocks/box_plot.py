@@ -5,6 +5,7 @@ import numpy as np
 
 from mixgene.util import log_timing
 from webapp.tasks import wrapper_task
+from workflow.blocks.blocks_pallet import GroupType
 from workflow.blocks.fields import FieldType, BlockField, InputType, ParamField
 
 from workflow.blocks.rc_vizualize import RcVisualizer
@@ -26,6 +27,8 @@ def fix_nan(val):
 
 class BoxPlot(RcVisualizer):
     block_base_name = "BOX_PLOT"
+    block_group = GroupType.VISUALIZE
+    name = "Box plot"
 
     boxplot_config = ParamField(name="boxplot_config", title="",
                               input_type=InputType.HIDDEN,
@@ -41,7 +44,7 @@ class BoxPlot(RcVisualizer):
     ])
 
     def __init__(self, *args, **kwargs):
-        super(BoxPlot, self).__init__("Box plot", *args, **kwargs)
+        super(BoxPlot, self).__init__(*args, **kwargs)
         self.boxplot_config = {
             "agg_axis_for_scoring": {},
             "compare_axis_by_boxplot": {},

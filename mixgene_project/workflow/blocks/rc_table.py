@@ -27,6 +27,7 @@ class TableObj(object):
 
 class RenderTable(RcVisualizer):
     block_base_name = "RENDER_TABLE"
+    name = "Results container as table"
 
     _table = BlockField(name="table", field_type=FieldType.CUSTOM, is_a_property=True)
     _export_table_url = BlockField(name="export_table_url",
@@ -43,7 +44,7 @@ class RenderTable(RcVisualizer):
                               field_type=FieldType.RAW)
 
     def __init__(self, *args, **kwargs):
-        super(RenderTable, self).__init__("Result table", *args, **kwargs)
+        super(RenderTable, self).__init__(*args, **kwargs)
         self.table_config = {
             "header_axis": "",
             "multi_index_axis_dict": {},

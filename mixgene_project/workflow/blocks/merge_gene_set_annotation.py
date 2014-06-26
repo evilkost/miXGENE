@@ -1,4 +1,5 @@
 from webapp.tasks import wrapper_task
+from workflow.blocks.blocks_pallet import GroupType
 from workflow.blocks.fields import FieldType, BlockField, OutputBlockField, InputBlockField, InputType, ParamField, \
     ActionRecord, ActionsList
 from workflow.blocks.generic import GenericBlock, save_params_actions_list, execute_block_actions_list
@@ -8,6 +9,9 @@ from converters.gene_set_tools import map_gene_sets_to_probes
 
 class MergeGeneSetWithPlatformAnnotation(GenericBlock):
     block_base_name = "MERGE_GS_GPL_ANN"
+    name = "Merge gene set with platform"
+    block_group = GroupType.PROCESSING
+
     is_block_supports_auto_execution = True
 
     _block_actions = ActionsList([
@@ -27,8 +31,7 @@ class MergeGeneSetWithPlatformAnnotation(GenericBlock):
                            provided_data_type="GeneSets")
 
     def __init__(self, *args, **kwargs):
-        super(MergeGeneSetWithPlatformAnnotation, self).__init__(
-            "Merge GeneSet with platform annotation", *args, **kwargs)
+        super(MergeGeneSetWithPlatformAnnotation, self).__init__(*args, **kwargs)
         self.celery_task = None
 
     def execute(self, exp, *args, **kwargs):

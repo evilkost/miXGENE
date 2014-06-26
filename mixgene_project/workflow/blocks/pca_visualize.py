@@ -7,6 +7,7 @@ from sklearn import decomposition
 
 from mixgene.util import log_timing
 from webapp.tasks import wrapper_task
+from workflow.blocks.blocks_pallet import GroupType
 from workflow.blocks.fields import FieldType, BlockField, InputType, ParamField, ActionsList, ActionRecord, \
     InputBlockField
 from workflow.blocks.generic import GenericBlock
@@ -18,6 +19,9 @@ log.setLevel(logging.DEBUG)
 
 class PcaVisualize(GenericBlock):
     block_base_name = "PCA_VISUALIZE"
+    name = "2D PCA Plot"
+    block_group = GroupType.VISUALIZE
+
     is_block_supports_auto_execution = False
 
     _block_actions = ActionsList([
