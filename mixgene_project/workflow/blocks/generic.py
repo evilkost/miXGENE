@@ -117,7 +117,7 @@ class GenericBlock(BaseBlock):
     _warnings = BlockField("warnings", FieldType.SIMPLE_LIST, list())
     _bound_inputs = BlockField("bound_inputs", FieldType.SIMPLE_DICT, defaultdict())
 
-    def __init__(self, name=None, exp_id=None, scope_name=None):
+    def __init__(self, exp_id=None, scope_name=None):
         """
             Building block for workflow
         """
@@ -126,10 +126,6 @@ class GenericBlock(BaseBlock):
 
         self.state = "created"
         self.uuid = "B" + uuid1().hex[:8]
-
-        # TODO: remove
-        if name is not None:
-            self.name = name
 
         self.exp_id = exp_id
         self.scope_name = scope_name
