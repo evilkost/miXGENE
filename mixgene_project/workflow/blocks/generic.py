@@ -108,10 +108,7 @@ class GenericBlock(BaseBlock):
     _create_new_scope = BlockField("create_new_scope", FieldType.BOOLEAN)
     create_new_scope = False
 
-
     is_block_supports_auto_execution = False
-
-
 
     _errors = BlockField("errors", FieldType.SIMPLE_LIST, list())
     _warnings = BlockField("warnings", FieldType.SIMPLE_LIST, list())
