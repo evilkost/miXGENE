@@ -15,8 +15,8 @@ from webapp.scope import Scope, ScopeVar
 from webapp.tasks import auto_exec_task, halt_execution_task
 from workflow.blocks.fields import FieldType, BlockField, InputBlockField, \
     ActionRecord, ActionsList, MultiUploadField
-from workflow.blocks.managers import TransSystem, BlockSerializer, OutManager, InputManager
-from workflow.blocks.blocks_pallet import register_block, GroupType
+from workflow.blocks.managers import TransSystem, BlockSpecification, OutManager, InputManager
+from workflow.blocks.blocks_pallet import add_block_to_toolbox, GroupType
 
 
 log = logging.getLogger(__name__)
@@ -26,7 +26,7 @@ taboo_attrs = [
     "__metaclass__",
     "is_abstract",
     "_trans",
-    "_block_serializer"
+    "_block_spec"
 ]
 
 
@@ -36,9 +36,8 @@ class BlockMeta(abc.ABCMeta):
         module = attrs.pop('__module__')
         new_class = super_new(cls, name, bases, {'__module__': module})
 
-        if hasattr(bases[0], "_block_serializer"):
-            setattr(new_class, "_block_serializer", BlockSerializer.clone(bases[0]._block_serializer))
-            setattr(new_class, "_trans", TransSystem.clone(bases[0]._trans))
+        setattr(new_class, "_block_spec", BlockSpecification())
+        setattr(new_class, "_trans", TransSystem())
 
         _attrs = {}
         for base in bases:
@@ -53,7 +52,8 @@ class BlockMeta(abc.ABCMeta):
             new_class.add_to_class(attr_name, attr_val)
 
         if not attrs.get("is_abstract", False):
-            register_block(name, _attrs.get("name"), _attrs.get("block_group"), new_class)
+            add_block_to_toolbox(name,
+                _attrs.get("name"), _attrs.get("block_group"), new_class)
 
         return new_class
 
@@ -65,9 +65,8 @@ class BlockMeta(abc.ABCMeta):
 
 
 class BaseBlock(object):
-    _block_serializer = BlockSerializer()
-    _trans = TransSystem()
-    __attrs_collect = dict()
+    # _block_spec = BlockSerializer()
+    #_trans = TransSystem()
     is_abstract = True
 
     """
@@ -119,7 +118,7 @@ class GenericBlock(BaseBlock):
             Building block for workflow
         """
         # TODO: due to dynamic inputs, find better solution
-        self._block_serializer = BlockSerializer.clone(self.__class__._block_serializer)
+        self._block_spec = BlockSpecification.clone(self.__class__._block_spec)
 
         self.state = "created"
         self.uuid = "B" + uuid1().hex[:8]
@@ -145,8 +144,8 @@ class GenericBlock(BaseBlock):
 
         # Init block fields
         for f_name, f in itertools.chain(
-                self._block_serializer.fields.iteritems(),
-                self._block_serializer.params.iteritems()):
+                self._block_spec.fields.iteritems(),
+                self._block_spec.params.iteritems()):
 
             #if f_name not in self.__dict__ and not f.is_a_property:
             if not f.is_a_property and not hasattr(self, f_name):
@@ -155,14 +154,14 @@ class GenericBlock(BaseBlock):
                 except:
                     import ipdb; ipdb.set_trace()
 
-        for f_name, f in self._block_serializer.inputs.iteritems():
+        for f_name, f in self._block_spec.inputs.iteritems():
             if f.multiply_extensible:
                 setattr(self, f_name, [])  # Names of dynamically added ports
 
         # TODO: Hmm maybe more metaclass magic can be applied here
         scope = self.get_scope()
         scope.load()
-        for f_name, f in self._block_serializer.outputs.iteritems():
+        for f_name, f in self._block_spec.outputs.iteritems():
             log.debug("Registering normal outputs: %s", f_name)
             self.register_provided_objects(scope, ScopeVar(self.uuid, f_name, f.provided_data_type))
             # TODO: Use factories for init values
@@ -171,12 +170,12 @@ class GenericBlock(BaseBlock):
 
         scope.store()
 
-        for f_name, f in self._block_serializer.fields.items():
+        for f_name, f in self._block_spec.fields.items():
             if f.init_val is not None:
                 #setattr(self, f.name, f.init_val)
                 pass
 
-        for f_name, f in self._block_serializer.inputs.iteritems():
+        for f_name, f in self._block_spec.inputs.iteritems():
             self.input_manager.register(f)
 
     def on_remove(self, *args, **kwargs):
@@ -270,7 +269,7 @@ class GenericBlock(BaseBlock):
 
     @log_timing
     def to_dict(self):
-        result = self._block_serializer.to_dict(self)
+        result = self._block_spec.to_dict(self)
         # import ipdb; ipdb.set_trace()
         return result
 
@@ -338,7 +337,7 @@ class GenericBlock(BaseBlock):
         exp.store_block(self)
 
     def save_params(self, exp, received_block=None, *args, **kwargs):
-        self._block_serializer.save_params(self, received_block)
+        self._block_spec.save_params(self, received_block)
         exp.store_block(self)
         self.validate_params(exp)
 
@@ -392,7 +391,7 @@ class GenericBlock(BaseBlock):
 
     def erase_file_input(self, exp, data):
         field_name = json.loads(data)["field_name"]
-        field = self._block_serializer.params.get(field_name)
+        field = self._block_spec.params.get(field_name)
 
         if not field.options.get("multiple", False):
             #  single stored value
@@ -415,7 +414,7 @@ class GenericBlock(BaseBlock):
         pass
 
     def add_input_port(self, new_port):
-        self._block_serializer.register(new_port)
+        self._block_spec.register(new_port)
         self.input_manager.register(new_port)
 
     def add_dyn_input(self, exp, received_block, *args, **kwargs):
@@ -427,7 +426,7 @@ class GenericBlock(BaseBlock):
             return
 
         dyn_port_name = spec['input']
-        dyn_port = self._block_serializer.inputs.get(dyn_port_name)
+        dyn_port = self._block_spec.inputs.get(dyn_port_name)
         if not dyn_port:
             return
 
@@ -459,7 +458,7 @@ class GenericBlock(BaseBlock):
                 self, self.bound_inputs, self.errors, self.warnings):
             is_valid = False
         # check user provided values
-        if not self._block_serializer.validate_params(self, exp):
+        if not self._block_spec.validate_params(self, exp):
             is_valid = False
 
         if not self.validate_params_hook(exp, *args, **kwargs):

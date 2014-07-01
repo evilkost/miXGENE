@@ -73,7 +73,7 @@ class BlockField(object):
 
     def contribute_to_class(self, cls, name):
         #setattr(cls, name, self.init_val)
-        getattr(cls, "_block_serializer").register(self)
+        getattr(cls, "_block_spec").register(self)
 
 
 class OutputBlockField(BlockField):
@@ -82,7 +82,7 @@ class OutputBlockField(BlockField):
         self.provided_data_type = provided_data_type
 
     def contribute_to_class(self, cls, name):
-        getattr(cls, "_block_serializer").register(self)
+        getattr(cls, "_block_spec").register(self)
 
 
 class InnerOutputField(OutputBlockField):
@@ -100,7 +100,7 @@ class InputBlockField(BlockField):
         self.multiply_extensible = multiply_extensible
 
     def contribute_to_class(self, cls, name):
-        getattr(cls, "_block_serializer").register(self)
+        getattr(cls, "_block_spec").register(self)
 
     def to_dict(self):
         return self.__dict__
@@ -139,7 +139,7 @@ class ParamField(object):
 
     def contribute_to_class(self, cls, name):
         #setattr(cls, name, self.init_val)
-        getattr(cls, "_block_serializer").register(self)
+        getattr(cls, "_block_spec").register(self)
 
     def to_dict(self):
         ignore_fields = set(["validator"])

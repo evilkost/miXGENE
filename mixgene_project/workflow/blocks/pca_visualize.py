@@ -51,9 +51,6 @@ class PcaVisualize(GenericBlock):
         "pca.html"
     ])
 
-    def __init__(self, *args, **kwargs):
-        super(PcaVisualize, self).__init__("PCA visualise", *args, **kwargs)
-
     def on_params_is_valid(self, exp, *args, **kwargs):
         super(PcaVisualize, self).on_params_is_valid(exp, *args, **kwargs)
 

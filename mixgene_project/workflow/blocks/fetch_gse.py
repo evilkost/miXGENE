@@ -60,7 +60,7 @@ class FetchGSE(GenericBlock):
                                 provided_data_type="PlatformAnnotation")
 
     def __init__(self, *args, **kwargs):
-        super(FetchGSE, self).__init__("Fetch ncbi gse", *args, **kwargs)
+        super(FetchGSE, self).__init__(*args, **kwargs)
         self.celery_task_fetch = None
         self.celery_task_preprocess = None
 

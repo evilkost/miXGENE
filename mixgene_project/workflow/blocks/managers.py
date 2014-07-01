@@ -12,8 +12,11 @@ from workflow.blocks.fields import InnerOutputField, OutputBlockField, InputBloc
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
+
 class TransSystem(object):
     """
+        Transition system that defines finite state machine.
+
         Assumptions:
             - one action can have multiple source states, but only one result state
     """
@@ -76,7 +79,7 @@ class TransSystem(object):
             return None
 
 
-class BlockSerializer(object):
+class BlockSpecification(object):
     def __init__(self):
         self.fields = dict()
         self.params = dict()
@@ -107,7 +110,7 @@ class BlockSerializer(object):
 
     @staticmethod
     def clone(other):
-        bs = BlockSerializer()
+        bs = BlockSpecification()
         bs.fields = copy.deepcopy(other.fields)
         bs.params = copy.deepcopy(other.params)
         bs.outputs = copy.deepcopy(other.outputs)
@@ -269,7 +272,6 @@ class InputManager(object):
         }
 
 
-
 class IteratedInnerFieldManager(object):
     def __init__(self):
         self.fields = {}
@@ -293,10 +295,10 @@ class IteratedInnerFieldManager(object):
         self.sequence = []
         self.iterator = -1
 
-    def get_var(self, fname):
+    def get_var(self, field_name):
         if self.iterator < 0:
             return RuntimeError("Iteration wasn't started")
         elif self.iterator >= len(self.sequence):
             return StopIteration()
         else:
-            return self.sequence[self.iterator][fname]
+            return self.sequence[self.iterator][field_name]

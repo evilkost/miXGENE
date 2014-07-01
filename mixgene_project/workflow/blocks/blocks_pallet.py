@@ -9,7 +9,7 @@ block_classes_by_name = {}
 blocks_by_group = defaultdict(list)
 
 
-def register_block(code_name, human_title, group, cls):
+def add_block_to_toolbox(code_name, human_title, group, cls):
     """
         Registers block to the toolbox pallet
     """

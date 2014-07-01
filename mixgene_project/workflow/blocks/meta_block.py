@@ -293,7 +293,7 @@ class UniformMetaBlock(GenericBlock):
 
         for new_inner_output in inner_outputs_list:
             self.inner_output_manager.register(new_inner_output)
-            self._block_serializer.register(new_inner_output)
+            self._block_spec.register(new_inner_output)
             scope.register_variable(ScopeVar(
                 self.uuid, new_inner_output.name, new_inner_output.provided_data_type))
 
