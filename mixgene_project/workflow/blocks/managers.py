@@ -165,15 +165,32 @@ class BlockSpecification(object):
 
         return is_valid
 
+    def validate_inputs(self, block, exp):
+        #import ipdb; ipdb.set_trace()
+        is_valid = True
+        bound_inputs = getattr(block, "bound_inputs", {})
+        for f_name, f in self.inputs.iteritems():
+            if f.multiply_extensible:
+                continue
+            if bound_inputs.get(f.name) is None:
+                exception = PortError(block, f.name, "Input port not bound")
+                if f.required:
+                    is_valid = False
+                    block.errors.append(exception)
+                else:
+                    block.warnings.append(exception)
+        return is_valid
+
     def save_params(self, block, received_block):
         """
             @param block: GenericBlock
             @param received_block: dict
+
+
         """
+        #TODO: split into parsing and actual fields value replace
         for p_name, p in itertools.chain(self.params.iteritems(), self.fields.iteritems()):
             # TODO: here invoke validator
-            #if p_name == "ui_folded":
-            #    import ipdb; ipdb.set_trace()
             if p.is_immutable:
                 continue
 
@@ -243,40 +260,6 @@ class OutManager(object):
             return result
         else:
             return []
-
-
-class InputManager(object):
-    def __init__(self):
-        self.input_fields = []
-
-    def register(self, input_field):
-        self.input_fields.append(input_field)
-
-    def validate_inputs(self, block, bound_inputs, errors, warnings):
-        is_valid = True
-        for f in self.input_fields:
-            if f.multiply_extensible:
-                continue
-            if bound_inputs.get(f.name) is None:
-                exception = PortError(block, f.name, "Input port not bound")
-                if f.required:
-                    is_valid = False
-                    errors.append(exception)
-                else:
-                    warnings.append(exception)
-        return is_valid
-
-    def to_dict(self):
-        return {
-            "list": [
-                field.to_dict()
-                for field in self.input_fields
-            ],
-            "dict": {
-                field.name: field.to_dict()
-                for field in self.input_fields
-            }
-        }
 
 
 class IteratedInnerFieldManager(object):

@@ -12,10 +12,10 @@ from mixgene.util import log_timing, get_redis_instance
 from webapp.models import Experiment, UploadedData, UploadedFileWrapper
 from webapp.notification import BlockUpdated
 from webapp.scope import Scope, ScopeVar
-from webapp.tasks import auto_exec_task, halt_execution_task
+from webapp.tasks import auto_exec_task, halt_execution_task, wrapper_task
 from workflow.blocks.fields import FieldType, BlockField, InputBlockField, \
     ActionRecord, ActionsList, MultiUploadField
-from workflow.blocks.managers import TransSystem, BlockSpecification, OutManager, InputManager
+from workflow.blocks.managers import TransSystem, BlockSpecification, OutManager
 from workflow.blocks.blocks_pallet import add_block_to_toolbox, GroupType
 
 
@@ -133,8 +133,6 @@ class GenericBlock(BaseBlock):
         self._out_data = dict()
         self.out_manager = OutManager()
 
-        self.input_manager = InputManager()
-
         # Automatic execution status map
         self.auto_exec_status_ready = set(["ready"])
         self.auto_exec_status_done = set(["done"])
@@ -173,9 +171,6 @@ class GenericBlock(BaseBlock):
             if f.init_val is not None:
                 #setattr(self, f.name, f.init_val)
                 pass
-
-        for f_name, f in self._block_spec.inputs.iteritems():
-            self.input_manager.register(f)
 
     def on_remove(self, *args, **kwargs):
         """
@@ -250,7 +245,7 @@ class GenericBlock(BaseBlock):
 
     def get_input_blocks(self):
         required_blocks = []
-        for f in self.input_manager.input_fields:
+        for f_name, f in self._block_spec.inputs.iteritems():
             if f.multiply_extensible:
                 continue
             if self.bound_inputs.get(f.name) is None and f.required:
@@ -414,7 +409,6 @@ class GenericBlock(BaseBlock):
 
     def add_input_port(self, new_port):
         self._block_spec.register(new_port)
-        self.input_manager.register(new_port)
 
     def add_dyn_input(self, exp, received_block, *args, **kwargs):
         spec = received_block.get("_add_dyn_port")
@@ -452,12 +446,12 @@ class GenericBlock(BaseBlock):
     def validate_params(self, exp, *args, **kwargs):
         is_valid = True
 
-        # check required inputs
-        if not self.input_manager.validate_inputs(
-                self, self.bound_inputs, self.errors, self.warnings):
-            is_valid = False
         # check user provided values
         if not self._block_spec.validate_params(self, exp):
+            is_valid = False
+
+        # check required inputs
+        if not self._block_spec.validate_inputs(self, exp):
             is_valid = False
 
         if not self.validate_params_hook(exp, *args, **kwargs):
@@ -495,8 +489,8 @@ class GenericBlock(BaseBlock):
 save_params_actions_list = ActionsList([
     ActionRecord("save_params", ["created", "valid_params", "done", "ready"], "validating_params",
                  user_title="Save parameters"),
-    ActionRecord("on_params_is_valid", ["validating_params"], "ready"),
-    ActionRecord("on_params_not_valid", ["validating_params"], "created"),
+    ActionRecord("on_params_is_valid", ["validating_params", "created"], "ready"),
+    ActionRecord("on_params_not_valid", ["validating_params", "created"], "created"),
 ])
 
 execute_block_actions_list = ActionsList([
