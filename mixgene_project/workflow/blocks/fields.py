@@ -38,6 +38,8 @@ class FieldType(object):
 
 
 class BlockField(object):
+    _ignore_fields = set(["validator"])
+
     def __init__(self, name, field_type=FieldType.HIDDEN, init_val=None,
                  is_immutable=False, required=False, is_a_property=False,
                  order_num=None,
@@ -54,22 +56,42 @@ class BlockField(object):
         else:
             self.order_num = order_num
 
+    def to_dict(self):
+        return {
+            k: v
+            for k, v in self.__dict__.iteritems()
+            if k not in self._ignore_fields
+        }
+
     def value_to_dict(self, raw_val, block):
         val = str(raw_val)
-        if raw_val is None:
-            val = None
-        else:
-            if self.field_type in [FieldType.RAW, FieldType.INT, FieldType.FLOAT, FieldType.BOOLEAN]:
-                val = raw_val
-            if self.field_type == FieldType.CUSTOM:
-                val = raw_val.to_dict(block)
-            if self.field_type in [FieldType.STR]:
-                val = str(raw_val)
-            if self.field_type == FieldType.SIMPLE_DICT:
-                val = {str(k): str(v) for k, v in raw_val.iteritems()}
-            if self.field_type == FieldType.SIMPLE_LIST:
-                val = map(str, raw_val)
-        return val
+        try:
+            if raw_val is None:
+                if self.field_type in [FieldType.STR]:
+                    val = ""
+                else:
+                    val = None
+            else:
+                if self.field_type in [FieldType.RAW, FieldType.INT,
+                                       FieldType.FLOAT, FieldType.BOOLEAN]:
+                    val = raw_val
+                if self.field_type == FieldType.CUSTOM:
+                    try:
+                        val = raw_val.to_dict(block)
+                    except Exception, e:
+                        log.exception("Failed to serialize field %s with error: %s", self.name, e)
+                        val = str(raw_val)
+                if self.field_type in [FieldType.STR]:
+                    val = str(raw_val)
+                if self.field_type == FieldType.SIMPLE_DICT:
+                    val = {str(k): str(v) for k, v in raw_val.iteritems()}
+                if self.field_type == FieldType.SIMPLE_LIST:
+                    val = map(str, raw_val)
+            return val
+        except Exception, e:
+            log.exception(e)
+            # TODO: fix it
+            return ""
 
     def contribute_to_class(self, cls, name):
         #setattr(cls, name, self.init_val)
@@ -81,30 +103,9 @@ class OutputBlockField(BlockField):
         super(OutputBlockField, self).__init__(*args, **kwargs)
         self.provided_data_type = provided_data_type
 
-    def contribute_to_class(self, cls, name):
-        getattr(cls, "_block_spec").register(self)
-
 
 class InnerOutputField(OutputBlockField):
     pass
-
-
-class InputBlockField(BlockField):
-    def __init__(self, required_data_type=None, multiply_extensible=False, options=None,
-                 *args, **kwargs):
-        super(InputBlockField, self).__init__(*args, **kwargs)
-        self.required_data_type = required_data_type
-        self.field_type = FieldType.INPUT_PORT
-        self.bound_var_key = None
-        self.options = options or {}
-        self.multiply_extensible = multiply_extensible
-
-    def contribute_to_class(self, cls, name):
-        getattr(cls, "_block_spec").register(self)
-
-    def to_dict(self):
-        return self.__dict__
-
 
 class InputType(object):
     TEXT = "text"
@@ -115,64 +116,31 @@ class InputType(object):
     FILE_INPUT = "file_input"
 
 
-class ParamField(object):
+class ParamField(BlockField):
     # TODO: maybe more use of django form fields?
     # TODO: or join ParamField and BlockField?
-    def __init__(self, name, title, input_type, field_type, init_val=None,
+    def __init__(self, title=None, input_type=InputType.TEXT,
                  validator=None, select_provider=None,
-                 required=True, order_num=None, options=None,
+                 options=None,
                  *args, **kwargs):
-        self.name = name
+        super(ParamField, self).__init__(*args, **kwargs)
         self.title = title
         self.input_type = input_type
-        self.field_type = field_type
-        self.init_val = init_val
         self.validator = validator
         self.select_provider = select_provider
         self.is_a_property = False
-        self.required = required
         self.options = options or {}
-        if order_num is None:
-            self.order_num = random.randint(0, 1000)
-        else:
-            self.order_num = order_num
 
-    def contribute_to_class(self, cls, name):
-        #setattr(cls, name, self.init_val)
-        getattr(cls, "_block_spec").register(self)
 
-    def to_dict(self):
-        ignore_fields = set(["validator"])
-        return {k: v for k, v in self.__dict__.iteritems() if k not in ignore_fields}
-
-    def value_to_dict(self, raw_val, block):
-        val = str(raw_val)
-        try:
-            if raw_val is None:
-                if self.field_type in [FieldType.STR]:
-                    val = ""
-                else:
-                    val = None
-            else:
-                if self.field_type in [FieldType.RAW, FieldType.INT, FieldType.FLOAT] :
-                    val = raw_val
-                if self.field_type == FieldType.CUSTOM:
-                    try:
-                        val = raw_val.to_dict(block)
-                    except Exception, e:
-                        log.exception("Failed to serialize field %s with error: %s", self.name, e)
-                        val = str(raw_val)
-                if self.field_type in [FieldType.STR, FieldType.BOOLEAN]:
-                    val = str(raw_val)
-                if self.field_type == FieldType.SIMPLE_DICT:
-                    val = {str(k): str(v) for k, v in raw_val.iteritems()}
-                if self.field_type == FieldType.SIMPLE_LIST:
-                    val = map(str, raw_val)
-            return val
-        except Exception, e:
-            log.exception(e)
-            # TODO: fix it
-            return ""
+class InputBlockField(BlockField):
+    def __init__(self, required_data_type=None, multiply_extensible=False, options=None,
+                 *args, **kwargs):
+        super(InputBlockField, self).__init__(*args, **kwargs)
+        self.required_data_type = required_data_type
+        self.field_type = FieldType.INPUT_PORT
+        self.bound_var_key = None
+        #self.options = options or {}
+        self.multiply_extensible = multiply_extensible
 
 
 class ActionRecord(object):

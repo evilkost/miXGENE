@@ -19,7 +19,6 @@ log.setLevel(logging.DEBUG)
 
 class RcVisualizer(GenericBlock):
     block_base_name = "RC_VIZUALIZER"
-    is_block_supports_auto_execution = False
     block_group = GroupType.VISUALIZE
     is_abstract = True
 

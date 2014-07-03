@@ -35,13 +35,13 @@ class UserUpload(GenericBlock):
         ActionRecord("error", ["processing_upload"], "valid_params", reload_block_in_client=True),
     ])
 
-    es_matrix = ParamField("es_matrix", title="Expression set matrix", order_num=0,
+    es_matrix = ParamField(name="es_matrix", title="Expression set matrix", order_num=0,
         input_type=InputType.FILE_INPUT, field_type=FieldType.CUSTOM)
-    pheno_matrix = ParamField("pheno_matrix", title="Phenotype matrix", order_num=1,
+    pheno_matrix = ParamField(name="pheno_matrix", title="Phenotype matrix", order_num=1,
         input_type=InputType.FILE_INPUT, field_type=FieldType.CUSTOM)
-    gpl_platform = ParamField("gpl_platform", title="Platform ID", order_num=2,
+    gpl_platform = ParamField(name="gpl_platform", title="Platform ID", order_num=2,
         input_type=InputType.TEXT, field_type=FieldType.STR, required=False)
-    working_unit = ParamField("working_unit", title="Working unit [used when platform is unknown]",
+    working_unit = ParamField(name="working_unit", title="Working unit [used when platform is unknown]",
         order_num=3, input_type=InputType.TEXT, field_type=FieldType.STR, required=False)
     # TODO: add sub page field
     # pages = BlockField("pages", FieldType.RAW, init_val={
@@ -144,24 +144,24 @@ class UserUploadComplex(GenericBlock):
         ActionRecord("error", ["processing_upload"], "valid_params"),
     ])
 
-    m_rna_matrix = ParamField("m_rna_matrix", title="mRNA expression", order_num=10,
+    m_rna_matrix = ParamField(name="m_rna_matrix", title="mRNA expression", order_num=10,
                          input_type=InputType.FILE_INPUT, field_type=FieldType.CUSTOM)
-    m_rna_platform = ParamField("m_rna_platform", title="Platform ID", order_num=11,
+    m_rna_platform = ParamField(name="m_rna_platform", title="Platform ID", order_num=11,
                                input_type=InputType.TEXT, field_type=FieldType.STR, required=False)
-    m_rna_unit = ParamField("m_rna_unit", title="Working unit [used when platform is unknown]", init_val=None,
+    m_rna_unit = ParamField(name="m_rna_unit", title="Working unit [used when platform is unknown]", init_val=None,
                            order_num=12, input_type=InputType.TEXT, field_type=FieldType.STR, required=False)
 
-    mi_rna_matrix = ParamField("mi_rna_matrix", title=u"μRNA expression", order_num=20,
+    mi_rna_matrix = ParamField(name="mi_rna_matrix", title=u"μRNA expression", order_num=20,
                           input_type=InputType.FILE_INPUT, field_type=FieldType.CUSTOM, required=False)
 
-    methyl_matrix = ParamField("methyl_matrix", title="Methylation expression", order_num=30,
+    methyl_matrix = ParamField(name="methyl_matrix", title="Methylation expression", order_num=30,
                           input_type=InputType.FILE_INPUT, field_type=FieldType.CUSTOM, required=False)
 
-    pheno_matrix = ParamField("pheno_matrix", title="Phenotype matrix", order_num=40,
+    pheno_matrix = ParamField(name="pheno_matrix", title="Phenotype matrix", order_num=40,
                               input_type=InputType.FILE_INPUT, field_type=FieldType.CUSTOM, required=False)
 
     csv_sep = ParamField(
-        "csv_sep", title="CSV separator symbol", order_num=50,
+        name="csv_sep", title="CSV separator symbol", order_num=50,
         input_type=InputType.SELECT, field_type=FieldType.STR, init_val=",",
         options={
             "inline_select_provider": True,
@@ -322,11 +322,11 @@ class UploadInteraction(GenericBlock):
         ActionRecord("on_params_not_valid", ["validating_params"], "created"),
     ])
 
-    upload_interaction = ParamField("upload_interaction", title="Interaction matrix", order_num=10,
+    upload_interaction = ParamField(name="upload_interaction", title="Interaction matrix", order_num=10,
         input_type=InputType.FILE_INPUT, field_type=FieldType.CUSTOM)
-    row_units = ParamField("row_units", title="Row units",
+    row_units = ParamField(name="row_units", title="Row units",
         order_num=11, input_type=InputType.TEXT, field_type=FieldType.STR, required=False)
-    col_units = ParamField("col_units", title="Column units",
+    col_units = ParamField(name="col_units", title="Column units",
                            order_num=12, input_type=InputType.TEXT, field_type=FieldType.STR, required=False)
 
     _interaction = OutputBlockField(name="interaction", provided_data_type="BinaryInteraction")
@@ -355,16 +355,16 @@ class UploadGeneSets(GenericBlock):
                      user_title="Save parameters"),
         ActionRecord("on_params_is_valid", ["validating_params"], "done"),
         ActionRecord("on_params_not_valid", ["validating_params"], "created"),
-        ])
+    ])
 
     upload_gs = ParamField(
-        "upload_gs", title="Gene sets in .gmt format", order_num=10,
+        name="upload_gs", title="Gene sets in .gmt format", order_num=10,
         input_type=InputType.FILE_INPUT, field_type=FieldType.CUSTOM
     )
 
-    set_units = ParamField("set_units", title="Set units",
+    set_units = ParamField(name="set_units", title="Set units",
                            order_num=11, input_type=InputType.TEXT, field_type=FieldType.STR, required=False)
-    gen_units = ParamField("gen_units", title="Gene units",
+    gen_units = ParamField(name="gen_units", title="Gene units",
                            order_num=12, input_type=InputType.TEXT, field_type=FieldType.STR, required=False)
 
     _gene_sets = OutputBlockField(name="gene_sets", provided_data_type="GeneSets")

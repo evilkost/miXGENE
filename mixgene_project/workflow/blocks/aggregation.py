@@ -63,7 +63,7 @@ class GeneSetAgg(GenericBlock):
         required_data_type="GeneSets", required=True)
 
     agg_method = ParamField(
-        "agg_method", title="Aggregate method", order_num=50,
+        name="agg_method", title="Aggregate method", order_num=50,
         input_type=InputType.SELECT, field_type=FieldType.STR,
         init_val="mean",
         options={

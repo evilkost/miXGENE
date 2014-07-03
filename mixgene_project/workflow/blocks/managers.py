@@ -100,13 +100,14 @@ class BlockSpecification(object):
             self.inputs[field.name] = field
             return
 
+        if isinstance(field, ParamField):
+            self.params[field.name] = field
+            return
+
         if isinstance(field, BlockField):
             self.fields[field.name] = field
             return
 
-        if isinstance(field, ParamField):
-            self.params[field.name] = field
-            return
 
     @staticmethod
     def clone(other):
@@ -126,15 +127,15 @@ class BlockSpecification(object):
                 continue
 
             with stopwatch(name="Serializing block field %s" % f_name, threshold=0.01):
-                raw_val = getattr(block, f_name)
+                raw_val = getattr(block, f_name, None)
                 result[f_name] = f.value_to_dict(raw_val, block)
 
-        params_protype = {
+        params_prototype = {
             str(param_name): param_field.to_dict()
             for param_name, param_field in self.params.iteritems()
         }
-        result["_params_prototype"] = params_protype
-        result["_params_prototype_list"] = params_protype.values()
+        result["_params_prototype"] = params_prototype
+        result["_params_prototype_list"] = params_prototype.values()
 
         for f_name, f in self.params.iteritems():
             with stopwatch(name="Serializing block param %s" % f_name, threshold=0.01):
@@ -169,8 +170,13 @@ class BlockSpecification(object):
             @param block: GenericBlock
             @param received_block: dict
         """
-        for p_name, p in self.params.iteritems():
+        for p_name, p in itertools.chain(self.params.iteritems(), self.fields.iteritems()):
             # TODO: here invoke validator
+            #if p_name == "ui_folded":
+            #    import ipdb; ipdb.set_trace()
+            if p.is_immutable:
+                continue
+
             try:
                 raw_val = received_block.get(p_name)
 
@@ -181,12 +187,13 @@ class BlockSpecification(object):
                     val = int(raw_val)
                 elif p.field_type == FieldType.STR:
                     val = str(raw_val)
+                elif p.field_type == FieldType.BOOLEAN:
+                    val = bool(raw_val)
                 elif p.field_type == FieldType.RAW:
                     val = raw_val
                 else:
                     continue
                     #val = raw_val
-
                 setattr(block, p_name, val)
             except:
                 pass

@@ -35,19 +35,19 @@ class MassUpload(UniformMetaBlock):
     ])
 
     es_matrices = ParamField(
-        "es_matrices", title="Expression sets", order_num=10,
+        name="es_matrices", title="Expression sets", order_num=10,
         input_type=InputType.FILE_INPUT, field_type=FieldType.CUSTOM,
         options={"multiple": True},
     )
 
     pheno_matrices = ParamField(
-        "pheno_matrices", title="Phenotypes", order_num=40,
+        name="pheno_matrices", title="Phenotypes", order_num=40,
         input_type=InputType.FILE_INPUT, field_type=FieldType.CUSTOM,
         options={"multiple": True},
     )
 
     csv_sep = ParamField(
-        "csv_sep", title="CSV separator symbol", order_num=50,
+        name="csv_sep", title="CSV separator symbol", order_num=50,
         input_type=InputType.SELECT, field_type=FieldType.STR, init_val=",",
         options={
             "inline_select_provider": True,

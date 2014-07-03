@@ -65,7 +65,7 @@ class BlockMeta(abc.ABCMeta):
 
 
 class BaseBlock(object):
-    # _block_spec = BlockSerializer()
+    _block_spec = BlockSpecification()
     #_trans = TransSystem()
     is_abstract = True
 
@@ -104,8 +104,7 @@ class GenericBlock(BaseBlock):
     _has_custom_layout = BlockField("has_custom_layout", FieldType.BOOLEAN)
     _custom_layout_name = BlockField("custom_layout_name", FieldType.STR)
 
-    _create_new_scope = BlockField("create_new_scope", FieldType.BOOLEAN)
-    create_new_scope = False
+    _create_new_scope = BlockField("create_new_scope", FieldType.BOOLEAN, init_val=False)
 
     is_block_supports_auto_execution = False
 
@@ -185,7 +184,6 @@ class GenericBlock(BaseBlock):
         """
         pass
 
-
     def get_exec_status(self):
         if self.state in self.auto_exec_status_done:
             return "done"
@@ -256,7 +254,8 @@ class GenericBlock(BaseBlock):
             if f.multiply_extensible:
                 continue
             if self.bound_inputs.get(f.name) is None and f.required:
-                raise RuntimeError("Not all required inputs are bound")
+                raise RuntimeError("Not all required inputs are bound:"
+                                   "block {0}, field: {1}".format(self.name, f.name))
             elif self.bound_inputs.get(f.name):
                 required_blocks.append(self.bound_inputs[f.name].block_uuid)
         return required_blocks
@@ -279,6 +278,7 @@ class GenericBlock(BaseBlock):
 
     @log_timing
     def apply_action_from_js(self, action_name, *args, **kwargs):
+        #import ipdb; ipdb.set_trace()
         if self._trans.is_action_available(self.state, action_name):
             self.do_action(action_name, *args, **kwargs)
         elif hasattr(self, action_name) and hasattr(getattr(self, action_name), "__call__"):
@@ -332,13 +332,12 @@ class GenericBlock(BaseBlock):
         if new_name:
             exp.change_block_alias(self, new_name)
 
-    def toggle_ui_folded(self, exp, received_block, *args, **kwargs):
-        self.ui_folded = received_block["ui_folded"]
+    def save_params_unsafe(self, exp, received_block=None, *args, **kwargs):
+        self._block_spec.save_params(self, received_block)
         exp.store_block(self)
 
     def save_params(self, exp, received_block=None, *args, **kwargs):
-        self._block_spec.save_params(self, received_block)
-        exp.store_block(self)
+        self.save_params_unsafe(exp, received_block, *args, **kwargs)
         self.validate_params(exp)
 
     def save_file_input(self, exp, field_name, file_obj, multiple=False, upload_meta=None):

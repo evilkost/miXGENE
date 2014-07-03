@@ -27,7 +27,7 @@ Constructor.controller('WorktableCtrl', function WorktableCtrl($scope, blockAcce
 
 });
 
-Constructor.controller('BlockCtrl', function BlockCtrl($scope, blockAccess){
+Constructor.controller('BlockCtrl', function BlockCtrl($scope, blockAccess, $log){
     $scope.access = blockAccess;
     $scope.exp_id = $scope.access.exp_id;
     $scope.has_errors = $scope.block.errors.length > 0;
@@ -35,7 +35,7 @@ Constructor.controller('BlockCtrl', function BlockCtrl($scope, blockAccess){
     $scope.bscope = $scope.block.sub_scope;
     $scope.toggleBodyVisibility = function(){
         $scope.block.ui_folded = !$scope.block.ui_folded;
-        $scope.access.send_action($scope.block, "toggle_ui_folded");
+        $scope.access.send_action($scope.block, "save_params_unsafe");
     };
 
     $scope.edit_base_name = false;

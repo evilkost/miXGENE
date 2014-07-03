@@ -231,7 +231,7 @@ class Experiment(models.Model):
         r = get_redis_instance()
         block_key = ExpKeys.get_block_key(block.uuid)
         pipe = r.pipeline(transaction=True)
-        if block.create_new_scope:
+        if getattr(block, "create_new_scope", False):
             for sub_block_uuid in block.children_blocks:
                 sub_block = self.get_block(sub_block_uuid)
                 self.remove_block(sub_block)
