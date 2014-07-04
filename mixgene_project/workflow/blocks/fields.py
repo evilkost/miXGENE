@@ -63,7 +63,17 @@ class BlockField(object):
             if k not in self._ignore_fields
         }
 
+    def value_from_dict(self, dct):
+        """
+            Parse dict object obtained from JSON representation
+
+        """
+
+
     def value_to_dict(self, raw_val, block):
+        """
+            Convert object @raw_val into the dict structure that will serialized into JSON
+        """
         val = str(raw_val)
         try:
             if raw_val is None:

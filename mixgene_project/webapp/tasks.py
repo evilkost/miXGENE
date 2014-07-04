@@ -45,6 +45,9 @@ def halt_execution_task(exp, scope_name):
         except Exception, e:
             log.exception(e)
 
+@task(name="webapp.tasks.deferred_block_method")
+def deferred_block_method(exp, block, method_name, *args, **kwargs):
+    getattr(block, method_name)(exp, *args, **kwargs)
 
 @task(name="webapp.tasks.wrapper_task")
 def wrapper_task(func, exp, block,

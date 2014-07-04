@@ -12,7 +12,7 @@ from mixgene.util import log_timing, get_redis_instance
 from webapp.models import Experiment, UploadedData, UploadedFileWrapper
 from webapp.notification import BlockUpdated
 from webapp.scope import Scope, ScopeVar
-from webapp.tasks import auto_exec_task, halt_execution_task, wrapper_task
+from webapp.tasks import auto_exec_task, halt_execution_task, wrapper_task, deferred_block_method
 from workflow.blocks.fields import FieldType, BlockField, InputBlockField, \
     ActionRecord, ActionsList, MultiUploadField
 from workflow.blocks.managers import TransSystem, BlockSpecification, OutManager
@@ -98,7 +98,6 @@ class GenericBlock(BaseBlock):
     _base_name = BlockField("base_name", FieldType.STR, "", is_immutable=True)
 
     _block_group = BlockField("block_group", FieldType.STR, "", is_immutable=True)
-    block_group = None
 
     _exp_id = BlockField("exp_id", FieldType.STR, None, is_immutable=True)
 

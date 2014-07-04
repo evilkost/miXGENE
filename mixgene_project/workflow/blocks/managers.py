@@ -168,20 +168,6 @@ class BlockSpecification(object):
 
         return result
 
-    def inputs_for_js(self):
-        """
-            Format meta information about inputs for js
-            Need to form for Angular
-        """
-        rlist = []
-        rdict = {}
-        for f_name, f in self.inputs.iteritems():
-            field_dictified = f.to_dict()
-            rlist.append(field_dictified)
-            rdict[f_name] = field_dictified
-
-        result = {"list": rlist, "dict": rdict}
-
     def validate_params(self, block, exp):
         is_valid = True
         for p_name, p in self.params.iteritems():
@@ -244,7 +230,6 @@ class BlockSpecification(object):
                 setattr(block, p_name, val)
             except Exception, e:
                 log.error(e)
-
 
         inputs_dict = received_block.get('bound_inputs')
         if inputs_dict:
