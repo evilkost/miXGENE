@@ -60,8 +60,8 @@ class UniformMetaBlock(GenericBlock):
     _block_actions.extend(ActionsList([
         ActionRecord("save_params", ["created", "valid_params", "done", "ready"], "validating_params",
                      user_title="Save parameters"),
-        ActionRecord("on_params_is_valid", ["validating_params"], "valid_params"),
-        ActionRecord("on_params_not_valid", ["validating_params"], "created"),
+        ActionRecord("on_params_is_valid", ["validating_params", "created", "ready"], "valid_params"),
+        ActionRecord("on_params_not_valid", ["validating_params", "created", "ready"], "created"),
 
         ActionRecord("add_collector_var", ["created", "ready", "done", "valid_params"], "validating_params"),
         ActionRecord("remove_collector_var", ["created", "ready", "done", "valid_params"], "validating_params"),

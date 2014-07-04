@@ -22,6 +22,21 @@ from workflow.blocks.blocks_pallet import add_block_to_toolbox, GroupType
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
+save_params_actions_list = ActionsList([
+    ActionRecord("save_params", ["created", "valid_params", "done", "ready"], "validating_params",
+                 user_title="Save parameters"),
+    ActionRecord("on_params_is_valid", ["validating_params"], "ready"),
+    ActionRecord("on_params_not_valid", ["validating_params"], "created"),
+])
+
+execute_block_actions_list = ActionsList([
+    ActionRecord("execute", ["ready"], "working", user_title="Run block"),
+    ActionRecord("success", ["working"], "done", propagate_auto_execution=True),
+    ActionRecord("error", ["*", "ready", "working"], "execution_error"),
+    ActionRecord("reset_execution", ["*", "done", "execution_error", "ready", "working"], "ready",
+                 user_title="Reset execution")
+])
+
 taboo_attrs = [
     "__metaclass__",
     "is_abstract",
@@ -69,9 +84,6 @@ class BaseBlock(object):
     #_trans = TransSystem()
     is_abstract = True
 
-    """
-        WARNING: For blocks always inherit other *Block class at first position
-    """
     __metaclass__ = BlockMeta
 
 
@@ -131,7 +143,6 @@ class GenericBlock(BaseBlock):
         # End
 
         self._out_data = dict()
-        self.out_manager = OutManager()
 
         # Automatic execution status map
         self.auto_exec_status_ready = set(["ready"])
@@ -155,15 +166,11 @@ class GenericBlock(BaseBlock):
             if f.multiply_extensible:
                 setattr(self, f_name, [])  # Names of dynamically added ports
 
-        # TODO: Hmm maybe more metaclass magic can be applied here
         scope = self.get_scope()
         scope.load()
         for f_name, f in self._block_spec.outputs.iteritems():
             log.debug("Registering normal outputs: %s", f_name)
-            self.register_provided_objects(scope, ScopeVar(self.uuid, f_name, f.provided_data_type))
-            # TODO: Use factories for init values
-            #if f.init_val is not None:
-            #    setattr(self, f.name, f.init_val)
+            scope.register_variable(ScopeVar(self.uuid, f_name, f.provided_data_type))
 
         scope.store()
 
@@ -203,7 +210,8 @@ class GenericBlock(BaseBlock):
             return None
 
     def get_out_var(self, name):
-        if self.out_manager.contains(name):
+        if name in self._block_spec.outputs:
+        # if self.out_manager.contains(name):
             return self._out_data.get(name)
         elif self.create_new_scope:
             return self.get_inner_out_var(name)
@@ -267,9 +275,10 @@ class GenericBlock(BaseBlock):
         # import ipdb; ipdb.set_trace()
         return result
 
-    def register_provided_objects(self, scope, scope_var):
-        self.out_manager.register(scope_var.var_name, scope_var.data_type)
-        scope.register_variable(scope_var)
+    # def register_provided_objects(self, scope, scope_var):
+    #     #self._block_spec.register()
+    #     self.out_manager.register(scope_var.var_name, scope_var.data_type)
+    #     scope.register_variable(scope_var)
 
     @log_timing
     def apply_action_from_js(self, action_name, *args, **kwargs):
@@ -284,9 +293,11 @@ class GenericBlock(BaseBlock):
     def do_action(self, action_name, exp, *args, **kwargs):
         # if action_name == "success" and self.block_base_name == "CROSS_VALID":
         #     from celery.contrib import rdb; rdb.set_trace()
+
         ar = self._trans.action_records_by_name[action_name]
         old_exec_state = self.get_exec_status()
-        next_state = self._trans.next_state(self.state, action_name)
+        # TODO: remove `ignore precondition` flag
+        next_state = self._trans.next_state(self.state, action_name, True)
 
         if next_state is not None:
             log.debug("Do action: %s in block %s from state %s -> %s",
@@ -332,8 +343,12 @@ class GenericBlock(BaseBlock):
         exp.store_block(self)
 
     def save_params(self, exp, received_block=None, *args, **kwargs):
+        #import ipdb; ipdb.set_trace()
         self.save_params_unsafe(exp, received_block, *args, **kwargs)
         self.validate_params(exp)
+
+        #TODO: potentional race condition. User lock in do_action and  validate_params
+        #deferred_block_method.s(exp, self, "validate_params").apply_async()
 
     def save_file_input(self, exp, field_name, file_obj, multiple=False, upload_meta=None):
         if upload_meta is None:
@@ -486,19 +501,5 @@ class GenericBlock(BaseBlock):
         exp.store_block(self)
 
 
-save_params_actions_list = ActionsList([
-    ActionRecord("save_params", ["created", "valid_params", "done", "ready"], "validating_params",
-                 user_title="Save parameters"),
-    ActionRecord("on_params_is_valid", ["validating_params", "created"], "ready"),
-    ActionRecord("on_params_not_valid", ["validating_params", "created"], "created"),
-])
-
-execute_block_actions_list = ActionsList([
-    ActionRecord("execute", ["ready"], "working", user_title="Run block"),
-    ActionRecord("success", ["working"], "done", propagate_auto_execution=True),
-    ActionRecord("error", ["*", "ready", "working"], "execution_error"),
-    ActionRecord("reset_execution", ["*", "done", "execution_error", "ready", "working"], "ready",
-                 user_title="Reset execution")
-])
 
 

@@ -177,7 +177,7 @@
                 &nbsp;
                 <div class="pull-left" ng-if="block.out">
                     Block <b>{$ block.base_name $}</b> provides:
-                    <span ng-repeat="out_var in block.out">
+                    <span ng-repeat="out_var in block.out.list">
                         {$ out_var.name $}[{$ out_var.data_type $}]
                     </span>
                     <!--<< list of variables with modal window for details >>-->

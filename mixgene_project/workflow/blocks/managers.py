@@ -68,15 +68,31 @@ class TransSystem(object):
         else:
             return False
 
-    def next_state(self, state, action_name):
+    def next_state(self, state, action_name, ignore_precondition=False):
         if action_name not in self.action_records_by_name:
             return None
 
         if action_name in self.states_to_actions[state] or \
-                action_name in self.states_to_actions["*"]:
+                action_name in self.states_to_actions["*"] or \
+                ignore_precondition:
             return self.action_to_state[action_name]
         else:
             return None
+
+
+def fields_for_js(fields):
+    """
+        Format meta information about inputs for js
+        Need to form for Angular
+    """
+    rlist = []
+    rdict = {}
+    for f_name, f in fields.iteritems():
+        field_dictified = f.to_dict()
+        rlist.append(field_dictified)
+        rdict[f_name] = field_dictified
+
+    return {"list": rlist, "dict": rdict}
 
 
 class BlockSpecification(object):
@@ -147,10 +163,24 @@ class BlockSpecification(object):
             "title": ar.user_title,
         } for ar in block.get_user_actions()]
 
-        result["out"] = block.out_manager.to_dict(block)
-        result["inputs"] = block.input_manager.to_dict()
+        result["inputs"] = fields_for_js(self.inputs)
+        result["out"] = fields_for_js(self.outputs)
 
         return result
+
+    def inputs_for_js(self):
+        """
+            Format meta information about inputs for js
+            Need to form for Angular
+        """
+        rlist = []
+        rdict = {}
+        for f_name, f in self.inputs.iteritems():
+            field_dictified = f.to_dict()
+            rlist.append(field_dictified)
+            rdict[f_name] = field_dictified
+
+        result = {"list": rlist, "dict": rdict}
 
     def validate_params(self, block, exp):
         is_valid = True
@@ -212,8 +242,9 @@ class BlockSpecification(object):
                     continue
                     #val = raw_val
                 setattr(block, p_name, val)
-            except:
-                pass
+            except Exception, e:
+                log.error(e)
+
 
         inputs_dict = received_block.get('bound_inputs')
         if inputs_dict:
@@ -222,44 +253,6 @@ class BlockSpecification(object):
                 if key:
                     var = ScopeVar.from_key(key)
                     block.bind_input_var(input_field.name, var)
-
-
-class OutManager(object):
-    def __init__(self):
-        self.vars_list = []
-        self.data_type_by_name = {}
-        self.fields_by_data_type = defaultdict(list)
-
-    def contains(self, var_name):
-        if var_name in self.data_type_by_name:
-            return True
-        else:
-            return False
-
-    def register(self, name, data_type):
-        if name in self.data_type_by_name.keys():
-            raise KeyError("Field with name %s already exists" % name)
-
-        self.vars_list.append((name, data_type))
-        self.data_type_by_name[name] = data_type
-        self.fields_by_data_type[data_type].append(name)
-
-    def get_fields_by_data_type(self, data_type):
-        return self.fields_by_data_type[data_type]
-
-    def to_dict(self, *args, **kwargs):
-        if hasattr(self, "vars_list"):
-            result = [
-                {
-                    "data_type": data_type,
-                    "name": fname,
-                }
-                for fname, data_type in self.vars_list
-            ]
-
-            return result
-        else:
-            return []
 
 
 class IteratedInnerFieldManager(object):

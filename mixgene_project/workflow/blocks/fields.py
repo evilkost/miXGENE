@@ -94,7 +94,6 @@ class BlockField(object):
             return ""
 
     def contribute_to_class(self, cls, name):
-        #setattr(cls, name, self.init_val)
         getattr(cls, "_block_spec").register(self)
 
 
@@ -103,9 +102,17 @@ class OutputBlockField(BlockField):
         super(OutputBlockField, self).__init__(*args, **kwargs)
         self.provided_data_type = provided_data_type
 
+    def to_dict(self):
+        result = super(OutputBlockField, self).to_dict()
+        result.update({
+            "data_type": self.provided_data_type,
+        })
+        return result
+
 
 class InnerOutputField(OutputBlockField):
     pass
+
 
 class InputType(object):
     TEXT = "text"
@@ -117,8 +124,6 @@ class InputType(object):
 
 
 class ParamField(BlockField):
-    # TODO: maybe more use of django form fields?
-    # TODO: or join ParamField and BlockField?
     def __init__(self, title=None, input_type=InputType.TEXT,
                  validator=None, select_provider=None,
                  options=None,
@@ -133,13 +138,12 @@ class ParamField(BlockField):
 
 
 class InputBlockField(BlockField):
-    def __init__(self, required_data_type=None, multiply_extensible=False, options=None,
+    def __init__(self, required_data_type=None, multiply_extensible=False,
                  *args, **kwargs):
         super(InputBlockField, self).__init__(*args, **kwargs)
         self.required_data_type = required_data_type
         self.field_type = FieldType.INPUT_PORT
         self.bound_var_key = None
-        #self.options = options or {}
         self.multiply_extensible = multiply_extensible
 
 
