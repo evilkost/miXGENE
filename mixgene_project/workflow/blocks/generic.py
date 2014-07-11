@@ -15,8 +15,8 @@ from webapp.scope import Scope, ScopeVar
 from webapp.tasks import auto_exec_task, halt_execution_task, wrapper_task, deferred_block_method
 from workflow.blocks.fields import FieldType, BlockField, InputBlockField, \
     ActionRecord, ActionsList, MultiUploadField
-from workflow.blocks.managers import TransSystem, BlockSpecification, OutManager
-from workflow.blocks.blocks_pallet import add_block_to_toolbox, GroupType
+from workflow.blocks.managers import TransSystem, BlockSpecification
+from workflow.blocks.blocks_pallet import add_block_to_toolbox
 
 
 log = logging.getLogger(__name__)
@@ -105,6 +105,8 @@ class GenericBlock(BaseBlock):
     _sub_scope_name = BlockField("sub_scope_name", FieldType.STR, None, is_immutable=True)
     _visible_scopes_list = BlockField("visible_scopes_list",
                                       FieldType.SIMPLE_LIST, is_immutable=True)
+    _available_user_actions = BlockField(name="available_user_actions", is_a_property=True,
+                                         field_type=FieldType.CUSTOM)
 
     _state = BlockField("state", FieldType.STR, "created")
 
@@ -262,9 +264,10 @@ class GenericBlock(BaseBlock):
                 required_blocks.append(self.bound_inputs[f.name].block_uuid)
         return required_blocks
 
-    def get_user_actions(self):
+    @property
+    def available_user_actions(self):
         """
-            @rtype: list of workflow.blocks.fields.ActionRecord
+            @rtype: workflow.blocks.fields.ActionsList
         """
         return self._trans.user_visible(self.state)
 
@@ -273,11 +276,6 @@ class GenericBlock(BaseBlock):
         result = self._block_spec.to_dict(self)
         # import ipdb; ipdb.set_trace()
         return result
-
-    # def register_provided_objects(self, scope, scope_var):
-    #     #self._block_spec.register()
-    #     self.out_manager.register(scope_var.var_name, scope_var.data_type)
-    #     scope.register_variable(scope_var)
 
     @log_timing
     def apply_action_from_js(self, action_name, *args, **kwargs):
@@ -346,7 +344,7 @@ class GenericBlock(BaseBlock):
         self.save_params_unsafe(exp, received_block, *args, **kwargs)
         self.validate_params(exp)
 
-        #TODO: potentional race condition. User lock in do_action and  validate_params
+        #TODO: potential race condition. User lock in do_action and  validate_params
         #deferred_block_method.s(exp, self, "validate_params").apply_async()
 
     def save_file_input(self, exp, field_name, file_obj, multiple=False, upload_meta=None):
@@ -498,7 +496,3 @@ class GenericBlock(BaseBlock):
     def reset_execution(self, exp, *args, **kwargs):
         self.clean_errors()
         exp.store_block(self)
-
-
-
-

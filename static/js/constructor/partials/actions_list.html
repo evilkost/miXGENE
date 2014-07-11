@@ -1,33 +1,15 @@
-<div class="btn-group"
+<div class="btn-toolbar"
      ng-hide="access.mode.ro"
+     ng-init="actions=block.available_user_actions"
 >
 
-    <button type="button" class="btn btn-default"
-            ng-if="block.actions"
-            ng-init="action=block.actions[0]"
-            ng-click="access.send_action(block, action.code)"
-    >
-        {$ action.title $}
-    </button>
-
-    <button
-        ng-if="block.actions[1]"
-        type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
-        <span class="caret"></span>
-        <span class="sr-only">Toggle Dropdown</span>
-    </button>
-
-    <ul class="dropdown-menu">
-
-        <li>
-            <a type="button"
-                ng-repeat="action in block.actions"
+    <div class="btn-group btn-group-sm">
+        <button type="button" class="btn btn-default"
+                ng-repeat="action in actions"
                 ng-click="access.send_action(block, action.code)"
-            >
-                {$ action.title $}
-            </a>
-        </li>
-
-    </ul>
+                >
+            {$ action.title $}
+        </button>
+    </div>
 
 </div>

@@ -185,3 +185,9 @@ class ActionsList(object):
     def contribute_to_class(self, cls, name):
         for action_record in self.actions_list:
             getattr(cls, "_trans").register(action_record)
+
+    def to_dict(self, *args, **kwargs):
+        return [{
+            "code": ar.name,
+            "title": ar.user_title,
+        } for ar in self.actions_list]

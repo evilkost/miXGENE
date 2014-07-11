@@ -7,7 +7,7 @@ from mixgene.util import log_timing, stopwatch
 from webapp.scope import ScopeVar
 from workflow.blocks.errors import PortError
 from workflow.blocks.fields import InnerOutputField, OutputBlockField, InputBlockField, BlockField, ParamField, \
-    FieldType
+    FieldType, ActionsList
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -50,14 +50,14 @@ class TransSystem(object):
         self.is_action_visible[ar.name] = ar.show_to_user
 
     def user_visible(self, state):
-        return set([
+        return ActionsList(set([
             self.action_records_by_name[action]
             for action in itertools.chain(
                 self.states_to_actions.get(state, []),
                 self.states_to_actions.get("*", [])
             )
             if self.is_action_visible[action]
-        ])
+        ]))
 
     def is_action_available(self, state, action_name):
         if action_name not in self.action_records_by_name:
@@ -124,7 +124,6 @@ class BlockSpecification(object):
             self.fields[field.name] = field
             return
 
-
     @staticmethod
     def clone(other):
         bs = BlockSpecification()
@@ -155,13 +154,7 @@ class BlockSpecification(object):
 
         for f_name, f in self.params.iteritems():
             with stopwatch(name="Serializing block param %s" % f_name, threshold=0.01):
-                raw_val = getattr(block, f.name)
-                result[f_name] = f.value_to_dict(raw_val, block)
-
-        result["actions"] = [{
-            "code": ar.name,
-            "title": ar.user_title,
-        } for ar in block.get_user_actions()]
+                result[f_name] = f.value_to_dict(getattr(block, f.name), block)
 
         result["inputs"] = fields_for_js(self.inputs)
         result["out"] = fields_for_js(self.outputs)
