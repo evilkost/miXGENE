@@ -130,7 +130,7 @@ Constructor.controller('CollectorCtrl', function($scope, blockAccess){
 
     $scope.show_add_button = function(){
         return _.contains(
-            _.map($scope.block.actions, function(obj){
+            _.map($scope.block.available_user_actions, function(obj){
                 return obj.code
             }),
             'save_params'

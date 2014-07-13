@@ -347,72 +347,8 @@ class GenericBlock(BaseBlock):
         #TODO: potential race condition. User lock in do_action and  validate_params
         #deferred_block_method.s(exp, self, "validate_params").apply_async()
 
-    def save_file_input(self, exp, field_name, file_obj, multiple=False, upload_meta=None):
-        if upload_meta is None:
-            upload_meta = {}
 
-        if not hasattr(self, field_name):
-            raise Exception("Block doesn't have field: %s" % field_name)
 
-        orig_name = file_obj.name
-        local_filename = "%s_%s_%s" % (self.uuid[:8], field_name, file_obj.name)
-
-        if not multiple:
-            log.debug("Storing single upload to field: %s", field_name)
-            ud, is_created = UploadedData.objects.get_or_create(
-                exp=exp, block_uuid=self.uuid, var_name=field_name)
-
-            file_obj.name = local_filename
-            ud.data = file_obj
-            ud.save()
-
-            ufw = UploadedFileWrapper(ud.pk)
-            ufw.orig_name = orig_name
-            setattr(self, field_name, ufw)
-            exp.store_block(self)
-        else:
-            log.debug("Adding upload to field: %s", field_name)
-
-            ud, is_created = UploadedData.objects.get_or_create(
-                exp=exp, block_uuid=self.uuid, var_name=field_name, filename=orig_name)
-
-            file_obj.name = local_filename
-            ud.data = file_obj
-            ud.filename = orig_name
-            ud.save()
-
-            ufw = UploadedFileWrapper(ud.pk)
-            ufw.orig_name = orig_name
-
-            r = get_redis_instance()
-            with redis_lock.Lock(r, ExpKeys.get_block_global_lock_key(self.exp_id, self.uuid)):
-                log.debug("Enter lock, file: %s", orig_name)
-                block = exp.get_block(self.uuid)
-                attr = getattr(block, field_name)
-
-                attr[orig_name] = ufw
-                log.debug("Added upload `%s` to collection: %s", orig_name, attr.keys())
-                exp.store_block(block)
-                log.debug("Exit lock, file: %s", orig_name)
-
-    def erase_file_input(self, exp, data):
-        field_name = json.loads(data)["field_name"]
-        field = self._block_spec.params.get(field_name)
-
-        if not field.options.get("multiple", False):
-            #  single stored value
-            ufw = getattr(self, field_name)
-            ud = ufw.ud
-            ud.delete()
-            setattr(self, field_name, None)
-        else:
-            # multiple
-            ufw_dict = getattr(self, field_name)
-            for name, ufw in ufw_dict.items():
-                ufw.ud.delete()
-            setattr(self, field_name, MultiUploadField())
-
-        exp.store_block(self)
 
     def add_dyn_input_hook(self, exp, dyn_port, new_port):
         """ to override later

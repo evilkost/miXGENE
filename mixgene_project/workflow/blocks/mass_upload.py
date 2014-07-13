@@ -13,12 +13,13 @@ from workflow.blocks.fields import MultiUploadField, FieldType, BlockField, Outp
     InputType, ParamField, ActionRecord, ActionsList
 from workflow.blocks.generic import GenericBlock
 from workflow.blocks.meta_block import UniformMetaBlock
+from workflow.blocks.user_upload import UploadMixin
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
 
-class MassUpload(UniformMetaBlock):
+class MassUpload(UniformMetaBlock, UploadMixin):
     block_base_name = "BunchUpload"
     name = "Mass upload expression sets"
 

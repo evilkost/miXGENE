@@ -4,7 +4,7 @@ from crossvalidation import CrossValidation
 from merge_gene_set_annotation import MergeGeneSetWithPlatformAnnotation
 
 from globaltest import GlobalTest
-from user_upload import UserUpload, UserUploadComplex, UploadInteraction, UploadGeneSets
+from user_upload import UserUploadComplex, UploadInteraction, UploadGeneSets
 from expression_sets_merge import MergeExpressionSets
 from workflow.blocks.aggregation import SubAggregation, SvdAggregation
 from workflow.blocks.aggregation import GeneSetAgg
