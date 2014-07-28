@@ -3,10 +3,14 @@ import copy
 import cPickle as pickle
 import logging
 
+import redis_lock
+
 from mixgene.redis_helper import ExpKeys
 from mixgene.util import get_redis_instance
 from webapp.notification import AllUpdated, NotifyMode
 
+
+from celery.task import task
 # TODO: invent magic to correct logging when called outside of celery task
 
 log = logging.getLogger(__name__)
@@ -215,6 +219,16 @@ class Scope(object):
         self.name = scope_name
 
         self.scope_vars = set()
+        self.exec_toke_list = ["fake",]
+
+
+    def run(self, exec_token=None):
+        """
+            TODO: this method should initiate scope execution
+
+            if no exec_toke provided, we should generate a new one here
+        """
+        pass
 
     @property
     def vars_by_data_type(self):
@@ -314,3 +328,77 @@ class Scope(object):
             log.debug("Variable: `%s` was registered in scope: `%s`", scope_var, self.name)
             self.scope_vars.add(scope_var)
             self.vars_by_data_type[scope_var.data_type].add(scope_var)
+
+
+@task(name="webapp.scope.apply_block_action_task")
+def apply_block_action_task(exp, block, exec_token, action_name, *args, **kwargs):
+    log.debug("Applying action: {0} to the block {1}, with ET: {2}".format(
+              action_name, block.base_name, exec_token))
+    r = get_redis_instance()
+    lock_key = ExpKeys.get_block_exec_token_lock_key(exp.pk, exec_token)
+
+    with redis_lock.Lock(r, lock_key):
+        apply_block_action(exp, block, exec_token, action_name, *args, **kwargs)
+        log.debug("block {0} state with ET {1} is {2}".format(
+            block.base_name, exec_token, block.get_et_field("state"))
+        )
+        next_action = block.get_et_field("next_action", exec_token)
+        log.debug("Next action: {0}".format(next_action))
+        while next_action is not None:
+            action_name, args, kwargs = next_action
+            apply_block_action(exp, block, exec_token, action_name, *args, **kwargs)
+            next_action = block.get_et_field("next_action", exec_token)
+
+
+
+def apply_block_action(exp, block, exec_token, action_name, *args, **kwargs):
+    """
+        @type block: workflow.blocks.generic.GenericBlock
+    """
+    #block.next_action = None
+    block.exec_token = exec_token
+
+    ## ar = block._trans.action_records_by_name[action_name]
+    #  old_exec_state = self.get_exec_status()
+    ##  TODO: remove `ignore precondition` flag
+
+    old_state = block.get_et_field("state")
+    next_state = block._trans.next_state(old_state, action_name, True)
+
+    if next_state is not None:
+        log.debug("Do action: %s in block %s from state %s -> %s",
+                  action_name, block.base_name, old_state, next_state)
+
+        block.set_et_field("state", next_state)
+        # Unsafe operation: if machine halts, couldn't recover
+        block.set_et_field("next_action", None)
+
+        #if old_exec_state != "done" and self.get_exec_status() == "done":
+        #    if self.is_block_supports_auto_execution:
+        #        BlockUpdated(self.exp_id,
+        #                     block_uuid=self.uuid, block_alias=self.base_name,
+        #                     silent=True).send()
+
+
+        getattr(block, action_name)(exp, *args, **kwargs)
+        exp.store_block(block)
+
+        #if ar.reload_block_in_client:
+        #    BlockUpdated(self.exp_id, self.uuid, self.base_name).send()
+
+        # TODO: Check if self.scope_name is actually set to auto execution
+        #
+
+        #if old_exec_state != "done" and self.get_exec_status() == "done" \
+        #        and ar.propagate_auto_execution \
+        #        and self.is_block_supports_auto_execution:
+        #    log.debug("Propagate execution: %s ", self.base_name)
+        #    auto_exec_task.s(exp, self.scope_name).apply_async()
+        #elif self.state in self.auto_exec_status_error \
+        #        and self.is_block_supports_auto_execution:
+        #    log.debug("Detected error during automated workflow execution")
+        #    halt_execution_task.s(exp, self.scope_name).apply_async()
+
+    else:
+        raise RuntimeError("Action %s isn't available for block %s in state %s" %
+                           (action_name, block.base_name, block.state))

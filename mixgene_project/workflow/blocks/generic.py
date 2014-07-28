@@ -3,6 +3,7 @@ import logging
 import collections
 import itertools
 from collections import defaultdict
+import cPickle as pickle
 from uuid import uuid1
 import json
 
@@ -11,12 +12,14 @@ from mixgene.redis_helper import ExpKeys
 from mixgene.util import log_timing, get_redis_instance
 from webapp.models import Experiment, UploadedData, UploadedFileWrapper
 from webapp.notification import BlockUpdated
-from webapp.scope import Scope, ScopeVar
+from webapp.scope import Scope, ScopeVar, apply_block_action_task
 from webapp.tasks import auto_exec_task, halt_execution_task, wrapper_task, deferred_block_method
 from workflow.blocks.fields import FieldType, BlockField, InputBlockField, \
     ActionRecord, ActionsList, MultiUploadField
 from workflow.blocks.managers import TransSystem, BlockSpecification
 from workflow.blocks.blocks_pallet import add_block_to_toolbox
+
+
 
 
 log = logging.getLogger(__name__)
@@ -41,7 +44,8 @@ taboo_attrs = [
     "__metaclass__",
     "is_abstract",
     "_trans",
-    "_block_spec"
+    "_block_spec",
+    "exec_token"
 ]
 
 
@@ -108,7 +112,11 @@ class GenericBlock(BaseBlock):
     _available_user_actions = BlockField(name="available_user_actions", is_a_property=True,
                                          field_type=FieldType.CUSTOM)
 
-    _state = BlockField("state", FieldType.STR, "created")
+    # TODO: use field descriptor to access ET fields
+    _state = BlockField("state", FieldType.STR, init_val="created", exec_token_affected=True)
+
+    # If not None the following structure expected: (action_name, *args, **kwargs)
+    _next_action = BlockField("next_action", FieldType.HIDDEN, init_val=None, exec_token_affected=True)
 
     _ui_folded = BlockField("ui_folded", FieldType.BOOLEAN, init_val=False)
     _ui_internal_folded = BlockField("ui_internal_folded", FieldType.BOOLEAN, init_val=False)
@@ -132,7 +140,7 @@ class GenericBlock(BaseBlock):
         # TODO: due to dynamic inputs, find better solution
         self._block_spec = BlockSpecification.clone(self.__class__._block_spec)
 
-        self.state = "created"
+        #self.state = "created"
         self.uuid = "B" + uuid1().hex[:8]
 
         self.exp_id = exp_id
@@ -180,6 +188,37 @@ class GenericBlock(BaseBlock):
                 #setattr(self, f.name, f.init_val)
                 pass
 
+        self.exec_token = "manual"
+        self.init_et_fields()
+
+    def init_et_fields(self):
+        for f_name, field in self._block_spec.fields.iteritems():
+            if field.exec_token_affected:
+                self.set_et_field(f_name, field.init_val)
+
+    def get_et_field(self, field_name, exec_token=None):
+        if exec_token is None:
+            exec_token = self.exec_token
+        r = get_redis_instance()
+        raw = r.hget(ExpKeys.get_block_field_et_key(self.exp_id, self.uuid, exec_token), field_name)
+        # TODO: check output correctness
+        return pickle.loads(raw)
+
+    def set_et_field(self, field_name, value, exec_token=None):
+        if exec_token is None:
+            exec_token = self.exec_token
+
+        r = get_redis_instance()
+        serialized = pickle.dumps(value)
+        r.hset(ExpKeys.get_block_field_et_key(self.exp_id, self.uuid, exec_token), field_name, serialized)
+
+    def enqueue_action(self, action_name, *args, **kwargs):
+        self.set_et_field(
+            field_name="next_action",
+            exec_token=self.exec_token,
+            value=(action_name, args, kwargs)
+        )
+
     def on_remove(self, *args, **kwargs):
         """
             Cleanup all created files
@@ -188,11 +227,13 @@ class GenericBlock(BaseBlock):
         pass
 
     def get_exec_status(self):
-        if self.state in self.auto_exec_status_done:
+        state = self.get_et_field("state")
+
+        if state in self.auto_exec_status_done:
             return "done"
-        if self.state in self.auto_exec_status_error:
+        if state in self.auto_exec_status_error:
             return "error"
-        if self.state in self.auto_exec_status_ready:
+        if state in self.auto_exec_status_ready:
             return "ready"
 
         return "not_ready"
@@ -269,7 +310,7 @@ class GenericBlock(BaseBlock):
         """
             @rtype: workflow.blocks.fields.ActionsList
         """
-        return self._trans.user_visible(self.state)
+        return self._trans.user_visible(self.get_et_field("state"))
 
     @log_timing
     def to_dict(self):
@@ -280,14 +321,21 @@ class GenericBlock(BaseBlock):
     @log_timing
     def apply_action_from_js(self, action_name, *args, **kwargs):
         #import ipdb; ipdb.set_trace()
-        if self._trans.is_action_available(self.state, action_name):
+        if self._trans.is_action_available(self.get_et_field("state"), action_name):
             self.do_action(action_name, *args, **kwargs)
         elif hasattr(self, action_name) and hasattr(getattr(self, action_name), "__call__"):
             return getattr(self, action_name)(*args, **kwargs)
         else:
             raise RuntimeError("Block %s doesn't have action: %s" % (self.name, action_name))
 
+
     def do_action(self, action_name, exp, *args, **kwargs):
+        task = apply_block_action_task.s(exp, self, self.exec_token,
+                                         action_name, *args, **kwargs)
+        #import ipdb; ipdb.set_trace()
+        task.apply_async()
+
+    def do_action_orig(self, action_name, exp, *args, **kwargs):
         # if action_name == "success" and self.block_base_name == "CROSS_VALID":
         #     from celery.contrib import rdb; rdb.set_trace()
 
@@ -337,7 +385,7 @@ class GenericBlock(BaseBlock):
 
     def save_params_unsafe(self, exp, received_block=None, *args, **kwargs):
         self._block_spec.save_params(self, received_block)
-        exp.store_block(self)
+        #exp.store_block(self)
 
     def save_params(self, exp, received_block=None, *args, **kwargs):
         #import ipdb; ipdb.set_trace()
@@ -346,9 +394,6 @@ class GenericBlock(BaseBlock):
 
         #TODO: potential race condition. User lock in do_action and  validate_params
         #deferred_block_method.s(exp, self, "validate_params").apply_async()
-
-
-
 
     def add_dyn_input_hook(self, exp, dyn_port, new_port):
         """ to override later
@@ -407,9 +452,14 @@ class GenericBlock(BaseBlock):
 
         if is_valid:
             self.errors = []
-            self.do_action("on_params_is_valid", exp)
+            #self.do_action("on_params_is_valid", exp)
+            self.enqueue_action("on_params_is_valid")
         else:
-            self.do_action("on_params_not_valid", exp)
+            #self.do_action("on_params_not_valid", exp)
+            self.enqueue_action("on_params_not_valid")
+
+        #from celery.contrib.rdb import set_trace
+        #set_trace()
 
     def on_params_is_valid(self, exp, *args, **kwargs):
         self.errors = []
@@ -421,7 +471,7 @@ class GenericBlock(BaseBlock):
     def clean_errors(self):
         self.errors = []
 
-    def error(self, exp, new_errors=None):
+    def error(self, exp, new_errors=None, *args, **kwargs):
         if isinstance(new_errors, collections.Iterable):
             self.errors.extend(new_errors)
         elif new_errors:

@@ -121,6 +121,9 @@ class UserUploadComplex(GenericUploadBlock):
                      "processing_upload", "Process uploaded data"),
         ActionRecord("success", ["processing_upload"], "done", reload_block_in_client=True),
         ActionRecord("error", ["processing_upload"], "valid_params"),
+
+
+        ActionRecord("reset", ["*"], "created", user_title="Reset"),
     ])
 
     m_rna_matrix = ParamField(name="m_rna_matrix", title="mRNA expression", order_num=10,
@@ -175,9 +178,12 @@ class UserUploadComplex(GenericUploadBlock):
 
     @property
     def is_sub_pages_visible(self):
-        if self.state in ['source_was_preprocessed', 'sample_classes_assigned', 'ready', 'done']:
+        if self.get_et_field("state") in ['source_was_preprocessed', 'sample_classes_assigned', 'ready', 'done']:
             return True
         return False
+
+    def reset(self, *args, **kwargs):
+        pass
 
     def process_upload(self, exp, *args, **kwargs):
         """
@@ -232,11 +238,13 @@ class UserUploadComplex(GenericUploadBlock):
 
                 self.set_out_var("methyl_es", methyl_es)
 
-            self.do_action("success", exp)
+            #self.do_action("success", exp)
+            self.enqueue_action("success", (), {})
         except Exception as e:
             ex_type, ex, tb = sys.exc_info()
             traceback.print_tb(tb)
-            self.do_action("error", exp, e)
+            self.enqueue_action("error", (e,), {})
+            #self.do_action("error", exp, e)
         # self.celery_task_fetch.apply_async()
 
     def phenotype_for_js(self, exp, *args, **kwargs):
@@ -286,7 +294,7 @@ class UserUploadComplex(GenericUploadBlock):
         exp.store_block(self)
 
     def success(self, exp, *args, **kwargs):
-        pass
+        log.debug("successfully processed files")
 
 
 class UploadInteraction(GenericUploadBlock):

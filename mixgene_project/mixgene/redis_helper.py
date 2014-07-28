@@ -41,9 +41,28 @@ class ExpKeys(object):
         return "AETLK-%s-%s" % (exp_id, scope_name)
 
     @staticmethod
+    def get_block_exec_token_lock_key(exp_id, exec_token):
+        return "AETLK-%s-%s" % (exp_id, exec_token)
+
+
+    @staticmethod
     def get_block_global_lock_key(exp_id, block_uuid):
         return "MBCLK-%s-%s" % (exp_id, block_uuid)
 
+    @staticmethod
+    def get_block_field_et_key(exp_id, block_uuid, exec_token):
+        """
+            HashSet: field_name -> serialized_value
+        """
+        return "BFETHS-%s-%s-%s" % (exp_id, block_uuid, exec_token)
+
+
+    @staticmethod
+    def get_block_field_nonet_key(exp_id, block_uuid):
+        """
+            HashSet: field_name -> serialized_value
+        """
+        return "BFETHS-%s-%s" % (exp_id, block_uuid)
 
 def register_sub_key(exp_id, key, redis_instance=None):
     if redis_instance is None:

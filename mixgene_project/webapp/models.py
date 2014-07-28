@@ -214,7 +214,7 @@ class Experiment(models.Model):
             pipe.execute()
 
         log.info("block %s was stored with state: %s [uuid: %s]",
-              block.base_name, block.state, block.uuid)
+              block.base_name, block.get_et_field("state"), block.uuid)
 
     def change_block_alias(self, block, new_base_name):
         r = get_redis_instance()

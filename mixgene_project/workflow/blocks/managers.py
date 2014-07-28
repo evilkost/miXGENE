@@ -142,7 +142,10 @@ class BlockSpecification(object):
                 continue
 
             with stopwatch(name="Serializing block field %s" % f_name, threshold=0.01):
-                raw_val = getattr(block, f_name, None)
+                if getattr(f, "exec_token_affected", False):
+                    raw_val = block.get_et_field(f_name)
+                else:
+                    raw_val = getattr(block, f_name, None)
                 result[f_name] = f.value_to_dict(raw_val, block)
 
         params_prototype = {
@@ -202,6 +205,8 @@ class BlockSpecification(object):
             # TODO: here invoke validator
             if p.is_immutable:
                 continue
+            if getattr(p, "is_a_property", False):
+                continue
 
             try:
                 raw_val = received_block.get(p_name)
@@ -223,6 +228,8 @@ class BlockSpecification(object):
                 setattr(block, p_name, val)
             except Exception, e:
                 log.error(e)
+                log.error(msg="field=%s" % p_name)
+                #raise e
 
         inputs_dict = received_block.get('bound_inputs')
         if inputs_dict:

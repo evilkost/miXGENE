@@ -42,7 +42,7 @@ class BlockField(object):
 
     def __init__(self, name, field_type=FieldType.HIDDEN, init_val=None,
                  is_immutable=False, required=False, is_a_property=False,
-                 order_num=None,
+                 order_num=None, exec_token_affected=False,
                  *args, **kwargs):
         self.name = name
         self.field_type = field_type
@@ -50,6 +50,7 @@ class BlockField(object):
         self.is_immutable = is_immutable
         self.required = required
         self.is_a_property = is_a_property
+        self.exec_token_affected = exec_token_affected
 
         if order_num is None:
             self.order_num = random.randint(0, 1000)
@@ -109,7 +110,7 @@ class BlockField(object):
 
 class OutputBlockField(BlockField):
     def __init__(self, provided_data_type=None, *args, **kwargs):
-        super(OutputBlockField, self).__init__(*args, **kwargs)
+        super(OutputBlockField, self).__init__(exec_token_affected=True, *args, **kwargs)
         self.provided_data_type = provided_data_type
 
     def to_dict(self):
@@ -121,7 +122,8 @@ class OutputBlockField(BlockField):
 
 
 class InnerOutputField(OutputBlockField):
-    pass
+    def __init__(self, *args, **kwargs):
+        super(InnerOutputField, self).__init__(exec_token_affected=False, *args, **kwargs)
 
 
 class InputType(object):
@@ -138,7 +140,7 @@ class ParamField(BlockField):
                  validator=None, select_provider=None,
                  options=None,
                  *args, **kwargs):
-        super(ParamField, self).__init__(*args, **kwargs)
+        super(ParamField, self).__init__(exec_token_affected=False, *args, **kwargs)
         self.title = title
         self.input_type = input_type
         self.validator = validator
@@ -150,7 +152,7 @@ class ParamField(BlockField):
 class InputBlockField(BlockField):
     def __init__(self, required_data_type=None, multiply_extensible=False,
                  *args, **kwargs):
-        super(InputBlockField, self).__init__(*args, **kwargs)
+        super(InputBlockField, self).__init__(exec_token_affected=True, *args, **kwargs)
         self.required_data_type = required_data_type
         self.field_type = FieldType.INPUT_PORT
         self.bound_var_key = None

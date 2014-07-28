@@ -201,7 +201,12 @@ def block_resource(request, exp_id, block_uuid, action_code=None):
         except Exception, e:
             # TODO log errors
             received_block = {}
-        action_result = block.apply_action_from_js(action_code, exp=exp, request=request, received_block=received_block)
+        action_result = block.apply_action_from_js(
+            action_code,
+            exp=exp,
+            #request=request,
+            received_block=received_block
+        )
 
     if request.method in ["GET", "POST"]:
         # TODO: split into two views
