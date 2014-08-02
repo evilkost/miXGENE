@@ -133,11 +133,47 @@ class GenericBlock(BaseBlock):
     _warnings = BlockField("warnings", FieldType.SIMPLE_LIST, list())
     _bound_inputs = BlockField("bound_inputs", FieldType.SIMPLE_DICT, defaultdict())
 
+    def __getattr__(self, field_name):
+        if not hasattr(self, "et_field_names"):
+            raise AttributeError("et_field_names")
+        if field_name in self.et_field_names:
+            return self.get_et_field(field_name)
+        else:
+            raise AttributeError(field_name)
+
+    def __setattr__(self, field_name, value):
+        if not hasattr(self, "et_field_names"):
+            raise AttributeError("et_field_names")
+        if field_name in self.et_field_names:
+            return self.set_et_field(field_name, value)
+        else:
+            super(GenericBlock, self).__setattr__(field_name, value)
+
+    def get_et_field(self, field_name, exec_token=None):
+        log.debug("Invoked `get_et_field` for field: {0}".format(field_name))
+        if exec_token is None:
+            exec_token = self.exec_token
+        r = get_redis_instance()
+        key = ExpKeys.get_block_field_et_key(self.exp_id, self.uuid, exec_token)
+        raw = r.hget(key, field_name)
+        # TODO: check output correctness
+        return pickle.loads(raw)
+
+    def set_et_field(self, field_name, value, exec_token=None):
+        log.debug("Invoked `set_et_field` for field: {0}".format(field_name))
+        if exec_token is None:
+            exec_token = self.exec_token
+
+        r = get_redis_instance()
+        serialized = pickle.dumps(value)
+        r.hset(ExpKeys.get_block_field_et_key(self.exp_id, self.uuid, exec_token), field_name, serialized)
+
     def __init__(self, exp_id=None, scope_name=None):
         """
             Building block for workflow
         """
         # TODO: due to dynamic inputs, find better solution
+        self.et_field_names = set()
         self._block_spec = BlockSpecification.clone(self.__class__._block_spec)
 
         #self.state = "created"
@@ -166,10 +202,11 @@ class GenericBlock(BaseBlock):
 
             #if f_name not in self.__dict__ and not f.is_a_property:
             if not f.is_a_property and not hasattr(self, f_name):
-                try:
-                    setattr(self, f_name, f.init_val)
-                except:
-                    import ipdb; ipdb.set_trace()
+                f.contribute_to_instance(self)
+
+                #setattr(self, f_name, f.init_val)
+                #except:
+                #    import ipdb; ipdb.set_trace()
 
         for f_name, f in self._block_spec.inputs.iteritems():
             if f.multiply_extensible:
@@ -196,21 +233,7 @@ class GenericBlock(BaseBlock):
             if field.exec_token_affected:
                 self.set_et_field(f_name, field.init_val)
 
-    def get_et_field(self, field_name, exec_token=None):
-        if exec_token is None:
-            exec_token = self.exec_token
-        r = get_redis_instance()
-        raw = r.hget(ExpKeys.get_block_field_et_key(self.exp_id, self.uuid, exec_token), field_name)
-        # TODO: check output correctness
-        return pickle.loads(raw)
 
-    def set_et_field(self, field_name, value, exec_token=None):
-        if exec_token is None:
-            exec_token = self.exec_token
-
-        r = get_redis_instance()
-        serialized = pickle.dumps(value)
-        r.hset(ExpKeys.get_block_field_et_key(self.exp_id, self.uuid, exec_token), field_name, serialized)
 
     def enqueue_action(self, action_name, *args, **kwargs):
         self.set_et_field(

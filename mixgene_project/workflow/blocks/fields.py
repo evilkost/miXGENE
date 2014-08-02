@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 import logging
 import random
+from mixgene.redis_helper import ExpKeys
+from mixgene.util import get_redis_instance
+import cPickle as pickle
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -107,6 +110,11 @@ class BlockField(object):
     def contribute_to_class(self, cls, name):
         getattr(cls, "_block_spec").register(self)
 
+    def contribute_to_instance(self, owner):
+        if not self.exec_token_affected:
+            setattr(owner, self.name, self.init_val)
+        else:
+            owner.et_field_names.add(self.name)
 
 class OutputBlockField(BlockField):
     def __init__(self, provided_data_type=None, *args, **kwargs):
@@ -193,3 +201,4 @@ class ActionsList(object):
             "code": ar.name,
             "title": ar.user_title,
         } for ar in self.actions_list]
+
