@@ -1,5 +1,28 @@
 from mixgene.util import get_redis_instance
 
+import cPickle as pickle
+import rom
+
+
+class RomListColumn(rom.Column):
+    _allowed = list
+
+    def _from_redis(self, value):
+        return list(pickle.loads(value))
+
+    def _to_redis(self, value):
+        return pickle.dumps(list(value))
+
+
+class RomPickleColumn(rom.Column):
+    _allowed = object
+
+    def _from_redis(self, value):
+        return pickle.loads(value)
+
+    def _to_redis(self, value):
+        return pickle.dumps(value)
+
 
 class ExpKeys(object):
     @staticmethod
@@ -30,7 +53,7 @@ class ExpKeys(object):
         return "AERK-%s" % exp_id
 
     @staticmethod
-    def get_scope_key(exp_id, scope_name):
+    def get_scope_vars_list_key(exp_id, scope_name):
         """
             Set of scope_name vars see workflow.scope.ScopeVar
         """

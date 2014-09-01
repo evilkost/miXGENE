@@ -139,7 +139,7 @@ class Experiment(models.Model):
             ExpKeys.get_exp_blocks_list_key(self.pk),
             ExpKeys.get_blocks_uuid_by_alias(self.pk),
             ExpKeys.get_scope_creating_block_uuid_keys(self.pk),
-            ExpKeys.get_scope_key(self.pk, "root")
+            ExpKeys.get_scope_vars_list_key(self.pk, "root")
         ])
         pipe.execute()
 

@@ -16,7 +16,7 @@ from celery.task import task
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
-LOCK_TIME = 60*10 # 10 minutes
+LOCK_TIME = 60 * 10  # 10 minutes
 
 
 class ScopeVar(object):
@@ -205,7 +205,20 @@ class ScopeRunner(object):
 
         self.dag.update_roots()
         self.dag.sort_graph()
-        # self.dag.p1()
+
+
+import rom
+
+from mixgene.redis_helper import RomListColumn, RomPickleColumn
+
+
+
+
+class ScopeRom(rom.Model):
+    exp_id = rom.Integer(index=True)
+    name = rom.String(index=True)
+    scope_vars = RomPickleColumn()
+    exec_token_list = RomListColumn()
 
 
 class Scope(object):
@@ -219,10 +232,9 @@ class Scope(object):
         self.name = scope_name
 
         self.scope_vars = set()
-        self.exec_toke_list = ["fake",]
+        self.exec_token_list = ["manual",]
 
-
-    def run(self, exec_token=None):
+    def run(self, exec_token):
         """
             TODO: this method should initiate scope execution
 
@@ -244,12 +256,19 @@ class Scope(object):
         else:
             r = redis_instance
 
-        key = ExpKeys.get_scope_key(self.exp.pk, scope_name=self.name)
-        r.set(key, pickle.dumps(self.scope_vars))
+        pipe = r.pipeline(transaction=True)
+        pipe.set(
+            ExpKeys.get_scope_vars_list_key(self.exp.pk, scope_name=self.name),
+            pickle.dumps(self.scope_vars)
+        )
+        pipe.set(
+            ExpKeys.get_scope_metadata_key(self.exp.pk, scope_name=self.name),
+            pickle.dumps({
+                "exec_token_list": self.exec_token_list
+            })
+        )
+        pipe.execute()
         log.debug("Scope `%s` was saved to storage", self.name)
-
-        #import ipdb; ipdb.set_trace()
-        #a = 2
 
     def get_parent_scope_list(self, redis_instance=None):
         if self.name == "root":
@@ -276,8 +295,9 @@ class Scope(object):
         else:
             r = redis_instance
 
-        key = ExpKeys.get_scope_key(self.exp.pk, scope_name=self.name)
-        raw = r.get(key)
+
+
+        raw = r.get(ExpKeys.get_scope_vars_list_key(self.exp.pk, scope_name=self.name))
         if raw is not None:
             self.scope_vars = pickle.loads(raw)
             # TODO: set scope name during scope_var creation
