@@ -201,4 +201,3 @@ class ActionsList(object):
             "code": ar.name,
             "title": ar.user_title,
         } for ar in self.actions_list]
-

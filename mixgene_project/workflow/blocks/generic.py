@@ -200,13 +200,8 @@ class GenericBlock(BaseBlock):
                 self._block_spec.fields.iteritems(),
                 self._block_spec.params.iteritems()):
 
-            #if f_name not in self.__dict__ and not f.is_a_property:
             if not f.is_a_property and not hasattr(self, f_name):
                 f.contribute_to_instance(self)
-
-                #setattr(self, f_name, f.init_val)
-                #except:
-                #    import ipdb; ipdb.set_trace()
 
         for f_name, f in self._block_spec.inputs.iteritems():
             if f.multiply_extensible:
