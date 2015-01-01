@@ -4,10 +4,12 @@ import unittest
 import pandas
 import pandas.util.testing as tm
 
-from workflow.structures import DataFrameStorage
+from environment.structures import DataFrameStorage
+import sys
+print(sys.path)
 
 
-class TestDataFrameStorage(unittest.TestCase):
+class _TestDataFrameStorage(unittest.TestCase):
     orig_filepath = "test/artifacts/es_assay.csv.gz"
     test_filepath = "test/tmp/test_df.csv.gz"
 
