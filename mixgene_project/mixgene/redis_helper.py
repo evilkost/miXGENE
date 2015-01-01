@@ -1,27 +1,27 @@
 from mixgene.util import get_redis_instance
 
 import cPickle as pickle
-import rom
+#import rom
 
 
-class RomListColumn(rom.Column):
-    _allowed = list
-
-    def _from_redis(self, value):
-        return list(pickle.loads(value))
-
-    def _to_redis(self, value):
-        return pickle.dumps(list(value))
-
-
-class RomPickleColumn(rom.Column):
-    _allowed = object
-
-    def _from_redis(self, value):
-        return pickle.loads(value)
-
-    def _to_redis(self, value):
-        return pickle.dumps(value)
+# class RomListColumn(rom.Column):
+#     _allowed = list
+#
+#     def _from_redis(self, value):
+#         return list(pickle.loads(value))
+#
+#     def _to_redis(self, value):
+#         return pickle.dumps(list(value))
+#
+#
+# class RomPickleColumn(rom.Column):
+#     _allowed = object
+#
+#     def _from_redis(self, value):
+#         return pickle.loads(value)
+#
+#     def _to_redis(self, value):
+#         return pickle.dumps(value)
 
 
 class ExpKeys(object):

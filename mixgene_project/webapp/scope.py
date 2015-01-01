@@ -205,21 +205,21 @@ class ScopeRunner(object):
 
         self.dag.update_roots()
         self.dag.sort_graph()
+#
+#
+# import rom
+#
+# from mixgene.redis_helper import RomListColumn, RomPickleColumn
+#
+#
 
 
-import rom
-
-from mixgene.redis_helper import RomListColumn, RomPickleColumn
-
-
-
-
-class ScopeRom(rom.Model):
-    exp_id = rom.Integer(index=True)
-    name = rom.String(index=True)
-    scope_vars = RomPickleColumn()
-    exec_token_list = RomListColumn()
-
+# class ScopeRom(rom.Model):
+#     exp_id = rom.Integer(index=True)
+#     name = rom.String(index=True)
+#     scope_vars = RomPickleColumn()
+#     exec_token_list = RomListColumn()
+#
 
 class Scope(object):
     # TODO: change webapp.models.py into package and move Scope there

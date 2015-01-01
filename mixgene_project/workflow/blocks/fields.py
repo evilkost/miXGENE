@@ -43,17 +43,17 @@ class FieldType(object):
 class BlockField(object):
     _ignore_fields = set(["validator"])
 
-    def __init__(self, name, field_type=FieldType.HIDDEN, init_val=None,
+    def __init__(self, name=None, field_type=FieldType.HIDDEN, init_val=None,
                  is_immutable=False, required=False, is_a_property=False,
-                 order_num=None, exec_token_affected=False,
+                 order_num=None,
                  *args, **kwargs):
+
         self.name = name
         self.field_type = field_type
         self.init_val = init_val
         self.is_immutable = is_immutable
         self.required = required
         self.is_a_property = is_a_property
-        self.exec_token_affected = exec_token_affected
 
         if order_num is None:
             self.order_num = random.randint(0, 1000)
@@ -62,8 +62,7 @@ class BlockField(object):
 
     def to_dict(self):
         return {
-            k: v
-            for k, v in self.__dict__.iteritems()
+            k: v for k, v in self.__dict__.iteritems()
             if k not in self._ignore_fields
         }
 
@@ -115,6 +114,10 @@ class BlockField(object):
             setattr(owner, self.name, self.init_val)
         else:
             owner.et_field_names.add(self.name)
+
+
+class HiddenValueField(BlockField):
+    pass
 
 class OutputBlockField(BlockField):
     def __init__(self, provided_data_type=None, *args, **kwargs):
