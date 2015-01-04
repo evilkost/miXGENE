@@ -41,7 +41,7 @@ class FieldType(object):
 
 
 class BlockField(object):
-    _ignore_fields = set(["validator"])
+    _ignore_fields = set(["name", "validator", "required", "init_val", "order_num"])
 
     def __init__(self, name=None, field_type=FieldType.HIDDEN, init_val=None,
                  is_immutable=False, required=False, is_a_property=False,
@@ -71,7 +71,6 @@ class BlockField(object):
             Parse dict object obtained from JSON representation
 
         """
-
 
     def value_to_dict(self, raw_val, block):
         """
@@ -110,14 +109,20 @@ class BlockField(object):
         getattr(cls, "_block_spec").register(self)
 
     def contribute_to_instance(self, owner):
-        if not self.exec_token_affected:
-            setattr(owner, self.name, self.init_val)
-        else:
-            owner.et_field_names.add(self.name)
+        setattr(owner, self.name, self.init_val)
+        # if not self.exec_token_affected:
+        #     setattr(owner, self.name, self.init_val)
+        # else:
+        #     owner.et_field_names.add(self.name)
 
 
 class HiddenValueField(BlockField):
     pass
+
+
+class LocalVarField(BlockField):
+    pass
+
 
 class OutputBlockField(BlockField):
     def __init__(self, provided_data_type=None, *args, **kwargs):
@@ -147,10 +152,15 @@ class InputType(object):
 
 
 class ParamField(BlockField):
+    _ignore_fields = set(["name", "validator", "required", "init_val",
+                          "is_immutable", "is_a_property"])
+
     def __init__(self, title=None, input_type=InputType.TEXT,
                  validator=None, select_provider=None,
                  options=None,
                  *args, **kwargs):
+        kwargs["is_a_property"] = False
+        kwargs["is_immutable"] = False
         super(ParamField, self).__init__(exec_token_affected=False, *args, **kwargs)
         self.title = title
         self.input_type = input_type
