@@ -449,6 +449,12 @@ class BaseBlock(object):
             "value": getattr(field, "init_val", None),
         }
 
+    def set_user_fsm_state(self, state):
+        self._doc["_user_fsm_state"] = state
+
+    def get_user_fsm_state(self):
+        return self._doc["_user_fsm_state"]
+
     def __getattr__(self, name):
         if name in self._doc["configuration"]["fields"]:
             return self._doc[name]
@@ -483,6 +489,15 @@ class BaseBlock(object):
         block.add_et_section(scope.latest_et)  # TODO: fetch parent scope ET
         return block
 
+    def auto_execute(self, et, conn_db):
+        """
+        Starts auto execution flow
+        :param et:
+        :param conn_db:
+        :return:
+        """
+        pass
+
     def run(self, et, conn_db):
         """
         Reserved action to initiate execution. Override it.
@@ -504,11 +519,37 @@ class BaseBlock(object):
         self._doc["_user_fsm_state"] = UserFsmStates.MODIFIED
         # self.save(conn_db)
 
+    def do_user_action(self, conn_db, action_name):
+        """
+        :param action_name:
+        :return:
+        """
+
+        ba = self.get_user_action_by_name(action_name)
+        current_state = self._user_fsm_state
+        print("CURRENT STATE: {}".format(current_state))
+        if current_state not in ba.source_states:
+            raise RuntimeError("Trying to apply action: {} but current state is: {}".format(
+                action_name, current_state
+            ))
+
+        getattr(self, action_name)()
+
+        self.save(conn_db)
+        # TODO: Think about async action: i.e.: fetch from remote servers
+
+
+    def do_auto_exec_action(self, conn_db, etoken):
+        pass
 
 class GenericMetaBlock(BaseBlock):
     is_meta_block = BlockField(field_type=FieldType.BOOLEAN, init_val=True, is_immutable=True)
     # summary = BlockField(field_type=FieldType.STR, init_val="Generic meta block", is_immutable=True)
     is_abstract = True
+
+
+class ValidationError(Exception):
+    pass
 
 
 class FetchGseNg(BaseBlock):
@@ -529,6 +570,21 @@ class FetchGseNg(BaseBlock):
         ExecAction("run", "on_done", "on_exec_error"),  # dummy execution action
     ]
 
+    def save_changes(self):
+        # Do validation
+        geo_uid = self.get_param_value("geo_uid")
+        if not geo_uid.startswith("GSE"):
+            self.set_user_fsm_state(UserFsmStates.MODIFIED)
+            self.errors.append(
+                ValidationError(msg="GEO id should start with GSE")
+            )
+            return
+
+        self.set_user_fsm_state("valid")
+
+        # if <annotained>
+        # elf.set_user_fsm_state(UserFsmStates.READY)
+
 
 class ClassifierBlock(BaseBlock):
     is_abstract = False
@@ -544,23 +600,3 @@ class CrossValidation(GenericMetaBlock):
     summary = "Cross validation"
 
 
-def do_user_action(conn_db, block, action_name):
-    """
-
-    :param conn_db:
-    :param block:
-    :type block: BaseBlock
-    :param action_name:
-    :return:
-    """
-
-    ba = block.get_user_action_by_name(action_name)
-    current_state = block._user_fsm_state
-    print("CURRENT STATE: {}".format(current_state))
-    if current_state not in ba.source_states:
-        raise RuntimeError("Trying to apply action: {} but current state is: {}".format(
-            action_name, current_state
-        ))
-
-
-    # TODO: Think about async action: i.e.: fetch from remote servers
