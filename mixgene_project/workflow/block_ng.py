@@ -4,6 +4,7 @@ import copy
 
 from datetime import date
 from uuid import uuid1
+import bson
 from marshmallow import Schema, fields, pprint
 from workflow.blocks.fields import ParamField, InputType, FieldType, BlockField, HiddenValueField, ActionsList, \
     ActionRecord
@@ -138,9 +139,9 @@ class Scope(object):
         return self.latest_et
 
     def remove_et(self, et):
-        if et == self.active_et:
+        if et == self.latest_et:
             raise RuntimeError("Couldn't remove active et")
-        if et in self.active_et:
+        if et in self.latest_et:
             self.et_list.remove(et)
 
     def _serialize_to_mongo(self):
@@ -315,6 +316,8 @@ class BaseBlock(object):
     uuid = BlockField(field_type=FieldType.STR, init_val=None, is_immutable=True)
     _summary = BlockField(name="summary", field_type=FieldType.STR, is_a_property=True)
 
+    errors = BlockField(field_type=FieldType.SIMPLE_LIST, init_val=[])
+
     scope = BlockField(field_type=FieldType.STR)
     is_meta_block = BlockField(field_type=FieldType.BOOLEAN, init_val=False, is_immutable=True)
 
@@ -364,7 +367,7 @@ class BaseBlock(object):
             "_exec_fsm_state": "initiated",
 
         }
-        self._doc["et"][etoken] = base
+        self._doc["et"][str(etoken)] = base
 
     @classmethod
     def get_user_action_by_name(cls, name):
@@ -413,7 +416,17 @@ class BaseBlock(object):
         print("save invoked")
         coll = conn_db[self._COLLECTION_NAME]
 
-        coll.insert(self._serialize_to_mongo())
+        #
+        # if "_id" in self._doc:
+        #     coll.update(spec={"_id": bson.ObjectId(self._doc["_id"])},
+        #                 document=self._serialize_to_mongo(),
+        #                 upsert=True)
+        # else:
+        #     coll.insert(document=self._serialize_to_mongo())
+        #
+        to_save = self._serialize_to_mongo()
+
+        coll.save(to_save)
         print("save done")
 
     @classmethod
@@ -437,6 +450,9 @@ class BaseBlock(object):
         block._deserialize_from_mongo(raw)
         print("load done")
         return block
+
+    def add_error(self, error):
+        self._doc["errors"].append(error)
 
     def set_block_field(self, field):
         self._doc["configuration"]["fields"][field.name] = field.to_dict()
@@ -463,10 +479,10 @@ class BaseBlock(object):
                                  .format(self.__class__, name))
 
     def get_param_value(self, name):
-        return self._doc["configuration"]["params"][name]
+        return self._doc["configuration"]["params"][name]["value"]
 
     def set_param_value(self, name, value):
-        self._doc["configuration"]["params"][name] = value
+        self._doc["configuration"]["params"][name]["value"] = value
 
     def set_hidden_value(self, field):
         self._doc["hidden"][field.name] = field.init_val
@@ -538,9 +554,9 @@ class BaseBlock(object):
         self.save(conn_db)
         # TODO: Think about async action: i.e.: fetch from remote servers
 
-
     def do_auto_exec_action(self, conn_db, etoken):
         pass
+
 
 class GenericMetaBlock(BaseBlock):
     is_meta_block = BlockField(field_type=FieldType.BOOLEAN, init_val=True, is_immutable=True)
@@ -548,8 +564,12 @@ class GenericMetaBlock(BaseBlock):
     is_abstract = True
 
 
-class ValidationError(Exception):
-    pass
+class ValidationError(object):
+    def __init__(self, msg):
+        self.msg = msg
+
+    def __str__(self):
+        return "<ValidationError: {}>".format(self.msg)
 
 
 class FetchGseNg(BaseBlock):
@@ -575,8 +595,9 @@ class FetchGseNg(BaseBlock):
         geo_uid = self.get_param_value("geo_uid")
         if not geo_uid.startswith("GSE"):
             self.set_user_fsm_state(UserFsmStates.MODIFIED)
-            self.errors.append(
-                ValidationError(msg="GEO id should start with GSE")
+            self.add_error(
+                # ValidationError(msg="GEO id should start with GSE")
+                dict(msg="GEO id should start with GSE")
             )
             return
 

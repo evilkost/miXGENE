@@ -10,7 +10,8 @@ from bson.objectid import ObjectId
 
 from marshmallow import Schema, fields, pprint
 
-from workflow.block_ng import get_schema_class, ClassifierBlock, FetchGseNg, CrossValidation, Scope, do_user_action
+from workflow.block_ng import get_schema_class, ClassifierBlock, \
+    FetchGseNg, CrossValidation, Scope
 
 
 def _test_get_schema():
@@ -75,9 +76,12 @@ class TestMongoBlocks(object):
         block = FetchGseNg.new(self.exp_id, self.owner_id, self.root_scope)
         # pprint(block.__class__.__dict__, indent=2)
         # pprint(block._doc)
+        pprint(block._doc["errors"])
         # pprint(dict(block.__class__.__dict__), indent=2)
-        do_user_action(self.db, block, "save_changes")
-
+        block.do_user_action(self.db, "save_changes")
+        uuid = block.uuid
+        block2 = FetchGseNg.load(self.db, self.exp_id, uuid)
+        pprint(block2._doc["errors"])
 
     def test_cv_block(self, root_scope):
         block = CrossValidation.new(self.exp_id, self.owner_id, self.root_scope)
