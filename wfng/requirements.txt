@@ -1,0 +1,17 @@
+billiard==3.3.0.16
+kombu==3.0.13
+celery==3.1.10
+gunicorn==18.0
+hiredis==0.1.2
+nose==1.3.1
+python-dateutil==2.2
+python-redis-lock==0.1.2
+pytz==2014.2
+redis==2.9.1
+# rpy2==2.3.9
+six==1.6.1
+ipdb==0.6.1
+ipython==1.1.0
+pytest
+mongoengine
+marshmallow

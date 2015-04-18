@@ -2,12 +2,13 @@
 import abc
 import copy
 
-from datetime import date
+import time
 from uuid import uuid1
-import bson
-from marshmallow import Schema, fields, pprint
-from workflow.blocks.fields import ParamField, InputType, FieldType, BlockField, HiddenValueField, ActionsList, \
-    ActionRecord
+
+from marshmallow import Schema, fields
+
+from webapp.tasks import wrapper_user_action
+from workflow.blocks.fields import ParamField, InputType, FieldType, BlockField
 
 
 class BlockAction(object):
@@ -219,7 +220,6 @@ class BlockMeta(abc.ABCMeta):
 
         return new_class
 
-
 class BaseBlock(object):
     __metaclass__ = BlockMeta
     _init_fields = []
@@ -236,6 +236,8 @@ class BaseBlock(object):
         "parent_scope": "name of parent scope, None for root level blocks",  # or reference to explicit object ?
         "sub_scope": "name of sub scope",  # Optional ! only for metablocks,
 
+        "celery_user_task_id": None,
+
         "is_meta_block": False,
 
         # "hidden": {
@@ -249,7 +251,7 @@ class BaseBlock(object):
             "0001": {
                 "etoken": "0001",
                 "parent_etoken": "0000",  # for easy discover
-
+                "celery_task_id": None,  # when async task issued remember celery task id
                 # for block itself
                 "local_vars": {
                     "foo": 2.123,
@@ -314,6 +316,10 @@ class BaseBlock(object):
     }
     available_user_actions = BlockField(is_a_property=True, field_type=FieldType.CUSTOM)
     uuid = BlockField(field_type=FieldType.STR, init_val=None, is_immutable=True)
+    exp_id = BlockField(field_type=FieldType.STR, init_val=None, is_immutable=True)
+
+    celery_user_task_id = BlockField(field_type=FieldType.HIDDEN, init_val=None)
+
     _summary = BlockField(name="summary", field_type=FieldType.STR, is_a_property=True)
 
     errors = BlockField(field_type=FieldType.SIMPLE_LIST, init_val=[])
@@ -339,6 +345,7 @@ class BaseBlock(object):
             "owner_id": owner_id,
             "uuid": uuid,
             "hidden": {},
+            "next_action": None,
 
 
             # setting for web presentation
@@ -358,6 +365,21 @@ class BaseBlock(object):
             "_user_fsm_state": UserFsmStates.MODIFIED,
             "et": {}
         }
+
+        # strictly runtime variable
+        self._db_provider = None
+
+    def register_db_provider(self, db_provider):
+        """
+        :param db_provider: Object with method .get_db()
+        """
+        self._db_provider = db_provider
+
+    def get_db_conn(self):
+        if not self._db_provider:
+            raise RuntimeError("No db provider set")
+        else:
+            return self._db_provider.get_db()
 
     def add_et_section(self, etoken, parent_etoken=None):
         base = {
@@ -413,6 +435,7 @@ class BaseBlock(object):
         self._doc = copy.deepcopy(raw)
 
     def save(self, conn_db):
+        # TODO: add method to update only SOME fields
         print("save invoked")
         coll = conn_db[self._COLLECTION_NAME]
 
@@ -551,8 +574,22 @@ class BaseBlock(object):
 
         getattr(self, action_name)()
 
+        #self.save(conn_db)
+
+    def start_async_user_action(self, action_name):
+        conn_db = self.get_db_conn()
+        # ba = self.get_user_action_by_name(action_name)
+        # current_state = self._user_fsm_state
+        # print("CURRENT STATE: {}".format(current_state))
+        # if current_state not in ba.source_states:
+        #     raise RuntimeError("Trying to apply action: {} but current state is: {}".format(
+        #         action_name, current_state
+        #     ))
+        task_id = uuid1().hex
+        celery_task = wrapper_user_action.s(self.__class__, self.exp_id, self.uuid, action_name)
+        self.celery_user_task_id = task_id
         self.save(conn_db)
-        # TODO: Think about async action: i.e.: fetch from remote servers
+        celery_task.apply_async(task_id=task_id)
 
     def do_auto_exec_action(self, conn_db, etoken):
         pass
@@ -605,6 +642,22 @@ class FetchGseNg(BaseBlock):
 
         # if <annotained>
         # elf.set_user_fsm_state(UserFsmStates.READY)
+
+    def start_preprocess(self):
+        self.start_async_user_action("_fetching")
+
+    def _fetching(self):
+        time.sleep(2)
+        self.set_user_fsm_state("fetched")
+        self.save(self.get_db_conn())
+
+        # from celery.contrib import rdb; rdb.set_trace()
+        self.start_async_user_action("_process")
+
+    def _process(self):
+        time.sleep(2)
+        self.set_user_fsm_state("processed")
+        self.save(self.get_db_conn())
 
 
 class ClassifierBlock(BaseBlock):

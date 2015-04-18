@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
+import pymongo
 import redis_lock
 from time import time
 from celery.task import task
@@ -7,6 +8,7 @@ from mixgene.redis_helper import ExpKeys
 from mixgene.util import get_redis_instance
 from webapp.scope import LOCK_TIME, ScopeRunner
 from webapp.notification import AllUpdated, NotifyMode
+from workflow.util_ng import load_by_class
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -65,3 +67,31 @@ def wrapper_task(func, exp, block,
     except Exception, e:
         log.exception(e)
         block.do_action(error_action, exp, e)
+
+
+class DbProvider(object):
+    def __init__(self, db_name):
+        self.test_client = pymongo.MongoClient()
+        # self.db_name = "test_{}".format(int(time.time()))
+        self.db_name = "test_123"
+        self.db = self.test_client[self.db_name]
+
+    def get_db(self):
+        return self.db
+
+
+@task(name="webapp.tasks.wrapper_user_action")
+def wrapper_user_action(block_cls, exp_id, block_uuid,  action_name, *args, **kwargs):
+    error_action = kwargs.pop("error_action", "error")
+    try:
+        dbp = DbProvider("test_123")
+        conn_db = dbp.get_db()
+        block = load_by_class(conn_db, block_cls, exp_id, block_uuid)
+        block.register_db_provider(dbp)
+        log.info("trying to apply: %s", action_name)
+
+        getattr(block, action_name)(*args, **kwargs)
+
+
+    except Exception, e:
+        log.exception(e)

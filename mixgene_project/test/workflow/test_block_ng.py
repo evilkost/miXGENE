@@ -34,14 +34,25 @@ def _test_get_schema():
     # print("="*30)
 
 
+class DbProvider(object):
+    def __init__(self, db):
+        self.db = db
+
+    def get_db(self):
+        return self.db
+
+
 class TestMongoBlocks(object):
 
     def setup_method(self, method):
         self.test_client = pymongo.MongoClient()
-        self.db_name = "test_{}".format(int(time.time()))
+        # self.db_name = "test_{}".format(int(time.time()))
+        self.db_name = "test_123"
         self.db = self.test_client[self.db_name]
 
-        self.exp_id = 1234
+        self.db_provider = DbProvider(self.db)
+
+        self.exp_id = 1234 + int(time.time())
         self.owner_id = 1
 
     @pytest.fixture
@@ -51,47 +62,57 @@ class TestMongoBlocks(object):
         self.root_scope.save(self.db)
 
     def teardown_method(self, method):
-        self.test_client.drop_database(self.db_name)
+        pass
+        # self.test_client.drop_database(self.db_name)
 
-    def not_test_db_connection(self):
-        self.db["collection_1"].insert({"foo": "bar"})
-        pprint(list(self.db["collection_1"].find()))
+    # def not_test_db_connection(self):
+    #     self.db["collection_1"].insert({"foo": "bar"})
+    #     pprint(list(self.db["collection_1"].find()))
 
-    def test_basic_block(self, root_scope):
-
-        block = ClassifierBlock.new(self.exp_id, 1, self.root_scope)
-
-        #print()
-        pprint(block._doc, indent=4)
-
-        print(block.uuid)
-        # block.save(self.db)
-        # uuid = block.uuid
-        #
-        # retrieved_block = ClassifierBlock.load(self.db, self.exp_id, uuid)
-        # pprint(retrieved_block._doc)
+    # def test_basic_block(self, root_scope):
+    #
+    #     block = ClassifierBlock.new(self.exp_id, 1, self.root_scope)
+    #
+    #     #print()
+    #     pprint(block._doc, indent=4)
+    #
+    #     print(block.uuid)
+    #     # block.save(self.db)
+    #     # uuid = block.uuid
+    #     #
+    #     # retrieved_block = ClassifierBlock.load(self.db, self.exp_id, uuid)
+    #     # pprint(retrieved_block._doc)
 
     def test_fetch_gse(self, root_scope):
 
         block = FetchGseNg.new(self.exp_id, self.owner_id, self.root_scope)
         # pprint(block.__class__.__dict__, indent=2)
         # pprint(block._doc)
-        pprint(block._doc["errors"])
+        pprint(block.uuid)
         # pprint(dict(block.__class__.__dict__), indent=2)
         block.do_user_action(self.db, "save_changes")
         uuid = block.uuid
         block2 = FetchGseNg.load(self.db, self.exp_id, uuid)
         pprint(block2._doc["errors"])
 
-    def test_cv_block(self, root_scope):
-        block = CrossValidation.new(self.exp_id, self.owner_id, self.root_scope)
-        pprint(block._doc)
+        block2.register_db_provider(self.db_provider)
+        block2.start_preprocess()
+        for i in range(10):
+            time.sleep(1)
+            block_new = FetchGseNg.load(self.db, self.exp_id, uuid)
+            print(">>>>> {}".format(block_new._user_fsm_state))
 
-    def test_scope(self):
-        scope_orig = Scope(exp_id=self.exp_id, name="root")
-        print(scope_orig)
-        scope_orig.next_et()
-        scope_orig.save(self.db)
-        print(scope_orig)
-        scope_from_bd = Scope.load(self.db, self.exp_id, "root")
-        print(scope_from_bd)
+
+
+    # def test_cv_block(self, root_scope):
+    #     block = CrossValidation.new(self.exp_id, self.owner_id, self.root_scope)
+    #     pprint(block._doc)
+    #
+    # def test_scope(self):
+    #     scope_orig = Scope(exp_id=self.exp_id, name="root")
+    #     print(scope_orig)
+    #     scope_orig.next_et()
+    #     scope_orig.save(self.db)
+    #     print(scope_orig)
+    #     scope_from_bd = Scope.load(self.db, self.exp_id, "root")
+    #     print(scope_from_bd)
